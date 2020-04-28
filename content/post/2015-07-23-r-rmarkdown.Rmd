@@ -1,37 +1,262 @@
 ---
-title: "Hello R Markdown"
-author: "Frida Gomam"
-date: 2015-07-23T21:13:14-05:00
+title: "knn model"
+author: "Meetales Abdelkader"
+date: 2019-12-16T21:13:14-05:00
 categories: ["R"]
-tags: ["R Markdown", "plot", "regression"]
+tags: ["knn", "Titanic data", "Machine learning"]
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(collapse = TRUE)
+knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+### Introduction
 
-You can embed an R code chunk like this:
+In this paper we will explore the **k nearest neighbors** model using two data sets, the first is **Tiatanic** data to which we will fit this model for  classification, and the second data is **BostonHousing** data (from **mlbench** package) that will be used to fit a regression model.
 
-```{r cars}
-summary(cars)
-fit <- lm(dist ~ speed, data = cars)
-fit
+### Classification
+
+We do not repeat the whole process for data preparation and missing values imputation. you can click [here](https://github.com/Metalesaek/svm-model) to see all the detail in my paper about **support vector machine** model.
+
+### Data partition
+
+All the codes for the first steps are grouped in one chunk. If you notice we are using the same specified parameter values and seed numbers to be able to compare the results of the tow models **svm** and **knn** for **classification** (Using titanic data) and for regression (using BostonHousing data)     
+
+
+
+```{r, include=FALSE}
+library(tidyverse)
+library(caret)
+
+data<-read_csv("train.csv")
+data<-data[,-c(1,4,9,11)]
+data <- data %>% 
+  mutate_at(c(1,2,3,8),funs(as.factor))
+
+set.seed(1234)
+index<-createDataPartition(data$Survived,p=0.8,list=FALSE)
+train<-data[index,]
+test<-data[-index,]
+
+library(mice)
+imput<-mice(train,m=1,method = "cart",maxit=20 ,seed=1111,print=FALSE)
+train<-complete(imput)
+imput1<-mice(test,m=1,method = "cart",maxit=20 ,seed=1111,print=FALSE)
+test<-complete(imput1)
 ```
 
-# Including Plots
+This plot shows how knn model works. With  k=5 the model chooses the 5 closest points inside the dashed circle, and hence the blue point will be predicted to be red using the majority vote (3 red and 2 black), but with k=9 the blue point will be predicted to be black (5 black and 4 red).     
 
-You can also embed plots. See Figure \@ref(fig:pie) for example:
-
-```{r pie, fig.cap='A fancy pie chart.', tidy=FALSE}
-par(mar = c(0, 1, 0, 1))
-pie(
-  c(280, 60, 20),
-  c('Sky', 'Sunny side of pyramid', 'Shady side of pyramid'),
-  col = c('#0292D8', '#F7EA39', '#C4B632'),
-  init.angle = -50, border = NA
-)
+```{r}
+library(plotrix)
+plot(train$Age[10:40],pch=16,train$Fare[10:40],
+     col=train$Survived,ylim = c(0,50))
+points(x=32,y=20,col="blue",pch=8)
+draw.circle(x=32,y=20,nv=1000,radius = 5.5,lty=2)
+draw.circle(x=32,y=20,nv=1000,radius = 10)
 ```
+
+
+
+
+The last things we should do before training the model is converting the factors to be numerics and standardizing all the predictors for both sets (train and test), and finally we rename the target variable levels
+
+```{r,include=TRUE}
+train1 <- train %>% mutate_at(c(2,3,8),funs(as.numeric))
+test1 <- test %>% mutate_at(c(2,3,8),funs(as.numeric))
+
+processed<-preProcess(train1[,-1],method = c("center","scale"))
+train1[,-1]<-predict(processed,train1[,-1])
+test1[,-1]<-predict(processed,test1[,-1])
+
+train1$Survived <- fct_recode(train1$Survived,died="0",surv="1")
+test1$Survived <- fct_recode(test1$Survived,died="0",surv="1")
+```
+
+
+### Train the model
+
+The big advantage of the **k nearest neighbors** model is that it has one single parameters which make the tuning process very fast. Here also we will make use of the same seed as we did with **svm** model. for the resampling process we will stick with the default bootstrapped method with 25 resampling iterations. 
+
+Let's now launch the model and get the summary.
+
+```{r}
+set.seed(123)
+modelknn <- train(Survived~., data=train1,
+                method="knn",
+                tuneGrid=expand.grid(k=1:30))
+modelknn
+```
+
+The metric used to get the best parameter value is the **accuracy** rate , for which the best value is about 81.47% obtained at k=17. we can also get these values from the plot 
+
+
+
+```{r}
+plot(modelknn)
+```
+
+For the contributions of the predictors, the measure of importance scaled from 0 to 100 shows that the most important one is far the **Sex**, followed by **Fare** and **Pclass** , and the least important one is **SibSp**  
+
+```{r}
+varImp(modelknn)
+```
+
+### Prediction and confusion matrix
+
+Let's now use the test set to evaluate the model performance.
+
+
+```{r}
+pred<-predict(modelknn,test1)
+confusionMatrix(as.factor(pred),as.factor(test1$Survived))
+
+```
+
+We see that the accuracy has slightly decreased from 81.47% to 79.66. the closeness of this rates is a good sign that we do not face the **overfitting** problem.
+
+### Fine tuning the model
+
+to seek improvements we can alter the metric. the best function that gives three importante metrics, **sensitivity**, **specivicity** and area under the **ROC** curve for each resampling iteration is **twoClassSummary**. Also we expand the grid search for the neighbors number to 30. 
+
+```{r}
+control <- trainControl(classProbs = TRUE,
+                        summaryFunction = twoClassSummary)
+
+set.seed(123)
+modelknn1 <- train(Survived~., data=train1,
+                method = "knn",
+                trControl = control,
+                tuneGrid = expand.grid(k=1:30))
+modelknn1
+
+```
+
+This time we use the **ROC** to choose the best model which gives a different value of 29 with 0.8686 for the **ROC**.
+
+
+```{r}
+pred<-predict(modelknn1,test1)
+confusionMatrix(pred,test1$Survived)
+
+```
+
+Using the **ROC** metric we get worse result for the accuracy rate which has decreased from 79.66% to 77.97%.
+
+### Comparison between knn and svm model
+
+Now let's train svm model with the same resamling method and we compare between them.
+
+```{r}
+control<-trainControl(method="boot",number=25,
+                      classProbs = TRUE,
+                      summaryFunction = twoClassSummary)
+
+modelsvm<-train(Survived~., data=train1,
+                method="svmRadial",
+                trControl=control)
+
+modelsvm
+```
+
+
+And let's get the confusion matrix.
+
+
+```{r}
+pred<-predict(modelsvm,test1)
+confusionMatrix(pred,test1$Survived)
+
+```
+
+we see that the accuracy fo this model is much higher with 80.23% than the knn model with 77.97% (the **modelknn1**).
+If we have a large number of models to be compared, there exists a function in **caret** called **resamples** to compare between models,but the models should have the same tarincontrol prameter values.
+
+```{r}
+comp<-resamples(list( svm = modelsvm,
+                         knn = modelknn1))
+
+summary(comp)
+```
+
+we can also plot the models' matric values  togather. 
+
+```{r}
+dotplot(comp,metric="ROC")
+```
+
+
+
+
+## Regression
+
+First we call the **BostonHousing** data.     
+
+```{r}
+library(mlbench)
+data("BostonHousing")
+glimpse(BostonHousing)
+
+```
+
+We will train a knn model to this data using the continuous variable as target **medv**   
+
+```{r}
+set.seed(1234)
+index<-sample(nrow(BostonHousing),size = floor(0.8*(nrow(BostonHousing))))
+train<-BostonHousing[index,]
+test<-BostonHousing[-index,]
+
+scaled<-preProcess(train[,-14],method=c("center","scale"))
+trainscaled<-predict(scaled,train)
+testscaled<-predict(scaled,test)
+
+```
+
+We are ready now to train our model.
+
+
+```{r}
+
+set.seed(123)
+modelknnR <- train(medv~., data=trainscaled,
+                method = "knn",
+                tuneGrid = expand.grid(k=1:60))
+modelknnR
+
+``` 
+
+The best model with k=7 for which the minimum RMSE is about 4.3757.
+
+We can also get the importance of the predictors.
+
+```{r}
+plot(varImp(modelknnR))
+```
+
+
+Then we get the prediction and the root mean squared error **RMSE** as follows. 
+
+```{r}
+
+pred<-predict(modelknnR,testscaled)
+head(pred)
+RMSE(pred,test$medv)
+```
+ 
+ The RMSE using the test set is about **4.4163** which is slightly greater than that of the training set **4.3757** .
+ Finally we can plot the predictted values vs the observed values to get  insight about their relationship.
+ 
+```{r}
+ggplot(data.frame(predicted=pred,observed=test$medv),aes(pred,test$medv))+
+  geom_point(col="blue")+
+  geom_abline(col="red")+
+  ggtitle("actual values vs predicted values")
+```
+ 
+ 
+  
+  
+
+
