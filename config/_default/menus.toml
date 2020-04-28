@@ -4,22 +4,22 @@
 #   The weight parameter defines the order that the links will appear in.
 
 [[main]]
-  name = "Home"
+  name = "demo"
   url = "#hero"
   weight = 10
 
 [[main]]
-  name = "Machine Learning"
+  name = "posts"
   url = "#posts"
   weight = 20
 
 [[main]]
-  name = "Bigdata"
+  name = "projects"
   url = "#projects"
   weight = 30
 
 [[main]]
-  name = "Deep learning"
+  name = "featured"
   url = "#featured"
   weight = 40
 
