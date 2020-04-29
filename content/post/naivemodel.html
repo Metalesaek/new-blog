@@ -1,0 +1,454 @@
+---
+title: "naive bayes"
+author: "Metales Abdelkader"
+date: '2019-12-19'
+tags:
+- naive bayes
+- titanic
+- Machine learning
+categories: R
+---
+
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+
+
+<div id="introduction" class="section level1">
+<h1>Introduction</h1>
+<p><strong>Naive bayes</strong> model based on a strong assumption that the features are <strong>conditionally independent</strong> given the class label. Since this assumption is rarely when it is true, this model termed as <strong>naive</strong>. However, even this assumption is not satisfied the model still works very well (Kevin.P murphy 2012). Using this assumption we can define the class conditionall density as the product of one dimensional densities.</p>
+<p><span class="math display">\[p(X|y=c,\theta)=\prod_{j=1}^Dp(x_j|y=c,\theta_{jc})\]</span></p>
+<p>The possible one dimensional density for each feature depends on the type of the feature:</p>
+<ul>
+<li>For real_valued features we can make use of gaussion distribution:</li>
+</ul>
+<p><span class="math display">\[p(X|y=c,\theta)=\prod_{j=1}^D\mathcal N(\mu_{jc}|y=c,\sigma_{jc}^2)\]</span></p>
+<ul>
+<li>For binary feature we can use bernouli distribution:</li>
+</ul>
+<p><span class="math display">\[p(X|y=c,\theta)=\prod_{j=1}^DBer(x_j|\mu_{jc})\]</span></p>
+<ul>
+<li>For categorical feature we can make use of multinouli distribution:</li>
+</ul>
+<p><span class="math display">\[p(X|y=c,\theta)=\prod_{j=1}^DCat(x_j|\mu_{jc})\]</span></p>
+<p>For data that has features of different types we can use a mixture product of the above distributions, and this is what we will do in this paper.</p>
+<p>The data that we will use is <a href="https://www.kaggle.com/johnsmith88/heart-disease-dataset">uploaded from kaggle website</a>.</p>
+<pre class="r"><code>library(tidyverse)
+library(caret)</code></pre>
+<pre class="r"><code>mydata&lt;-read.csv(&quot;heart.csv&quot;,header = TRUE)
+names(mydata)[1]&lt;-&quot;age&quot;
+glimpse(mydata)</code></pre>
+<pre><code>## Observations: 303
+## Variables: 14
+## $ age      &lt;int&gt; 63, 37, 41, 56, 57, 57, 56, 44, 52, 57, 54, 48, 49, 64, 58...
+## $ sex      &lt;int&gt; 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0...
+## $ cp       &lt;int&gt; 3, 2, 1, 1, 0, 0, 1, 1, 2, 2, 0, 2, 1, 3, 3, 2, 2, 3, 0, 3...
+## $ trestbps &lt;int&gt; 145, 130, 130, 120, 120, 140, 140, 120, 172, 150, 140, 130...
+## $ chol     &lt;int&gt; 233, 250, 204, 236, 354, 192, 294, 263, 199, 168, 239, 275...
+## $ fbs      &lt;int&gt; 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0...
+## $ restecg  &lt;int&gt; 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1...
+## $ thalach  &lt;int&gt; 150, 187, 172, 178, 163, 148, 153, 173, 162, 174, 160, 139...
+## $ exang    &lt;int&gt; 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0...
+## $ oldpeak  &lt;dbl&gt; 2.3, 3.5, 1.4, 0.8, 0.6, 0.4, 1.3, 0.0, 0.5, 1.6, 1.2, 0.2...
+## $ slope    &lt;int&gt; 0, 0, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 1, 2, 0, 2, 2...
+## $ ca       &lt;int&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2...
+## $ thal     &lt;int&gt; 1, 2, 2, 2, 2, 1, 2, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2...
+## $ target   &lt;int&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1...</code></pre>
+<p>the <strong>target</strong> variable indicates whether a patient has the disease or not based on the following features:</p>
+<ul>
+<li>age.</li>
+<li>sex: 1=male,0=female</li>
+<li>cp : chest pain type.</li>
+<li>trestbps : resting blood pressure.</li>
+<li>chol: serum cholestoral.</li>
+<li>fbs : fasting blood sugar.</li>
+<li>restecg : resting electrocardiographic results.</li>
+<li>thalach : maximum heart rate achieved</li>
+<li>exang : exercise induced angina.</li>
+<li>oldpeak : ST depression induced by exercise relative to rest.</li>
+<li>slope : the slope of the peak exercise ST segment.</li>
+<li>ca : number of major vessels colored by flourosopy.</li>
+<li>thal : it is not well defined from the data source.</li>
+<li>target: have heart disease or not.</li>
+</ul>
+<p>First let’s get summary of this data to check the suitable type of each feature.</p>
+<pre class="r"><code>summary(mydata)</code></pre>
+<pre><code>##       age             sex               cp           trestbps    
+##  Min.   :29.00   Min.   :0.0000   Min.   :0.000   Min.   : 94.0  
+##  1st Qu.:47.50   1st Qu.:0.0000   1st Qu.:0.000   1st Qu.:120.0  
+##  Median :55.00   Median :1.0000   Median :1.000   Median :130.0  
+##  Mean   :54.37   Mean   :0.6832   Mean   :0.967   Mean   :131.6  
+##  3rd Qu.:61.00   3rd Qu.:1.0000   3rd Qu.:2.000   3rd Qu.:140.0  
+##  Max.   :77.00   Max.   :1.0000   Max.   :3.000   Max.   :200.0  
+##       chol            fbs            restecg          thalach     
+##  Min.   :126.0   Min.   :0.0000   Min.   :0.0000   Min.   : 71.0  
+##  1st Qu.:211.0   1st Qu.:0.0000   1st Qu.:0.0000   1st Qu.:133.5  
+##  Median :240.0   Median :0.0000   Median :1.0000   Median :153.0  
+##  Mean   :246.3   Mean   :0.1485   Mean   :0.5281   Mean   :149.6  
+##  3rd Qu.:274.5   3rd Qu.:0.0000   3rd Qu.:1.0000   3rd Qu.:166.0  
+##  Max.   :564.0   Max.   :1.0000   Max.   :2.0000   Max.   :202.0  
+##      exang           oldpeak         slope             ca        
+##  Min.   :0.0000   Min.   :0.00   Min.   :0.000   Min.   :0.0000  
+##  1st Qu.:0.0000   1st Qu.:0.00   1st Qu.:1.000   1st Qu.:0.0000  
+##  Median :0.0000   Median :0.80   Median :1.000   Median :0.0000  
+##  Mean   :0.3267   Mean   :1.04   Mean   :1.399   Mean   :0.7294  
+##  3rd Qu.:1.0000   3rd Qu.:1.60   3rd Qu.:2.000   3rd Qu.:1.0000  
+##  Max.   :1.0000   Max.   :6.20   Max.   :2.000   Max.   :4.0000  
+##       thal           target      
+##  Min.   :0.000   Min.   :0.0000  
+##  1st Qu.:2.000   1st Qu.:0.0000  
+##  Median :2.000   Median :1.0000  
+##  Mean   :2.314   Mean   :0.5446  
+##  3rd Qu.:3.000   3rd Qu.:1.0000  
+##  Max.   :3.000   Max.   :1.0000</code></pre>
+<p>Some variables should be treated as factors such as <strong>sex</strong>,<strong>cp</strong>,<strong>fbs</strong>,<strong>restecg</strong>,<strong>exange</strong>,<strong>slope</strong>,<strong>ca</strong>,<strong>thal</strong>, and the <strong>target</strong> variable.</p>
+<pre class="r"><code>mydata&lt;-mydata %&gt;%
+  mutate_at(c(2,3,6,7,9,11,12,13,14),funs(as.factor))
+summary(mydata)</code></pre>
+<pre><code>##       age        sex     cp         trestbps          chol       fbs    
+##  Min.   :29.00   0: 96   0:143   Min.   : 94.0   Min.   :126.0   0:258  
+##  1st Qu.:47.50   1:207   1: 50   1st Qu.:120.0   1st Qu.:211.0   1: 45  
+##  Median :55.00           2: 87   Median :130.0   Median :240.0          
+##  Mean   :54.37           3: 23   Mean   :131.6   Mean   :246.3          
+##  3rd Qu.:61.00                   3rd Qu.:140.0   3rd Qu.:274.5          
+##  Max.   :77.00                   Max.   :200.0   Max.   :564.0          
+##  restecg    thalach      exang      oldpeak     slope   ca      thal    target 
+##  0:147   Min.   : 71.0   0:204   Min.   :0.00   0: 21   0:175   0:  2   0:138  
+##  1:152   1st Qu.:133.5   1: 99   1st Qu.:0.00   1:140   1: 65   1: 18   1:165  
+##  2:  4   Median :153.0           Median :0.80   2:142   2: 38   2:166          
+##          Mean   :149.6           Mean   :1.04           3: 20   3:117          
+##          3rd Qu.:166.0           3rd Qu.:1.60           4:  5                  
+##          Max.   :202.0           Max.   :6.20</code></pre>
+<p>Now let’s check if all the factor levels contributes on the each target variable level.</p>
+<pre class="r"><code>xtabs(~target+sex,data=mydata)</code></pre>
+<pre><code>##       sex
+## target   0   1
+##      0  24 114
+##      1  72  93</code></pre>
+<pre class="r"><code>xtabs(~target+cp,data=mydata)</code></pre>
+<pre><code>##       cp
+## target   0   1   2   3
+##      0 104   9  18   7
+##      1  39  41  69  16</code></pre>
+<pre class="r"><code>xtabs(~target+fbs,data=mydata)</code></pre>
+<pre><code>##       fbs
+## target   0   1
+##      0 116  22
+##      1 142  23</code></pre>
+<pre class="r"><code>xtabs(~target+restecg,data=mydata)</code></pre>
+<pre><code>##       restecg
+## target  0  1  2
+##      0 79 56  3
+##      1 68 96  1</code></pre>
+<pre class="r"><code>xtabs(~target+exang,data=mydata)</code></pre>
+<pre><code>##       exang
+## target   0   1
+##      0  62  76
+##      1 142  23</code></pre>
+<pre class="r"><code>xtabs(~target+slope,data=mydata)</code></pre>
+<pre><code>##       slope
+## target   0   1   2
+##      0  12  91  35
+##      1   9  49 107</code></pre>
+<pre class="r"><code>xtabs(~target+ca,data=mydata)</code></pre>
+<pre><code>##       ca
+## target   0   1   2   3   4
+##      0  45  44  31  17   1
+##      1 130  21   7   3   4</code></pre>
+<pre class="r"><code>xtabs(~target+thal,data=mydata)</code></pre>
+<pre><code>##       thal
+## target   0   1   2   3
+##      0   1  12  36  89
+##      1   1   6 130  28</code></pre>
+<p>As we see the <strong>restecg</strong>,<strong>ca</strong> and <strong>thal</strong> variables have values less than the threshold of 5 casses required, so if we split the data between training set and test set the level <strong>2</strong> of the <strong>restecg</strong> variable will not be found in one of the sets since we have only one case. Therfore we should remove these variables from the model.</p>
+<pre class="r"><code>mydata&lt;-mydata[,-c(7,12,13)]
+glimpse(mydata)</code></pre>
+<pre><code>## Observations: 303
+## Variables: 11
+## $ age      &lt;int&gt; 63, 37, 41, 56, 57, 57, 56, 44, 52, 57, 54, 48, 49, 64, 58...
+## $ sex      &lt;fct&gt; 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0...
+## $ cp       &lt;fct&gt; 3, 2, 1, 1, 0, 0, 1, 1, 2, 2, 0, 2, 1, 3, 3, 2, 2, 3, 0, 3...
+## $ trestbps &lt;int&gt; 145, 130, 130, 120, 120, 140, 140, 120, 172, 150, 140, 130...
+## $ chol     &lt;int&gt; 233, 250, 204, 236, 354, 192, 294, 263, 199, 168, 239, 275...
+## $ fbs      &lt;fct&gt; 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0...
+## $ thalach  &lt;int&gt; 150, 187, 172, 178, 163, 148, 153, 173, 162, 174, 160, 139...
+## $ exang    &lt;fct&gt; 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0...
+## $ oldpeak  &lt;dbl&gt; 2.3, 3.5, 1.4, 0.8, 0.6, 0.4, 1.3, 0.0, 0.5, 1.6, 1.2, 0.2...
+## $ slope    &lt;fct&gt; 0, 0, 2, 2, 2, 1, 1, 2, 2, 2, 2, 2, 2, 1, 2, 1, 2, 0, 2, 2...
+## $ target   &lt;fct&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1...</code></pre>
+<p>Before training our model, we can get a vague insight about the predictors that have some importance for the prediction of the dependent variable.</p>
+<p>Let’s plot the relationships between the target variabl and the other features.</p>
+<pre class="r"><code>ggplot(mydata,aes(sex,target,color=target))+
+  geom_jitter()</code></pre>
+<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p>If we look only at the red points (healthy patients) we can wrongly interpret that females are less healthy than males. This is because we do not take into account that we have imbalanced number of each sex level (96 females , 207 males). in contrast, if we look only at females we can say that a particular female are more likely to have the disease than not.</p>
+<pre class="r"><code>ggplot(mydata,aes(cp,fill=target))+
+  geom_histogram(stat = &quot;count&quot;,position = &quot;dodge&quot;)</code></pre>
+<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p>From this plot we can conclude that if the patient does not have any chest pain he/she will be highly unlikely to get the disease, otherwise for any chest type the patient will be more likely to be pathologique by this disease. we can expect therfore that this predictor will have a significant importance on the training model.</p>
+<pre class="r"><code>ggplot(mydata, aes(age,fill=target))+
+  geom_density(alpha=.5)</code></pre>
+<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p>Since the independence assumption of the features is highly required for <strong>naive bayes</strong> model, let’s check the corralation matrix.</p>
+<pre class="r"><code>library(psych)
+pairs.panels(mydata[,-11])</code></pre>
+<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<p>AS we see all the correlations are less than 50% so we can go ahead and train our model.</p>
+<div id="data-partition" class="section level2">
+<h2>Data partition</h2>
+<p>we take out 80% of the data to use as training set and the rest will be put aside to evaluate the model performance.</p>
+<pre class="r"><code>set.seed(1234)
+index&lt;-createDataPartition(mydata$target, p=.8,list=FALSE)
+train&lt;-mydata[index,]
+test&lt;-mydata[-index,]</code></pre>
+</div>
+<div id="train-the-model" class="section level2">
+<h2>train the model</h2>
+<p>Note: for this model we do not need to set seed because this model uses known densities for the predictors and does not use any random method.</p>
+<pre class="r"><code>library(naivebayes)
+modelnv&lt;-naive_bayes(target~.,data=train)
+modelnv</code></pre>
+<pre><code>## 
+## ================================== Naive Bayes ================================== 
+##  
+##  Call: 
+## naive_bayes.formula(formula = target ~ ., data = train)
+## 
+## --------------------------------------------------------------------------------- 
+##  
+## Laplace smoothing: 0
+## 
+## --------------------------------------------------------------------------------- 
+##  
+##  A priori probabilities: 
+## 
+##         0         1 
+## 0.4567901 0.5432099 
+## 
+## --------------------------------------------------------------------------------- 
+##  
+##  Tables: 
+## 
+## --------------------------------------------------------------------------------- 
+##  ::: age (Gaussian) 
+## --------------------------------------------------------------------------------- 
+##       
+## age            0         1
+##   mean 56.432432 52.378788
+##   sd    8.410623  9.896819
+## 
+## --------------------------------------------------------------------------------- 
+##  ::: sex (Bernoulli) 
+## --------------------------------------------------------------------------------- 
+##    
+## sex         0         1
+##   0 0.1891892 0.3939394
+##   1 0.8108108 0.6060606
+## 
+## --------------------------------------------------------------------------------- 
+##  ::: cp (Categorical) 
+## --------------------------------------------------------------------------------- 
+##    
+## cp           0          1
+##   0 0.75675676 0.22727273
+##   1 0.07207207 0.25000000
+##   2 0.12612613 0.42424242
+##   3 0.04504505 0.09848485
+## 
+## --------------------------------------------------------------------------------- 
+##  ::: trestbps (Gaussian) 
+## --------------------------------------------------------------------------------- 
+##         
+## trestbps         0         1
+##     mean 133.82883 128.75758
+##     sd    18.26267  15.21857
+## 
+## --------------------------------------------------------------------------------- 
+##  ::: chol (Gaussian) 
+## --------------------------------------------------------------------------------- 
+##       
+## chol           0         1
+##   mean 248.52252 240.80303
+##   sd    51.07194  53.55705
+## 
+## ---------------------------------------------------------------------------------
+## 
+## # ... and 5 more tables
+## 
+## ---------------------------------------------------------------------------------</code></pre>
+<p>As we see each predictor is treated depending on its type, gaussion distribution for numeric variables, bernouli distribution for binary variables and multinouli distribution for categorical variables.</p>
+<p>all the informations about this model can be extracted using the function <strong>attributes</strong>.</p>
+<pre class="r"><code>attributes(modelnv)</code></pre>
+<pre><code>## $names
+## [1] &quot;data&quot;       &quot;levels&quot;     &quot;laplace&quot;    &quot;tables&quot;     &quot;prior&quot;     
+## [6] &quot;usekernel&quot;  &quot;usepoisson&quot; &quot;call&quot;      
+## 
+## $class
+## [1] &quot;naive_bayes&quot;</code></pre>
+<p>Now let’s use the test set to evaluate the model.</p>
+<pre class="r"><code>plot(modelnv)</code></pre>
+<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-14-1.png" width="672" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-14-2.png" width="672" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-14-3.png" width="672" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-14-4.png" width="672" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-14-5.png" width="672" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-14-6.png" width="672" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-14-7.png" width="672" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-14-8.png" width="672" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-14-9.png" width="672" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-14-10.png" width="672" /></p>
+<p>Let’s check now the accuracy of this model using the confusion matrix.</p>
+</div>
+<div id="evaluate-the-model" class="section level2">
+<h2>Evaluate the model</h2>
+<pre class="r"><code>pred&lt;-predict(modelnv,train)
+confusionMatrix(pred,train$target)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction   0   1
+##          0  86  24
+##          1  25 108
+##                                           
+##                Accuracy : 0.7984          
+##                  95% CI : (0.7423, 0.8469)
+##     No Information Rate : 0.5432          
+##     P-Value [Acc &gt; NIR] : &lt;2e-16          
+##                                           
+##                   Kappa : 0.5934          
+##                                           
+##  Mcnemar&#39;s Test P-Value : 1               
+##                                           
+##             Sensitivity : 0.7748          
+##             Specificity : 0.8182          
+##          Pos Pred Value : 0.7818          
+##          Neg Pred Value : 0.8120          
+##              Prevalence : 0.4568          
+##          Detection Rate : 0.3539          
+##    Detection Prevalence : 0.4527          
+##       Balanced Accuracy : 0.7965          
+##                                           
+##        &#39;Positive&#39; Class : 0               
+## </code></pre>
+<p>The accuracy rate of the training set is about 81.89%.
+as expected the specificity rate (85.61%) for class 1 is much larger than the snesitivity rate (77.48) for class 0. This reflectd by the fact that we have larger number of class 1 than class 0.</p>
+<pre class="r"><code>print(prop.table(table(train$target)),digits = 2)</code></pre>
+<pre><code>## 
+##    0    1 
+## 0.46 0.54</code></pre>
+<p>Now let’s use the test set.</p>
+<pre class="r"><code>pred&lt;-predict(modelnv,test)
+confusionMatrix(pred,test$target)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction  0  1
+##          0 18  6
+##          1  9 27
+##                                           
+##                Accuracy : 0.75            
+##                  95% CI : (0.6214, 0.8528)
+##     No Information Rate : 0.55            
+##     P-Value [Acc &gt; NIR] : 0.001116        
+##                                           
+##                   Kappa : 0.4898          
+##                                           
+##  Mcnemar&#39;s Test P-Value : 0.605577        
+##                                           
+##             Sensitivity : 0.6667          
+##             Specificity : 0.8182          
+##          Pos Pred Value : 0.7500          
+##          Neg Pred Value : 0.7500          
+##              Prevalence : 0.4500          
+##          Detection Rate : 0.3000          
+##    Detection Prevalence : 0.4000          
+##       Balanced Accuracy : 0.7424          
+##                                           
+##        &#39;Positive&#39; Class : 0               
+## </code></pre>
+<p>The accuracy rate of the test set now is about 75%, may be due to overfitting problem.</p>
+</div>
+<div id="fine-tune-the-model" class="section level2">
+<h2>Fine tune the model:</h2>
+<p>By default the usekernel argument is set to be <strong>FALSE</strong> which allows the use of the gaussion distriburtion for the numeric variables,if <strong>TRUE</strong> the kernel density estimation applies instead. Let’s turn it to be <strong>TRUE</strong> and see what will happen for the test accuracy rate.</p>
+<pre class="r"><code>modelnv1&lt;-naive_bayes(target~.,data=train,
+                      usekernel = TRUE)
+pred&lt;-predict(modelnv1,test)
+confusionMatrix(pred,test$target)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction  0  1
+##          0 19  6
+##          1  8 27
+##                                           
+##                Accuracy : 0.7667          
+##                  95% CI : (0.6396, 0.8662)
+##     No Information Rate : 0.55            
+##     P-Value [Acc &gt; NIR] : 0.0004231       
+##                                           
+##                   Kappa : 0.5254          
+##                                           
+##  Mcnemar&#39;s Test P-Value : 0.7892680       
+##                                           
+##             Sensitivity : 0.7037          
+##             Specificity : 0.8182          
+##          Pos Pred Value : 0.7600          
+##          Neg Pred Value : 0.7714          
+##              Prevalence : 0.4500          
+##          Detection Rate : 0.3167          
+##    Detection Prevalence : 0.4167          
+##       Balanced Accuracy : 0.7609          
+##                                           
+##        &#39;Positive&#39; Class : 0               
+## </code></pre>
+<p>After using the kernel estimation we have obtained a slight improvement for the accuracy rate which is now about 76%.</p>
+<p>Another way to improve the model is to try to preprocess the data, especailly for numeric when we standardize them we would follow the normal distribution.</p>
+<pre class="r"><code>modelnv2&lt;-train(target~., data=train,
+                method=&quot;naive_bayes&quot;,
+                preProc=c(&quot;center&quot;,&quot;scale&quot;))
+modelnv2</code></pre>
+<pre><code>## Naive Bayes 
+## 
+## 243 samples
+##  10 predictor
+##   2 classes: &#39;0&#39;, &#39;1&#39; 
+## 
+## Pre-processing: centered (13), scaled (13) 
+## Resampling: Bootstrapped (25 reps) 
+## Summary of sample sizes: 243, 243, 243, 243, 243, 243, ... 
+## Resampling results across tuning parameters:
+## 
+##   usekernel  Accuracy   Kappa    
+##   FALSE      0.7775205  0.5511328
+##    TRUE      0.7490468  0.4988034
+## 
+## Tuning parameter &#39;laplace&#39; was held constant at a value of 0
+## Tuning
+##  parameter &#39;adjust&#39; was held constant at a value of 1
+## Accuracy was used to select the optimal model using the largest value.
+## The final values used for the model were laplace = 0, usekernel = FALSE
+##  and adjust = 1.</code></pre>
+<p>As we see we get better accuracy rate with the gaussion distribution 78.48% (when usekernel=FALSE) than with the kernel estimation 78.48%.</p>
+<p>Let’s use the test set:</p>
+<pre class="r"><code>pred&lt;-predict(modelnv2,test)
+confusionMatrix(pred,test$target)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction  0  1
+##          0 19  5
+##          1  8 28
+##                                          
+##                Accuracy : 0.7833         
+##                  95% CI : (0.658, 0.8793)
+##     No Information Rate : 0.55           
+##     P-Value [Acc &gt; NIR] : 0.0001472      
+##                                          
+##                   Kappa : 0.5578         
+##                                          
+##  Mcnemar&#39;s Test P-Value : 0.5790997      
+##                                          
+##             Sensitivity : 0.7037         
+##             Specificity : 0.8485         
+##          Pos Pred Value : 0.7917         
+##          Neg Pred Value : 0.7778         
+##              Prevalence : 0.4500         
+##          Detection Rate : 0.3167         
+##    Detection Prevalence : 0.4000         
+##       Balanced Accuracy : 0.7761         
+##                                          
+##        &#39;Positive&#39; Class : 0              
+## </code></pre>
+<p>We have a large improvment with accuracy rate <strong>78.33</strong> after scaling the data.</p>
+</div>
+</div>

@@ -1,0 +1,269 @@
+---
+title: "naive bayes"
+author: "Metales Abdelkader"
+date: '2019-12-19'
+tags:
+- naive bayes
+- titanic
+- Machine learning
+categories: R
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,warning = FALSE,message=FALSE,error=FALSE)
+```
+
+
+# Introduction
+
+**Naive bayes** model based on a strong assumption that the features are **conditionally  independent** given the class label. Since this assumption is rarely when it is true, this model termed as **naive**. However, even this assumption is not satisfied the model still works very well (Kevin.P murphy  2012). Using this assumption we can define the class conditionall density as the product of one dimensional densities.
+
+$$p(X|y=c,\theta)=\prod_{j=1}^Dp(x_j|y=c,\theta_{jc})$$
+
+The possible one dimensional density for each feature depends on the type of the feature: 
+
+* For real_valued features we can make use of gaussion distribution:
+
+$$p(X|y=c,\theta)=\prod_{j=1}^D\mathcal N(\mu_{jc}|y=c,\sigma_{jc}^2)$$
+
+* For binary feature we can use bernouli distribution:
+
+$$p(X|y=c,\theta)=\prod_{j=1}^DBer(x_j|\mu_{jc})$$
+
+* For categorical feature we can make use of multinouli distribution:
+
+$$p(X|y=c,\theta)=\prod_{j=1}^DCat(x_j|\mu_{jc})$$
+
+
+For data that has features of different types we can use a mixture product of the above distributions, and this is what we will do in this paper.  
+
+The data that we will use is [uploaded from kaggle website](https://www.kaggle.com/johnsmith88/heart-disease-dataset).
+
+
+```{r}
+library(tidyverse)
+library(caret)
+```
+
+
+```{r}
+mydata<-read.csv("heart.csv",header = TRUE)
+names(mydata)[1]<-"age"
+glimpse(mydata)
+
+```
+
+the **target** variable indicates whether a patient has the disease or not based on the following features:
+
+* age.
+* sex: 1=male,0=female
+* cp : chest pain type.
+* trestbps :  resting blood pressure.
+* chol: serum cholestoral.
+* fbs : fasting blood sugar.
+* restecg : resting electrocardiographic results.
+* thalach : maximum heart rate achieved
+* exang : exercise induced angina. 
+* oldpeak : ST depression induced by exercise relative to rest.
+* slope : the slope of the peak exercise ST segment.
+* ca : number of major vessels colored by flourosopy.
+* thal : it is not well defined from the data source.
+* target: have heart disease or not.
+
+
+
+First let's get summary of this data to check the suitable type of each feature.  
+
+
+```{r}
+summary(mydata)
+```
+
+
+ Some variables should be treated as factors such as **sex**,**cp**,**fbs**,**restecg**,**exange**,**slope**,**ca**,**thal**, and the **target** variable.
+ 
+ 
+```{r}
+mydata<-mydata %>%
+  mutate_at(c(2,3,6,7,9,11,12,13,14),funs(as.factor))
+summary(mydata)
+```
+ 
+ 
+ Now let's check if all the factor levels contributes on the each target variable level.
+ 
+ 
+ 
+```{r}
+xtabs(~target+sex,data=mydata)
+xtabs(~target+cp,data=mydata)
+xtabs(~target+fbs,data=mydata)
+xtabs(~target+restecg,data=mydata)
+xtabs(~target+exang,data=mydata)
+xtabs(~target+slope,data=mydata)
+xtabs(~target+ca,data=mydata)
+xtabs(~target+thal,data=mydata)
+```
+ 
+ 
+ 
+As we see the **restecg**,**ca** and **thal** variables have values less than the threshold of 5 casses required, so if we split the data between training set and test set the level **2** of the **restecg** variable will not be found in one of the sets since we have only one case. Therfore we should remove these variables from the model.
+
+```{r}
+mydata<-mydata[,-c(7,12,13)]
+glimpse(mydata)
+```
+
+
+
+Before training our model, we can get a vague insight about the predictors that have some importance for the prediction of the dependent variable.  
+
+Let's plot the relationships between the target variabl and the other features.
+
+
+```{r}
+ggplot(mydata,aes(sex,target,color=target))+
+  geom_jitter()
+```
+
+
+If we look only at the red points (healthy patients) we can wrongly interpret that females are less healthy than males. This is because we do not take into account that we have imbalanced number of each sex level (96 females , 207 males). in contrast, if we look only at females we can say that a particular female are more likely to have the disease than not.      
+
+
+
+```{r}
+ggplot(mydata,aes(cp,fill=target))+
+  geom_histogram(stat = "count",position = "dodge")
+```
+
+
+
+From this plot we can conclude that if the patient does not have any chest pain he/she will be highly unlikely to get the disease, otherwise for any chest type the patient will be more likely to be pathologique by this disease. we can expect therfore that this predictor will have a significant importance on the training model.
+
+```{r}
+ggplot(mydata, aes(age,fill=target))+
+  geom_density(alpha=.5)
+```
+
+
+Since the independence assumption of the features is highly required for **naive bayes** model, let's check the corralation matrix. 
+
+
+```{r}
+library(psych)
+pairs.panels(mydata[,-11])
+```
+
+
+AS we see all the correlations are less than 50% so we can go ahead and train our model.
+
+
+## Data partition
+
+
+we take out 80% of the data to use as training set and the rest will be put aside to evaluate the model performance.  
+
+
+```{r}
+set.seed(1234)
+index<-createDataPartition(mydata$target, p=.8,list=FALSE)
+train<-mydata[index,]
+test<-mydata[-index,]
+```
+
+
+## train the model 
+
+Note: for this model we do not need to set seed because this model uses known densities for the predictors and does not use any random method.
+
+```{r}
+library(naivebayes)
+modelnv<-naive_bayes(target~.,data=train)
+modelnv
+
+```
+
+As we see each predictor is treated depending on its type, gaussion distribution for numeric variables, bernouli distribution for binary variables and multinouli distribution for categorical variables.   
+
+all the informations about this model can be extracted using the function **attributes**.  
+
+
+```{r}
+attributes(modelnv)
+```
+
+Now let's use the test set to evaluate the model.
+```{r}
+plot(modelnv)
+```
+
+
+
+Let's check now the accuracy of this model using the confusion matrix.
+
+## Evaluate the model
+
+
+```{r}
+pred<-predict(modelnv,train)
+confusionMatrix(pred,train$target)
+```
+
+The accuracy rate of the training set is about 81.89%.
+as expected the specificity rate (85.61%) for class 1 is much larger than the snesitivity rate (77.48) for class 0. This reflectd by the fact that we have larger number of class 1 than class 0.
+
+```{r}
+print(prop.table(table(train$target)),digits = 2)
+      
+```
+
+
+Now let's use the test set.
+
+
+
+```{r}
+pred<-predict(modelnv,test)
+confusionMatrix(pred,test$target)
+```
+
+The accuracy rate of the test set now is about 75%, may be due to overfitting problem. 
+
+## Fine tune the model:
+
+By default the usekernel argument  is set to be **FALSE** which allows the use of the gaussion distriburtion for the numeric variables,if **TRUE** the kernel density estimation applies instead. Let's turn it to be **TRUE**  and see what will happen for the test accuracy rate.
+
+
+```{r}
+modelnv1<-naive_bayes(target~.,data=train,
+                      usekernel = TRUE)
+pred<-predict(modelnv1,test)
+confusionMatrix(pred,test$target)
+
+```
+
+After using the kernel estimation we have obtained a slight improvement for the accuracy rate which is now about 76%.
+
+Another way to improve the model is to try to preprocess the data, especailly for numeric when we standardize them we would follow the normal distribution.
+
+```{r}
+modelnv2<-train(target~., data=train,
+                method="naive_bayes",
+                preProc=c("center","scale"))
+modelnv2
+```
+
+As we see we get better accuracy rate with the gaussion distribution 78.48% (when usekernel=FALSE) than with the kernel estimation 78.48%.
+
+
+Let's use the test set:
+
+```{r}
+pred<-predict(modelnv2,test)
+confusionMatrix(pred,test$target)
+
+
+```
+
+ We have a large improvment with accuracy rate **78.33** after scaling the data. 
+ 
