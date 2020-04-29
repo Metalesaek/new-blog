@@ -19,7 +19,7 @@
   weight = 30
 
 [[main]]
-  name = "featured"
+  name = "Bayes"
   url = "#featured"
   weight = 40
 
