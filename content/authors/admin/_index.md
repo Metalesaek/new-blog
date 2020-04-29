@@ -1,7 +1,7 @@
 ---
 authors:
 - admin
-bio: My research interests include Econometrics, statidtics, machine learning, deep learning.
+bio: My research interests include Econometrics, statistics, machine learning, deep learning.
 education:
   courses:
   - course: PhD in Econometriccs
