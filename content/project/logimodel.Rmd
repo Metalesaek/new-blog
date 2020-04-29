@@ -1,0 +1,201 @@
+---
+title: "logistic regression"
+author: "Metales Abdelkader"
+date: "2019-12-19"
+tags:
+- Logistic regression
+categories: R
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,warning = FALSE,message=FALSE,error=FALSE)
+options(tinytex.verbose=TRUE)
+```
+
+
+# Introduction
+
+In this paper we will fit a logistic regression model to the **heart disease** data [uploaded from kaggle website](https://www.kaggle.com/johnsmith88/heart-disease-dataset).
+
+For the data preparation we will follow the same steps as we did in my previous paper about **naive bayes model**, for more detail thus click [here](https://github.com/Metalesaek/naive-bayes-model) to get access to that paper.   
+
+```{r}
+library(tidyverse)
+library(caret)
+mydata<-read.csv("heart.csv",header = TRUE)
+names(mydata)[1]<-"age"
+glimpse(mydata)
+```
+The data at hand has the following features:
+
+* age.
+* sex: 1=male,0=female
+* cp : chest pain type.
+* trestbps :  resting blood pressure.
+* chol: serum cholestoral.
+* fbs : fasting blood sugar.
+* restecg : resting electrocardiographic results.
+* thalach : maximum heart rate achieved
+* exang : exercise induced angina. 
+* oldpeak : ST depression induced by exercise relative to rest.
+* slope : the slope of the peak exercise ST segment.
+* ca : number of major vessels colored by flourosopy.
+* thal : it is not well defined from the data source.
+* target: have heart disease or not.
+
+
+```{r}
+mydata<-mydata %>%
+  modify_at(c(2,3,6,7,9,11,12,13,14),as.factor)
+glimpse(mydata)
+
+```
+
+
+```{r}
+xtabs(~target+sex,data=mydata)
+xtabs(~target+cp,data=mydata)
+xtabs(~target+fbs,data=mydata)
+xtabs(~target+restecg,data=mydata)
+xtabs(~target+exang,data=mydata)
+xtabs(~target+slope,data=mydata)
+xtabs(~target+ca,data=mydata)
+xtabs(~target+thal,data=mydata)
+```
+
+As we see the **restecg**,**ca** and **thal** variables have values less than the threshold of 5 casses required, so if we split the data between training set and test set the level **2** of the **restecg** variable will not be found in one of the sets since we have only one case. Therfore we should remove these variables from the model.
+
+```{r}
+mydata<-mydata[,-c(7,12,13)]
+glimpse(mydata)
+```
+
+Before training our model, we can get a vague insight about the predictors that have some importance for the prediction of the dependent variable.  
+
+Let's plot the relationships between the target variabl and the other features.
+
+
+```{r}
+ggplot(mydata,aes(sex,target,color=target))+
+  geom_jitter()
+```
+
+
+If we look only at the red points (healthy patients) we can wrongly interpret that females are less healthy than males. This is because we do not take into account that we have imbalanced number of each sex level (96 females , 207 males). in contrast, if we look only at females we can say that a particular female are more likely to have the disease than not.      
+
+
+
+```{r}
+ggplot(mydata,aes(cp,fill=target))+
+  geom_histogram(stat = "count",position = "dodge")
+```
+
+
+
+From this plot we can conclude that if the patient does not have any chest pain he/she will be highly unlikely to get the disease, otherwise for any chest type the patient will be more likely to be pathologique by this disease. we can expect therfore that this predictor will have a significant importance on the training model.
+
+```{r}
+ggplot(mydata, aes(age,fill=target))+
+  geom_density(alpha=.5)
+```
+
+
+## Data partition
+
+
+we take out 80% of the data to use as training set and the rest will be put aside to evaluate the model performance.  
+
+
+```{r}
+set.seed(1234)
+index<-createDataPartition(mydata$target, p=.8,list=FALSE)
+train<-mydata[index,]
+test<-mydata[-index,]
+```
+
+
+## train the model 
+
+We are now ready to train our model.
+
+
+```{r}
+model <- glm(target~., data=train,family = "binomial")
+summary(model)
+```
+
+we see that some variables are not significant using p-value such as **age**, **chol**,**fbs**,**slope**, and also the intercept. First let's remove the insignificant factor variables **fbs** and **slope**.
+
+```{r}
+model <- glm(target~.-fbs-slope, data=train,family = "binomial")
+summary(model)
+
+```
+
+Now we remove the **age** variable since it is the least significance.
+
+
+```{r}
+model <- glm(target~.-fbs-slope-age, data=train,family = "binomial")
+summary(model)
+```
+
+we remove now the variables **exang**.
+
+
+```{r}
+model <- glm(target~.-fbs-slope-age-exang, data=train,family = "binomial")
+summary(model)
+
+```
+
+
+Notice that we can not remove intercept even it is not significant because it contains the first level of "0" of the factor **cp** which is significant. This is hence our final model.
+
+##  prediction and confusion matrix
+
+we will use this model to predict the training set.
+
+```{r}
+pred <- predict(model,train, type="response")
+head(pred)
+```
+
+using the confusion matrix we get the accuracy rate in the training set.
+
+
+```{r}
+pred <- as.integer(pred>0.5)
+confusionMatrix(as.factor(pred),train$target, positive = "1")
+```
+
+In the training set the accuracy rate is about 83,13% . But we are more  intrested in the accuracy of the test set.  
+
+
+```{r}
+pred <- predict(model,test, type="response")
+pred <- as.integer(pred>0.5)
+confusionMatrix(as.factor(pred),test$target)
+```
+ 
+With the test set we have lower accuracy rate about 76.67%. 
+
+## altering the link function
+
+By default the link function is **logit** from the sigmoid distribution, we can make use of the link function **probit** instead, which stands for the normal distribution.  
+
+```{r}
+model1 <- glm(target~.-fbs-slope-exang-age, data=train,
+             family = binomial(link = "probit"))
+summary(model1)
+
+```
+
+
+```{r}
+pred <- predict(model,test, type="response")
+pred <- as.integer(pred>0.5)
+confusionMatrix(as.factor(pred),test$target)
+```
+
+As we see we get the same results with a slight difference between the **AIC** criterion **215.54** for **probit** link and **214.98** for **logit** link.
