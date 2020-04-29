@@ -2,6 +2,9 @@
 title: "Introduction to sparklyr"
 author: "Abdelkader Metales"
 date: '2019-01-23'
+output:
+  html_document:
+    toc: true
 tags:
 - sparklyr
 - Big data
@@ -291,7 +294,7 @@ once the file is created we split the data **card** into tow parts  the first pa
 ```
 
 
-If we add the second part in the file raw_data the streaming process luch to execute the above operation.
+If we add the second part in the file raw_data the streaming process lunch to execute the above operation.
 
 
 ```{r}
