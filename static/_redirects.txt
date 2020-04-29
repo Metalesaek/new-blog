@@ -1,0 +1,2 @@
+https://serene-einstein-b01e4e.netlify.app/*  https://modelingwithr.rbind.io/:splat  301!
+http://serene-einstein-b01e4e.netlify.app/*   https://modelingwithr.rbind.io/:splat  301!
