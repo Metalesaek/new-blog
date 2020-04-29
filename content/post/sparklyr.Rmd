@@ -1,0 +1,326 @@
+---
+title: "Introduction to sparklyr"
+author: "Abdelkader Metales"
+date: '2019-01-23'
+tags:
+- sparklyr
+- Big data
+- Machine learning
+categories: R
+---
+
+```{r setup, include=FALSE,message=FALSE,warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+## Introduction
+
+
+The programming language R has very powerful tools and functions to do almost every thing we want to do, such as wrangling , visualizing, modeling...etc. However, R such as all the classical languages, requires the whole data to be completely loaded into its memory before doing anything, and this is a big disadvantage when we deal with large data set using less powerful machine, so that any even small data manipulation is time consuming, and may be in some cases the data size can exceed the memory size and R fails even to load the data.
+
+
+However, there are two widely used engines for this type of data **hadoop** and **spark** which both use a distributed system to partition the data into different storage locations and distribute any computation processes among different machines (computing clusters), or among different CPU’s inside a single machine.
+
+
+Spark is more recent and recognized to be more faster than hadoop (2010). **scala** is its native language, but it can also support **SQL** and **java**. Obviously, if you do not know neither spark nor hadoop it would be obvious to choose spark . However,  if you are R user and you do  not want to spent time to learn the spark languages (scala, or sql) good news for you is that **sparklyr**  package (or sparkR) is R interface for spark from which you can use the most of the R codes and other functions from some packages such as dplyr …etc.
+
+In this paper we will go step by step to learn how to use sparklyr by making use of some examples .   
+
+## Installing sparklyr
+
+Such as any R package we call the function **install.packages**
+ to install sparklyr, but before that make sure you have **java** installed in your system since the programming language **scala** is run by the java virtual machine.
+ 
+```{r}
+#install.packages("sparklyr")
+```
+ 
+
+## Installing spark
+
+
+We have deliberately installed  sparklyr before  spark to provide us with the function **spark_install()** that downloads, installs, and configures the latest version of spark at once.
+
+```{r}
+#spark_install()
+```
+
+## Connecting to spark
+
+Usually, spark is designed to create a clusters using multiple machines either physical machines or virtual machines (in the cloud). However, it can also create a local cluster in your single machine by making use of the CPU’s, if exist in this machine, to speed up the data processing. 
+
+
+Wherever the clusters are created  (local or in cloud), the data processing functions work in the same way, and the only difference is how to create and interact with these clusters. Since this is the case, then we can get started in our local cluster to learn the most basic things of data science such as importing, analyzing, visualizing data, and perform machine learning models using spark via sparklyr.          
+
+
+To connect to spark in the local mode we use the function **spark_connect** as follows.
+
+```{r, warning=FALSE,message=FALSE}
+library(sparklyr)
+library(tidyverse)
+sc<-spark_connect(master = "local")
+
+```
+
+
+## Importing data
+
+If the data is build-in R we load it to the spark memory using the function **copy_to**.
+
+
+```{r,message=FALSE,warning=FALSE}
+mydata<-copy_to(sc,airquality)
+```
+
+Then R can get access to this data by the help of sparklyr, for example we can use the dplyr function **glimpse**.
+
+
+```{r}
+glimpse(mydata)
+```
+
+And if the data is stored anywhere outside R with any different format, then sparklyr provides some functions to import these data. For example to load csv file we use the function **spark_read_csv**, and for json we use **spark_read_json**. To get the list of all the sparklyr functions and their usages click [here](https://cran.r-project.org/web/packages/sparklyr/sparklyr.pdf).
+
+For illustration we will call tha data **creditcards** stored in my machine as follows
+
+
+```{r}
+card<-spark_read_csv(sc,"creditcard.csv")
+sdf_dim(card)
+
+```
+
+As you see using the same connection **sc** we load two data **mydata** and **card** 
+
+if we want to show what is going on in spark we call the function **spark_web()** that lead us to the spark website 
+
+```{r}
+#spark_web(sc)
+```
+
+
+## Manipulating data
+
+With the help of sparklyr, we can access very easily to the data into spark memory by using the delyr functions. Let's apply some  manipulations on the data **card** such as for example filtering the data using the variable **Time** , then we compute the mean of **Amount** for each class label in the variable **Class**.
+
+
+```{r,warning=FALSE}
+card %>%
+  filter(Time <= mean(Time,na.rm = TRUE))%>%
+      group_by(Class)%>%
+  summarise(Class_avg=mean(Amount,na.rm=TRUE))
+  
+```
+
+
+As you can see now the output is a very small table which can moved from spark memory into R memory for further analysis by making use of the function **collect**. In other words, if you feel with ease in R then each spark output that is small enough to be processed with R add this function at the end of your script before running it to bring this output into R. For example we cannot use the function **plot** to plot the above table, that is why we should fist pull this output into R then apply the function **plot** as follows       
+
+
+```{r}
+card %>%
+  filter(Time <= mean(Time,na.rm = TRUE))%>%
+      group_by(Class)%>%
+  summarise(Class_avg=mean(Amount,na.rm=TRUE))%>%
+  collect()%>%
+  plot(col="red",pch=19,main = "Class average vs Class")
+  
+```
+
+
+However , we can plot the sparklyr outputs without having to remove them to R memory by using the **dbplot** functions, since most of the functions of this package are supported by sparklyr. Let's for example plot the mean of Amount by Class for cards transaction that have time less than the mean.
+
+```{r}
+library(dbplot)
+card %>%
+  filter(Time <= mean(Time,na.rm = TRUE))%>%
+        dbplot_bar(Class,mean(Amount))
+```
+
+
+As we see the Amount mean of fraudulent cards is higher than that of regular cards. 
+
+## Disconnecting
+
+each time you finish your work think to disconnect from spark to save your resources as follows.
+
+```{r}
+#spark_disconnect(sc)
+```
+
+
+## saving data
+
+Sparklyr provides functions to save files directly from spark memory into our directory. For example, to save data in csv file we use spark function **spark_write_csv** (we can save in other type of formats such as **spark_write_parquet**,...etc) as follows
+
+```{r}
+#spark_write_csv(card,"card.csv")
+
+```
+
+
+## Example of modeling in spark 
+
+
+For machine learning models spark has its own library **MLlib** that has almost every thing  we need so that we do not need the library **caret**.
+
+To illustrate how do we perform a machine learning model, we train a logistic regression model to predict the fraudulent cards form the data **card**.
+
+first let's split the data between training set and testing set as follows, and to do this we use the function **sdf_random_split** as follows
+
+```{r}
+partitions<-card%>%
+  sdf_random_split(training=0.8,test=0.2,seed = 123)
+train<-partitions$training
+test<-partitions$test
+   
+```
+ 
+ 
+ Now we will use the set **train** to train our model, and for the model performance we make use of the set **test**.
+ 
+ 
+```{r}
+model_in_spark<-train %>%
+  ml_logistic_regression(Class~.)
+```
+
+
+we can get the summary of this model by typing its name
+
+
+```{r}
+model_in_spark
+```
+
+Fortunately, sparklyr also supports the functions of **broom** package so that We can get nicer table using the function **tidy**.
+
+```{r}
+library(broom)
+tidy(model_in_spark)
+```
+
+
+ 
+To evaluate the model performance we use the function **ml_evaluate** as follows
+
+```{r}
+model_summary<-ml_evaluate(model_in_spark,train)
+model_summary
+```
+
+
+To extract the metric that we want we use **$**.  we can extract for example **the accuracy rate**, the **AUC** or the **roc**
+
+```{r}
+model_summary$area_under_roc()
+model_summary$accuracy()
+model_summary$roc()
+```
+
+
+we can retrieve this table into R to plot it with ggplot by using the function **collect** 
+
+
+
+```{r}
+model_summary$roc()%>%
+collect()%>%
+ggplot(aes(FPR,TPR ))+
+  geom_line(col="blue")+
+  geom_abline(intercept = 0,slope = 1,col="red")+
+  ggtitle("the roc of model_in_spark ")
+
+```
+
+
+High accuracy rate for the training set can be only the result of overfitting problem. the accuracy rate using the testing set  is the more reliable one.
+
+
+```{r}
+pred<-ml_evaluate(model_in_spark,test)
+pred$accuracy()
+pred$area_under_roc()
+```
+
+
+Finally, to get the prediction we use the function **ml_predict**
+
+```{r}
+pred<-ml_predict(model_in_spark,test)%>%
+select(.,Class,prediction,probability_0,probability_1)
+pred  
+
+  
+```
+ Here we can also use the function **collect** to plot the results
+ 
+```{r}
+pred%>%
+  collect()%>%
+  ggplot(aes(Class,prediction ))+
+  geom_point(size=0.1)+
+  geom_jitter()+
+  ggtitle("Actual vs predicted")
+  
+```
+
+
+
+## Streaming
+
+Among the most powrful properties of spark is that can handle streaming data very easily. to show that let's use a simple example by creating a folder to contain the input for some data transformations and then we save the output in another folder so that each time we add files to the first folder the above transformations will be excuted automotically and the output will be saved in the last folder.
+
+```{r}
+#dir.create("raw_data")
+```
+
+once the file is created we split the data **card** into tow parts  the first part will be exported now to the folder **raw_data**, and then we apply some operations using spark functions **stream_read_csv** and **spark_wrirte_csv** as follows . 
+
+```{r}
+#card1<-card%>%
+  #filter(Time<=mean(Time,na.rm = TRUE))
+#write.csv(card1,"raw_data/card1.csv")
+```
+
+```{r}
+#stream <- stream_read_csv(sc,"raw_data/")%>%
+ # select(Class,Amount) %>%
+#  stream_write_csv("result/")
+
+```
+
+
+If we add the second part in the file raw_data the streaming process luch to execute the above operation.
+
+
+```{r}
+#card2<-card%>%
+ # filter(Time>mean(Time,na.rm = TRUE))
+#write.csv(card,"raw_data/card2.csv")
+```
+
+
+```{r}
+#dir("result",pattern = ".csv")
+```
+
+we stop the stream 
+
+```{r}
+#stream_stop(stream)
+```
+
+
+```{r}
+sdf_describe(card)
+```
+
+
+
+Now we disconnect
+
+```{r}
+spark_disconnect(sc)
+```
+
