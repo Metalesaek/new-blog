@@ -4,13 +4,13 @@ authors:
 bio: My research interests include Econometrics, statistics, machine learning, deep learning.
 education:
   courses:
-  - course: PhD in Econometriccs
+  - course: PhD in Econometrics
     institution: Algeirs3 University
     year: 2012
-  - course: Master in Econometris
+  - course: Master in Econometrics
     institution: Algeirs3 University
     year: 2008
-  - course: Bachelor in Managment
+  - course: Bachelor in Management
     institution: Oran University
     year: 1996
 email: ""
@@ -36,4 +36,4 @@ user_groups:
 - Visitors
 ---
 
-My main research interests are econometrics, statistics, machine learning, deep learning. Since R is my favorite language, All practical casses presented here are implemented using the various R packages. For instances, tidymodels for machine learning, keras for deep learning..etc. Most of the papers are written using Rmarkdown. 
+My main research interests are econometrics, statistics, machine learning, and deep learning. Since R is my favorite language, All practical casses presented here are implemented using R with some of its packages. For instances, tidymodels for machine learning, keras for deep learning..etc. Most of the papers are written using Rmarkdown. 
