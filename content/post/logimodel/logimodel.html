@@ -131,15 +131,15 @@ glimpse(mydata)</code></pre>
 <p>Let’s plot the relationships between the target variabl and the other features.</p>
 <pre class="r"><code>ggplot(mydata,aes(sex,target,color=target))+
   geom_jitter()</code></pre>
-<p><img src="/project/logimodel_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p><img src="/post/logimodel/logimodel_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
 <p>If we look only at the red points (healthy patients) we can wrongly interpret that females are less healthy than males. This is because we do not take into account that we have imbalanced number of each sex level (96 females , 207 males). in contrast, if we look only at females we can say that a particular female are more likely to have the disease than not.</p>
 <pre class="r"><code>ggplot(mydata,aes(cp,fill=target))+
   geom_histogram(stat = &quot;count&quot;,position = &quot;dodge&quot;)</code></pre>
-<p><img src="/project/logimodel_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p><img src="/post/logimodel/logimodel_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
 <p>From this plot we can conclude that if the patient does not have any chest pain he/she will be highly unlikely to get the disease, otherwise for any chest type the patient will be more likely to be pathologique by this disease. we can expect therfore that this predictor will have a significant importance on the training model.</p>
 <pre class="r"><code>ggplot(mydata, aes(age,fill=target))+
   geom_density(alpha=.5)</code></pre>
-<p><img src="/project/logimodel_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p><img src="/post/logimodel/logimodel_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
 <div id="data-partition" class="section level2">
 <h2>Data partition</h2>
 <p>we take out 80% of the data to use as training set and the rest will be put aside to evaluate the model performance.</p>
