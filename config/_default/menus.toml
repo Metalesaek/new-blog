@@ -10,18 +10,18 @@
 
 [[main]]
   name = "Machine Learning"
-  url = "#posts"
+  url = "post/"
   weight = 30
 
 [[main]]
   name = "big Data"
-  url = "#bigdata"
+  url = "sparklyr/"
   weight = 40
 
 
 [[main]]
   name = "DeepLearning"
-  url = "#deepposts"
+  url = "courses/"
   weight = 50
 
 [[main]]
