@@ -14,8 +14,14 @@
   weight = 20
 
 [[main]]
+  name = "DeepLearning"
+  url = "#deepposts"
+  weight = 20
+
+
+[[main]]
   name = "big Data"
-  url = "#projects"
+  url = "#bigdata"
   weight = 30
 
 [[main]]
@@ -23,10 +29,6 @@
   url = "#featured"
   weight = 40
 
-[[main]]
-  name = "Deep learning"
-  url = "courses/"
-  weight = 50
 
 [[main]]
   name = "Contact"

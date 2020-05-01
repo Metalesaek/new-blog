@@ -274,7 +274,7 @@ confusionMatrix(pred,test$target)
 
  We have another slight improvment with accuracy rate **78.33** after scaling the data. 
  
- ## Conclusion
+## Conclusion
  
  Naive bayes model is the most widely used model in the classical machine learning models, sepecially with features that are originally normally distributed or after transformation. However, compared to the bagged or boosted models like random forest exgboost models, or compared to deep learning models it is quite less attractive.   
  
