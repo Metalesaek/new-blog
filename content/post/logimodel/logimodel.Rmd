@@ -86,8 +86,8 @@ If we look only at the red points (healthy patients) we can wrongly interpret th
 
 
 ```{r}
-ggplot(mydata,aes(cp,fill=target))+
-  geom_histogram(stat = "count",position = "dodge")
+ggplot(mydata,aes(cp, fill = target))+
+  geom_bar(stat = "count", position = "dodge")
 ```
 
 
