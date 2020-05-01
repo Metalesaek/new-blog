@@ -26,18 +26,14 @@ categories: R
 library(keras)
 library(foreach)
 
-mytrain &lt;- c(paste0(&quot;cat&quot;,1:7,&quot;.jpg&quot;),paste0(&quot;dog&quot;,1:7,&quot;.jpg&quot;),
-        paste0(&quot;lion&quot;,1:7,&quot;.jpg&quot;))
+mytrain &lt;- c(paste0(&quot;images/cat&quot;,1:7,&quot;.jpg&quot;),paste0(&quot;images/dog&quot;,1:7,&quot;.jpg&quot;),
+        paste0(&quot;images/lion&quot;,1:7,&quot;.jpg&quot;))
 
-mytest &lt;- c(paste0(&quot;cat&quot;,8:10,&quot;.jpg&quot;),paste0(&quot;dog&quot;,8:10,&quot;.jpg&quot;),
-        paste0(&quot;lion&quot;,8:10,&quot;.jpg&quot;))
-
-setwd(&quot;C://Users/dell/Documents/image-classification/images&quot;)
+mytest &lt;- c(paste0(&quot;images/cat&quot;,8:10,&quot;.jpg&quot;),paste0(&quot;images/dog&quot;,8:10,&quot;.jpg&quot;),
+        paste0(&quot;images/lion&quot;,8:10,&quot;.jpg&quot;))
 
 train &lt;- lapply(mytrain, readImage)
-test &lt;- lapply(mytest, readImage)
-
-setwd(&quot;C://Users/dell/Documents/image-classification&quot;)</code></pre>
+test &lt;- lapply(mytest, readImage)</code></pre>
 <p>Now let us first figure out what information each image contains .</p>
 <pre class="r"><code>train[[1]]</code></pre>
 <pre><code>## Image 
