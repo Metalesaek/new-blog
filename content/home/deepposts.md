@@ -12,7 +12,7 @@ subtitle = ""
 
 [content]
   # Page type to display. E.g. post, talk, or publication.
-  page_type = "courses"
+  page_type = "courses/cnnmodel/"
   
   # Choose how much pages you would like to display (0 = all pages)
   count = 5
