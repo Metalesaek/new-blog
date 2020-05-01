@@ -2,6 +2,11 @@
 title: "naive bayes"
 author: "Metales Abdelkader"
 date: '2019-12-19'
+output:
+  blogdown::html_page:
+    toc: true
+    toc_depth: 1
+    fig_width: 6
 tags:
 - naive bayes
 categories: R
@@ -12,7 +17,7 @@ knitr::opts_chunk$set(echo = TRUE,warning = FALSE,message=FALSE,error=FALSE)
 ```
 
 
-# Introduction
+## Introduction
 
 **Naive bayes** model based on a strong assumption that the features are **conditionally  independent** given the class label. Since this assumption is rarely when it is true, this model termed as **naive**. However, even this assumption is not satisfied the model still works very well (Kevin.P murphy  2012). Using this assumption we can define the class conditionall density as the product of one dimensional densities.
 
@@ -35,21 +40,21 @@ $$p(X|y=c,\theta)=\prod_{j=1}^DCat(x_j|\mu_{jc})$$
 
 For data that has features of different types we can use a mixture product of the above distributions, and this is what we will do in this paper.  
 
-The data that we will use is [uploaded from kaggle website](https://www.kaggle.com/johnsmith88/heart-disease-dataset).
+## Data preparation
 
+The data that we will use here is [uploaded from kaggle website](https://www.kaggle.com/johnsmith88/heart-disease-dataset), which is about heart disease.
+let us start by calling the packages needed and the data, then we give an appropriate name to the first column 
+  
 
 ```{r}
 library(tidyverse)
 library(caret)
-```
-
-
-```{r}
 mydata<-read.csv("heart.csv",header = TRUE)
 names(mydata)[1]<-"age"
 glimpse(mydata)
 
 ```
+
 
 the **target** variable indicates whether a patient has the disease or not based on the following features:
 
@@ -70,7 +75,8 @@ the **target** variable indicates whether a patient has the disease or not based
 
 
 
-First let's get summary of this data to check the suitable type of each feature.  
+
+The most intuitive thing by which we start  our analysis  is by getting the summary of this data to check the range, the five quantiles, and the existance or not of missing values for each feature.  
 
 
 ```{r}
@@ -78,7 +84,7 @@ summary(mydata)
 ```
 
 
- Some variables should be treated as factors such as **sex**,**cp**,**fbs**,**restecg**,**exange**,**slope**,**ca**,**thal**, and the **target** variable.
+ After inspecting the features we see that Some variables should be treated as factors rather than numerics such as **sex**, **cp**, **fbs**, **restecg**, **exange**, **slope**, **ca**, **thal**, and the **target** variable, hence they will be converted to factor type as follows: 
  
  
 ```{r}
@@ -88,10 +94,12 @@ summary(mydata)
 ```
  
  
- Now let's check if all the factor levels contributes on the each target variable level.
  
+ In practice It is very usefull to inspect (by traditional statistic test such as **kisq** or correlation coefficient) the relationships between the target variable and each of the potential explanatory variables before building any model, doing so we can tell apart the relevant variables from the irrelvant ones and hence which of which should include in our model. 
+Another important issue with factors is that when spliting the data between training set and testing set some factor level can be missing in one set if the the number of casses for that level is too small.    
+let's check if all the factor levels contribute on each target variable level.
  
- 
+
 ```{r}
 xtabs(~target+sex,data=mydata)
 xtabs(~target+cp,data=mydata)
@@ -130,8 +138,8 @@ If we look only at the red points (healthy patients) we can wrongly interpret th
 
 
 ```{r}
-ggplot(mydata,aes(cp,fill=target))+
-  geom_histogram(stat = "count",position = "dodge")
+ggplot(mydata,aes(cp,fill= target))+
+  geom_bar(stat = "count",position = "dodge")
 ```
 
 
@@ -144,7 +152,8 @@ ggplot(mydata, aes(age,fill=target))+
 ```
 
 
-Since the independence assumption of the features is highly required for **naive bayes** model, let's check the corralation matrix. 
+Even there exist a large amount of overlapping between the two densities which may violate the independence assumption, it still exist some difference since these are drawn from the sample not the from the true distributions. However, we do not care much about it since we will evaluate the resulted model by using the testing set.  
+we can also check this assumption with the corralation matrix. 
 
 
 ```{r}
@@ -190,25 +199,26 @@ all the informations about this model can be extracted using the function **attr
 attributes(modelnv)
 ```
 
-Now let's use the test set to evaluate the model.
+we can visualize the above reults with the fuction plot that provides us by plot the distribution of each features, densities for numeric features and bars for factors.  .
+
 ```{r}
 plot(modelnv)
 ```
 
 
 
-Let's check now the accuracy of this model using the confusion matrix.
 
 ## Evaluate the model
 
+We can check the accuracy of the training data of this model using the confusion matrix.
 
 ```{r}
 pred<-predict(modelnv,train)
 confusionMatrix(pred,train$target)
 ```
 
-The accuracy rate of the training set is about 81.89%.
-as expected the specificity rate (85.61%) for class 1 is much larger than the snesitivity rate (77.48) for class 0. This reflectd by the fact that we have larger number of class 1 than class 0.
+The accuracy rate of the training set is about 79.84%.
+as expected the specificity rate (81.82%) for class 1 is much larger than the snesitivity rate (77.48) for class 0. This is reflectd by the fact that we have larger number of class 1 than class 0.
 
 ```{r}
 print(prop.table(table(train$target)),digits = 2)
@@ -216,8 +226,7 @@ print(prop.table(table(train$target)),digits = 2)
 ```
 
 
-Now let's use the test set.
-
+The reliable evaluation is that based on the unseen testing data rather than the training data.  
 
 
 ```{r}
@@ -225,11 +234,11 @@ pred<-predict(modelnv,test)
 confusionMatrix(pred,test$target)
 ```
 
-The accuracy rate of the test set now is about 75%, may be due to overfitting problem. 
+The accuracy rate of the test set now is about 75%, may be due to overfitting problem, or this kind of model is not suitable for this data. 
 
 ## Fine tune the model:
 
-By default the usekernel argument  is set to be **FALSE** which allows the use of the gaussion distriburtion for the numeric variables,if **TRUE** the kernel density estimation applies instead. Let's turn it to be **TRUE**  and see what will happen for the test accuracy rate.
+In order to increase the model performance we can try another set of hyperparameters. Naive bayes model has different kernels and by default the usekernel argument  is set to be **FALSE** which allows the use of the gaussion distriburtion for the numeric variables,if **TRUE** the kernel density estimation applies instead. Let's turn it to be **TRUE**  and see what will happen for the test accuracy rate.
 
 
 ```{r}
@@ -242,7 +251,7 @@ confusionMatrix(pred,test$target)
 
 After using the kernel estimation we have obtained a slight improvement for the accuracy rate which is now about 76%.
 
-Another way to improve the model is to try to preprocess the data, especailly for numeric when we standardize them we would follow the normal distribution.
+Another way to improve the model is to try to preprocess the data, especailly for numeric when we standardize them they would follow the normal distribution.
 
 ```{r}
 modelnv2<-train(target~., data=train,
@@ -263,5 +272,9 @@ confusionMatrix(pred,test$target)
 
 ```
 
- We have a large improvment with accuracy rate **78.33** after scaling the data. 
+ We have another slight improvment with accuracy rate **78.33** after scaling the data. 
+ 
+ ## Conclusion
+ 
+ Naive bayes model is the most widely used model in the classical machine learning models, sepecially with features that are originally normally distributed or after transformation. However, compared to the bagged or boosted models like random forest exgboost models, or compared to deep learning models it is quite less attractive.   
  

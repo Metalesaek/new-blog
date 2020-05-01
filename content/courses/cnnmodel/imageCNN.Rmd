@@ -3,8 +3,15 @@ title: "Predicting images using Convolutional neural network"
 author: "Abdelkader Metales"
 date: "2020-12-03"
 output:
-  html_document:
+  blogdown::html_page:
     toc: true
+    toc_depth: 1
+    fig_width: 6
+  keep_md: true
+menu: 
+  cnnmodel: 
+    parent: cnnmodel Topic
+    weight: 1
 tags:
 - CNN
 categories: R

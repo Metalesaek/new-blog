@@ -3,8 +3,15 @@ title: "Predicting images using Convolutional neural network"
 author: "Abdelkader Metales"
 date: "2020-12-03"
 output:
-  html_document:
+  blogdown::html_page:
     toc: true
+    toc_depth: 1
+    fig_width: 6
+  keep_md: true
+menu: 
+  cnnmodel: 
+    parent: cnnmodel Topic
+    weight: 1
 tags:
 - CNN
 categories: R
@@ -53,11 +60,11 @@ test &lt;- lapply(mytest, readImage)</code></pre>
 <p>As we see this image is color image with 275 pxl hight, 183 pxl width and 3 chanels (RGB) since it is a color image.</p>
 <p>we can visualize an image as follows:</p>
 <pre class="r"><code>plot(test[[4]])</code></pre>
-<p><img src="/courses/cnnmodel/imageCNN_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p><img src="/courses/cnnmodel/imageCNN_files/figure-html/unnamed-chunk-3-1.png" width="576" /></p>
 <p>If instead we want to visualize all the image as one block we can make use of <strong>foreach</strong> package to apply a for loop as follows.</p>
 <pre class="r"><code>par(mfrow=c(7,3))
 foreach(i=1:21) %do% {plot(train[[i]])}</code></pre>
-<p><img src="/courses/cnnmodel/imageCNN_files/figure-html/unnamed-chunk-4-1.png" width="672" /></p>
+<p><img src="/courses/cnnmodel/imageCNN_files/figure-html/unnamed-chunk-4-1.png" width="576" /></p>
 <pre class="r"><code>par(mfrow=c(1,1))</code></pre>
 <p>After taking a brief glance at our data, we found that the image sizes are different from eaech other which is not what our image classification model expects. That is why, the following script will resize all the images to have the same size <strong>150x150x3</strong>.</p>
 <pre class="r"><code>foreach(i=1:21) %do% {train[[i]] &lt;- resize(train[[i]],150,150)}
@@ -97,7 +104,7 @@ foreach(i=1:9) %do% {test[[i]] &lt;- resize(test[[i]],150,150)}</code></pre>
 testall &lt;- combine(test) </code></pre>
 <p>We can display the output block usine the following:</p>
 <pre class="r"><code>display(tile(trainall,7))</code></pre>
-<p><img src="/courses/cnnmodel/imageCNN_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p><img src="/courses/cnnmodel/imageCNN_files/figure-html/unnamed-chunk-8-1.png" width="576" /></p>
 <p>Now the images are nicely combined in one block with four dimension: number of instances (images), height, width, and number of channels, and this is the input that will be used in our model. However, to correctly read the input our model expects that the first dimension is the number of instances, the second is height , the third is width, and the fourth is the number of channels.
 Let us check whether the input has the correct order or not.</p>
 <pre class="r"><code>str(trainall)</code></pre>
@@ -215,7 +222,7 @@ if you want to run this model juste remove thid symbol.</p>
 <p>AS you notice all the above codes have not been executed to avoide the issue discussed above and to make things simple. here we load the plot saved.</p>
 <pre class="r"><code>par(mar=c(0,0,0,0))
 plot(as.raster(readImage(&quot;plot_loss.jpg&quot;)))</code></pre>
-<p><img src="/courses/cnnmodel/imageCNN_files/figure-html/unnamed-chunk-21-1.png" width="672" /></p>
+<p><img src="/courses/cnnmodel/imageCNN_files/figure-html/unnamed-chunk-21-1.png" width="576" /></p>
 <p>This plot shows the loss values for both the training set (in blue) and the validation set (in red), we see that the training loss consistently increases whereas the validation loss largely oscillating reflecting the less capability of the model to well predict the new unseen examples.
 The same conclusion can be induced from the following plot for the acccuracy metric.</p>
 <pre class="r"><code>#p2 &lt;- ggplot(df,aes(x=epoch, train_acc))+
@@ -226,7 +233,7 @@ The same conclusion can be induced from the following plot for the acccuracy met
 <p>Here also we do the same thing</p>
 <pre class="r"><code>par(mar=c(0,0,0,0))
 plot(as.raster(readImage(&quot;plot_acc.jpg&quot;)))</code></pre>
-<p><img src="/courses/cnnmodel/imageCNN_files/figure-html/unnamed-chunk-23-1.png" width="672" /></p>
+<p><img src="/courses/cnnmodel/imageCNN_files/figure-html/unnamed-chunk-23-1.png" width="576" /></p>
 <p><strong>Note</strong>: we coud have used directly the plot function , plot(history), but doing so we will get ifferent plot each time we knit the document.</p>
 </div>
 <div id="model-evaluation" class="section level2">
@@ -257,7 +264,7 @@ foreach(i=1:9) %do% {display(test[[i]], method=&quot;raster&quot;);
   text(x = 20, y = 20, label = pred[i], 
        adj = c(0,1), col = &quot;black&quot;, cex = 4)
 }</code></pre>
-<p><img src="/courses/cnnmodel/imageCNN_files/figure-html/unnamed-chunk-27-1.png" width="672" /></p>
+<p><img src="/courses/cnnmodel/imageCNN_files/figure-html/unnamed-chunk-27-1.png" width="576" /></p>
 <pre class="r"><code>par(mfrow=c(1,1))</code></pre>
 <p>Using this model to predict the test examples, all the dogs are misclassified wherease the lions are perfectly classified.</p>
 <p>We can also display the training examples as follows:</p>
@@ -275,7 +282,7 @@ foreach(i=1:21) %do% {display(train[[i]], method=&quot;raster&quot;);
   text(x = 20, y = 20, label = pred1[i], 
        adj = c(0,1), col = &quot;black&quot;, cex = 2)
 }</code></pre>
-<p><img src="/courses/cnnmodel/imageCNN_files/figure-html/unnamed-chunk-28-1.png" width="672" /></p>
+<p><img src="/courses/cnnmodel/imageCNN_files/figure-html/unnamed-chunk-28-1.png" width="576" /></p>
 <pre class="r"><code>par(mfrow=c(1,1))</code></pre>
 </div>
 <div id="conclusion" class="section level2">

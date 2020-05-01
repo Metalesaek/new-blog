@@ -2,6 +2,11 @@
 title: "naive bayes"
 author: "Metales Abdelkader"
 date: '2019-12-19'
+output:
+  blogdown::html_page:
+    toc: true
+    toc_depth: 1
+    fig_width: 6
 tags:
 - naive bayes
 categories: R
@@ -10,8 +15,8 @@ categories: R
 <script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
 
 
-<div id="introduction" class="section level1">
-<h1>Introduction</h1>
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
 <p><strong>Naive bayes</strong> model based on a strong assumption that the features are <strong>conditionally independent</strong> given the class label. Since this assumption is rarely when it is true, this model termed as <strong>naive</strong>. However, even this assumption is not satisfied the model still works very well (Kevin.P murphy 2012). Using this assumption we can define the class conditionall density as the product of one dimensional densities.</p>
 <p><span class="math display">\[p(X|y=c,\theta)=\prod_{j=1}^Dp(x_j|y=c,\theta_{jc})\]</span></p>
 <p>The possible one dimensional density for each feature depends on the type of the feature:</p>
@@ -28,10 +33,14 @@ categories: R
 </ul>
 <p><span class="math display">\[p(X|y=c,\theta)=\prod_{j=1}^DCat(x_j|\mu_{jc})\]</span></p>
 <p>For data that has features of different types we can use a mixture product of the above distributions, and this is what we will do in this paper.</p>
-<p>The data that we will use is <a href="https://www.kaggle.com/johnsmith88/heart-disease-dataset">uploaded from kaggle website</a>.</p>
+</div>
+<div id="data-preparation" class="section level2">
+<h2>Data preparation</h2>
+<p>The data that we will use here is <a href="https://www.kaggle.com/johnsmith88/heart-disease-dataset">uploaded from kaggle website</a>, which is about heart disease.
+let us start by calling the packages needed and the data, then we give an appropriate name to the first column</p>
 <pre class="r"><code>library(tidyverse)
-library(caret)</code></pre>
-<pre class="r"><code>mydata&lt;-read.csv(&quot;heart.csv&quot;,header = TRUE)
+library(caret)
+mydata&lt;-read.csv(&quot;heart.csv&quot;,header = TRUE)
 names(mydata)[1]&lt;-&quot;age&quot;
 glimpse(mydata)</code></pre>
 <pre><code>## Observations: 303
@@ -67,7 +76,7 @@ glimpse(mydata)</code></pre>
 <li>thal : it is not well defined from the data source.</li>
 <li>target: have heart disease or not.</li>
 </ul>
-<p>First let’s get summary of this data to check the suitable type of each feature.</p>
+<p>The most intuitive thing by which we start our analysis is by getting the summary of this data to check the range, the five quantiles, and the existance or not of missing values for each feature.</p>
 <pre class="r"><code>summary(mydata)</code></pre>
 <pre><code>##       age             sex               cp           trestbps    
 ##  Min.   :29.00   Min.   :0.0000   Min.   :0.000   Min.   : 94.0  
@@ -97,7 +106,7 @@ glimpse(mydata)</code></pre>
 ##  Mean   :2.314   Mean   :0.5446  
 ##  3rd Qu.:3.000   3rd Qu.:1.0000  
 ##  Max.   :3.000   Max.   :1.0000</code></pre>
-<p>Some variables should be treated as factors such as <strong>sex</strong>,<strong>cp</strong>,<strong>fbs</strong>,<strong>restecg</strong>,<strong>exange</strong>,<strong>slope</strong>,<strong>ca</strong>,<strong>thal</strong>, and the <strong>target</strong> variable.</p>
+<p>After inspecting the features we see that Some variables should be treated as factors rather than numerics such as <strong>sex</strong>, <strong>cp</strong>, <strong>fbs</strong>, <strong>restecg</strong>, <strong>exange</strong>, <strong>slope</strong>, <strong>ca</strong>, <strong>thal</strong>, and the <strong>target</strong> variable, hence they will be converted to factor type as follows:</p>
 <pre class="r"><code>mydata&lt;-mydata %&gt;%
   mutate_at(c(2,3,6,7,9,11,12,13,14),funs(as.factor))
 summary(mydata)</code></pre>
@@ -115,7 +124,9 @@ summary(mydata)</code></pre>
 ##          Mean   :149.6           Mean   :1.04           3: 20   3:117          
 ##          3rd Qu.:166.0           3rd Qu.:1.60           4:  5                  
 ##          Max.   :202.0           Max.   :6.20</code></pre>
-<p>Now let’s check if all the factor levels contributes on the each target variable level.</p>
+<p>In practice It is very usefull to inspect (by traditional statistic test such as <strong>kisq</strong> or correlation coefficient) the relationships between the target variable and each of the potential explanatory variables before building any model, doing so we can tell apart the relevant variables from the irrelvant ones and hence which of which should include in our model.
+Another important issue with factors is that when spliting the data between training set and testing set some factor level can be missing in one set if the the number of casses for that level is too small.<br />
+let’s check if all the factor levels contribute on each target variable level.</p>
 <pre class="r"><code>xtabs(~target+sex,data=mydata)</code></pre>
 <pre><code>##       sex
 ## target   0   1
@@ -176,20 +187,22 @@ glimpse(mydata)</code></pre>
 <p>Let’s plot the relationships between the target variabl and the other features.</p>
 <pre class="r"><code>ggplot(mydata,aes(sex,target,color=target))+
   geom_jitter()</code></pre>
-<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-6-1.png" width="576" /></p>
 <p>If we look only at the red points (healthy patients) we can wrongly interpret that females are less healthy than males. This is because we do not take into account that we have imbalanced number of each sex level (96 females , 207 males). in contrast, if we look only at females we can say that a particular female are more likely to have the disease than not.</p>
-<pre class="r"><code>ggplot(mydata,aes(cp,fill=target))+
-  geom_histogram(stat = &quot;count&quot;,position = &quot;dodge&quot;)</code></pre>
-<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<pre class="r"><code>ggplot(mydata,aes(cp,fill= target))+
+  geom_bar(stat = &quot;count&quot;,position = &quot;dodge&quot;)</code></pre>
+<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-7-1.png" width="576" /></p>
 <p>From this plot we can conclude that if the patient does not have any chest pain he/she will be highly unlikely to get the disease, otherwise for any chest type the patient will be more likely to be pathologique by this disease. we can expect therfore that this predictor will have a significant importance on the training model.</p>
 <pre class="r"><code>ggplot(mydata, aes(age,fill=target))+
   geom_density(alpha=.5)</code></pre>
-<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
-<p>Since the independence assumption of the features is highly required for <strong>naive bayes</strong> model, let’s check the corralation matrix.</p>
+<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-8-1.png" width="576" /></p>
+<p>Even there exist a large amount of overlapping between the two densities which may violate the independence assumption, it still exist some difference since these are drawn from the sample not the from the true distributions. However, we do not care much about it since we will evaluate the resulted model by using the testing set.<br />
+we can also check this assumption with the corralation matrix.</p>
 <pre class="r"><code>library(psych)
 pairs.panels(mydata[,-11])</code></pre>
-<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-9-1.png" width="576" /></p>
 <p>AS we see all the correlations are less than 50% so we can go ahead and train our model.</p>
+</div>
 <div id="data-partition" class="section level2">
 <h2>Data partition</h2>
 <p>we take out 80% of the data to use as training set and the rest will be put aside to evaluate the model performance.</p>
@@ -281,13 +294,13 @@ modelnv</code></pre>
 ## 
 ## $class
 ## [1] &quot;naive_bayes&quot;</code></pre>
-<p>Now let’s use the test set to evaluate the model.</p>
+<p>we can visualize the above reults with the fuction plot that provides us by plot the distribution of each features, densities for numeric features and bars for factors. .</p>
 <pre class="r"><code>plot(modelnv)</code></pre>
-<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-14-1.png" width="672" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-14-2.png" width="672" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-14-3.png" width="672" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-14-4.png" width="672" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-14-5.png" width="672" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-14-6.png" width="672" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-14-7.png" width="672" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-14-8.png" width="672" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-14-9.png" width="672" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-14-10.png" width="672" /></p>
-<p>Let’s check now the accuracy of this model using the confusion matrix.</p>
+<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-1.png" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-2.png" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-3.png" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-4.png" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-5.png" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-6.png" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-7.png" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-8.png" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-9.png" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-10.png" width="576" /></p>
 </div>
 <div id="evaluate-the-model" class="section level2">
 <h2>Evaluate the model</h2>
+<p>We can check the accuracy of the training data of this model using the confusion matrix.</p>
 <pre class="r"><code>pred&lt;-predict(modelnv,train)
 confusionMatrix(pred,train$target)</code></pre>
 <pre><code>## Confusion Matrix and Statistics
@@ -317,13 +330,13 @@ confusionMatrix(pred,train$target)</code></pre>
 ##                                           
 ##        &#39;Positive&#39; Class : 0               
 ## </code></pre>
-<p>The accuracy rate of the training set is about 81.89%.
-as expected the specificity rate (85.61%) for class 1 is much larger than the snesitivity rate (77.48) for class 0. This reflectd by the fact that we have larger number of class 1 than class 0.</p>
+<p>The accuracy rate of the training set is about 79.84%.
+as expected the specificity rate (81.82%) for class 1 is much larger than the snesitivity rate (77.48) for class 0. This is reflectd by the fact that we have larger number of class 1 than class 0.</p>
 <pre class="r"><code>print(prop.table(table(train$target)),digits = 2)</code></pre>
 <pre><code>## 
 ##    0    1 
 ## 0.46 0.54</code></pre>
-<p>Now let’s use the test set.</p>
+<p>The reliable evaluation is that based on the unseen testing data rather than the training data.</p>
 <pre class="r"><code>pred&lt;-predict(modelnv,test)
 confusionMatrix(pred,test$target)</code></pre>
 <pre><code>## Confusion Matrix and Statistics
@@ -353,11 +366,11 @@ confusionMatrix(pred,test$target)</code></pre>
 ##                                           
 ##        &#39;Positive&#39; Class : 0               
 ## </code></pre>
-<p>The accuracy rate of the test set now is about 75%, may be due to overfitting problem.</p>
+<p>The accuracy rate of the test set now is about 75%, may be due to overfitting problem, or this kind of model is not suitable for this data.</p>
 </div>
 <div id="fine-tune-the-model" class="section level2">
 <h2>Fine tune the model:</h2>
-<p>By default the usekernel argument is set to be <strong>FALSE</strong> which allows the use of the gaussion distriburtion for the numeric variables,if <strong>TRUE</strong> the kernel density estimation applies instead. Let’s turn it to be <strong>TRUE</strong> and see what will happen for the test accuracy rate.</p>
+<p>In order to increase the model performance we can try another set of hyperparameters. Naive bayes model has different kernels and by default the usekernel argument is set to be <strong>FALSE</strong> which allows the use of the gaussion distriburtion for the numeric variables,if <strong>TRUE</strong> the kernel density estimation applies instead. Let’s turn it to be <strong>TRUE</strong> and see what will happen for the test accuracy rate.</p>
 <pre class="r"><code>modelnv1&lt;-naive_bayes(target~.,data=train,
                       usekernel = TRUE)
 pred&lt;-predict(modelnv1,test)
@@ -390,7 +403,7 @@ confusionMatrix(pred,test$target)</code></pre>
 ##        &#39;Positive&#39; Class : 0               
 ## </code></pre>
 <p>After using the kernel estimation we have obtained a slight improvement for the accuracy rate which is now about 76%.</p>
-<p>Another way to improve the model is to try to preprocess the data, especailly for numeric when we standardize them we would follow the normal distribution.</p>
+<p>Another way to improve the model is to try to preprocess the data, especailly for numeric when we standardize them they would follow the normal distribution.</p>
 <pre class="r"><code>modelnv2&lt;-train(target~., data=train,
                 method=&quot;naive_bayes&quot;,
                 preProc=c(&quot;center&quot;,&quot;scale&quot;))
@@ -447,6 +460,7 @@ confusionMatrix(pred,test$target)</code></pre>
 ##                                          
 ##        &#39;Positive&#39; Class : 0              
 ## </code></pre>
-<p>We have a large improvment with accuracy rate <strong>78.33</strong> after scaling the data.</p>
-</div>
+<p>We have another slight improvment with accuracy rate <strong>78.33</strong> after scaling the data.</p>
+<p>## Conclusion</p>
+<p>Naive bayes model is the most widely used model in the classical machine learning models, sepecially with features that are originally normally distributed or after transformation. However, compared to the bagged or boosted models like random forest exgboost models, or compared to deep learning models it is quite less attractive.</p>
 </div>
