@@ -2,6 +2,9 @@
 title: "logistic regression"
 author: "Metales Abdelkader"
 date: "2019-12-19"
+output:
+  html_document:
+    toc: true
 tags:
 - Logistic regression
 categories: R
@@ -10,10 +13,14 @@ categories: R
 <script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
 
 
-<div id="introduction" class="section level1">
-<h1>Introduction</h1>
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
 <p>In this paper we will fit a logistic regression model to the <strong>heart disease</strong> data <a href="https://www.kaggle.com/johnsmith88/heart-disease-dataset">uploaded from kaggle website</a>.</p>
 <p>For the data preparation we will follow the same steps as we did in my previous paper about <strong>naive bayes model</strong>, for more detail thus click <a href="https://github.com/Metalesaek/naive-bayes-model">here</a> to get access to that paper.</p>
+</div>
+<div id="data-preparation" class="section level2">
+<h2>Data preparation</h2>
+<p>First we call our data with the required packages</p>
 <pre class="r"><code>library(tidyverse)
 library(caret)
 mydata&lt;-read.csv(&quot;heart.csv&quot;,header = TRUE)
@@ -52,6 +59,7 @@ glimpse(mydata)</code></pre>
 <li>thal : it is not well defined from the data source.</li>
 <li>target: have heart disease or not.</li>
 </ul>
+<p>We see that some features should be converted to factor type as follows:m</p>
 <pre class="r"><code>mydata&lt;-mydata %&gt;%
   modify_at(c(2,3,6,7,9,11,12,13,14),as.factor)
 glimpse(mydata)</code></pre>
@@ -71,6 +79,7 @@ glimpse(mydata)</code></pre>
 ## $ ca       &lt;fct&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2...
 ## $ thal     &lt;fct&gt; 1, 2, 2, 2, 2, 1, 2, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2...
 ## $ target   &lt;fct&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1...</code></pre>
+<p>Before going head we should check the relationships between the target variable and the remaining factors</p>
 <pre class="r"><code>xtabs(~target+sex,data=mydata)</code></pre>
 <pre><code>##       sex
 ## target   0   1
@@ -111,7 +120,7 @@ glimpse(mydata)</code></pre>
 ## target   0   1   2   3
 ##      0   1  12  36  89
 ##      1   1   6 130  28</code></pre>
-<p>As we see the <strong>restecg</strong>,<strong>ca</strong> and <strong>thal</strong> variables have values less than the threshold of 5 casses required, so if we split the data between training set and test set the level <strong>2</strong> of the <strong>restecg</strong> variable will not be found in one of the sets since we have only one case. Therfore we should remove these variables from the model.</p>
+<p>As we see the <strong>restecg</strong>,<strong>ca</strong> and <strong>thal</strong> variables have values less than the threshold of 5 casses required for logistic regression. In addition if we split the data between training set and test set the level <strong>2</strong> of the <strong>restecg</strong> variable will not be found in one of the sets since we have only one case. Therfore we should remove these variables from the model.</p>
 <pre class="r"><code>mydata&lt;-mydata[,-c(7,12,13)]
 glimpse(mydata)</code></pre>
 <pre><code>## Observations: 303
@@ -140,6 +149,7 @@ glimpse(mydata)</code></pre>
 <pre class="r"><code>ggplot(mydata, aes(age,fill=target))+
   geom_density(alpha=.5)</code></pre>
 <p><img src="/post/logimodel/logimodel_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+</div>
 <div id="data-partition" class="section level2">
 <h2>Data partition</h2>
 <p>we take out 80% of the data to use as training set and the rest will be put aside to evaluate the model performance.</p>
@@ -428,5 +438,4 @@ confusionMatrix(as.factor(pred),test$target)</code></pre>
 ##        &#39;Positive&#39; Class : 0               
 ## </code></pre>
 <p>As we see we get the same results with a slight difference between the <strong>AIC</strong> criterion <strong>215.54</strong> for <strong>probit</strong> link and <strong>214.98</strong> for <strong>logit</strong> link.</p>
-</div>
 </div>

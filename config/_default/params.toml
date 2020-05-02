@@ -82,15 +82,15 @@ edit_page = {repo_url = "https://github.com/Metalesaek/new-blog",content_dir = "
 
 # Enter contact details (optional). To hide a field, clear it to "".
 email = "metalesaek@gmail.com"
-phone = "888 888 88 88"
+phone = ""
 
 # Address
 # For country_code, use the 2-letter ISO code (see https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2 )
-address = {street = "6 avenue de la commune de paris", city = "vitry sur seine", region = "Ile de france", postcode = "94400", country = "France", country_code = "FR"}
+address = {street = "", city = "vitry sur seine", region = "Ile de france", postcode = "94400", country = "France", country_code = "FR"}
 
 # Geographic coordinates
 # To get your coordinates, right-click on Google Maps and choose "What's here?". The coords will show up at the bottom.
-coordinates = {latitude = "", longitude = ""}
+coordinates = {latitude = "48.7833", longitude = "2.4"}
 
 # Directions for visitors to locate you.
 directions = ""
@@ -155,7 +155,7 @@ sharing = true
 link_authors = true
 
 # Abstract length (characters) in the Compact and Portfolio Card list views. Also, see `summaryLength` in `config.toml`.
-abstract_length = 135
+abstract_length = 30
 
 # Load JS plugins
 #   E.g. To load `/assets/js/custom.js`, set `plugins_js = ["custom"]`.
@@ -195,7 +195,7 @@ plugins_js  = []
   #   2: Compact
   #   3: Card
   #   4: Citation (publications only)
-  post_view = 2
+  post_view = 1
   publication_view = 2
   talk_view = 2
 

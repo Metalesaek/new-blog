@@ -2,6 +2,6 @@
 header:
   caption: ""
   image: ""
-title: tidymodels & caret
+title: Sparklyr
 view: 2
 ---
