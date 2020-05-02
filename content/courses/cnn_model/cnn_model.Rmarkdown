@@ -1,6 +1,6 @@
 ---
 linktitle: cnn model
-summary: this is 
+summary:  
 weight: 1
 
 title: "predict images with cnn"
