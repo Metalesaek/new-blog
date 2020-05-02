@@ -2,6 +2,9 @@
 title: "logistic regression"
 author: "Metales Abdelkader"
 date: "2019-12-19"
+output:
+  html_document:
+    toc: true
 tags:
 - Logistic regression
 categories: R
@@ -13,11 +16,15 @@ options(tinytex.verbose=TRUE)
 ```
 
 
-# Introduction
+## Introduction
 
 In this paper we will fit a logistic regression model to the **heart disease** data [uploaded from kaggle website](https://www.kaggle.com/johnsmith88/heart-disease-dataset).
 
 For the data preparation we will follow the same steps as we did in my previous paper about **naive bayes model**, for more detail thus click [here](https://github.com/Metalesaek/naive-bayes-model) to get access to that paper.   
+
+## Data preparation
+
+First we call our data with the required packages
 
 ```{r}
 library(tidyverse)
@@ -26,6 +33,7 @@ mydata<-read.csv("heart.csv",header = TRUE)
 names(mydata)[1]<-"age"
 glimpse(mydata)
 ```
+
 The data at hand has the following features:
 
 * age.
@@ -43,6 +51,7 @@ The data at hand has the following features:
 * thal : it is not well defined from the data source.
 * target: have heart disease or not.
 
+We see that some features should be converted to factor type as follows:m
 
 ```{r}
 mydata<-mydata %>%
@@ -51,6 +60,7 @@ glimpse(mydata)
 
 ```
 
+Before going head we should check the relationships between the target variable and the remaining factors
 
 ```{r}
 xtabs(~target+sex,data=mydata)
@@ -63,7 +73,7 @@ xtabs(~target+ca,data=mydata)
 xtabs(~target+thal,data=mydata)
 ```
 
-As we see the **restecg**,**ca** and **thal** variables have values less than the threshold of 5 casses required, so if we split the data between training set and test set the level **2** of the **restecg** variable will not be found in one of the sets since we have only one case. Therfore we should remove these variables from the model.
+As we see the **restecg**,**ca** and **thal** variables have values less than the threshold of 5 casses required for logistic regression. In addition if we split the data between training set and test set the level **2** of the **restecg** variable will not be found in one of the sets since we have only one case. Therfore we should remove these variables from the model.
 
 ```{r}
 mydata<-mydata[,-c(7,12,13)]
