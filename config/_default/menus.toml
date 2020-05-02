@@ -9,18 +9,18 @@
   weight = 10
 
 [[main]]
-  name = "Machine Learning"
+  name = "Machine-Learning"
   url = "post/"
   weight = 30
 
 [[main]]
-  name = "big Data"
+  name = "Big-Data"
   url = "sparklyr/"
   weight = 40
 
 
 [[main]]
-  name = "DeepLearning"
+  name = "Deep-Learning"
   url = "courses/"
   weight = 50
 
@@ -39,4 +39,4 @@
 [[main]]
   name = "CV"
   url = "files/CV.pdf"
-  weight = 70
+  weight = 80
