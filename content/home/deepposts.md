@@ -3,8 +3,8 @@
 # This section displays recent blog posts from `content/post/`.
 
 widget = "pages"  # See https://sourcethemes.com/academic/docs/page-builder/
-headless = true  # This file represents a page section.
-active = true  # Activate this widget? true/false
+headless = false  # This file represents a page section.
+active = false  # Activate this widget? true/false
 weight = 50  # Order that this section will appear.
 
 title = "Keras"
@@ -12,7 +12,7 @@ subtitle = ""
 
 [content]
   # Page type to display. E.g. post, talk, or publication.
-  page_type = "courses/cnnmodel/"
+  page_type = "post"
   
   # Choose how much pages you would like to display (0 = all pages)
   count = 5
