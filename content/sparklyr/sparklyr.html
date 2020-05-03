@@ -2,6 +2,11 @@
 title: "Introduction to sparklyr"
 author: "Abdelkader Metales"
 date: '2019-01-23'
+summary: 'sparklyr is an R interface for spark'
+reading_time: true  # Show estimated reading time?
+share: false  # Show social sharing links?
+profile: false  # Show author profile?
+comments: true 
 output:
   html_document:
     toc: true
@@ -85,7 +90,7 @@ sdf_dim(card)</code></pre>
   summarise(Class_avg=mean(Amount,na.rm=TRUE))%&gt;%
   collect()%&gt;%
   plot(col=&quot;red&quot;,pch=19,main = &quot;Class average vs Class&quot;)</code></pre>
-<p><img src="/post/sparklyr_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p><img src="/sparklyr/sparklyr_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
 <p>However , we can plot the sparklyr outputs without having to remove them to R memory by using the <strong>dbplot</strong> functions, since most of the functions of this package are supported by sparklyr. Let’s for example plot the mean of Amount by Class for cards transaction that have time less than the mean.</p>
 <pre class="r"><code>library(dbplot)
 card %&gt;%
@@ -94,7 +99,7 @@ card %&gt;%
 <pre><code>## Warning: Missing values are always removed in SQL.
 ## Use `mean(x, na.rm = TRUE)` to silence this warning
 ## This warning is displayed only once per session.</code></pre>
-<p><img src="/post/sparklyr_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<p><img src="/sparklyr/sparklyr_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
 <p>As we see the Amount mean of fraudulent cards is higher than that of regular cards.</p>
 </div>
 <div id="disconnecting" class="section level2">
@@ -185,7 +190,7 @@ model_summary</code></pre>
 ##  - weighted_true_positive_rate()</code></pre>
 <p>To extract the metric that we want we use <strong>$</strong>. we can extract for example <strong>the accuracy rate</strong>, the <strong>AUC</strong> or the <strong>roc</strong></p>
 <pre class="r"><code>model_summary$area_under_roc()</code></pre>
-<pre><code>## [1] 0.9765195</code></pre>
+<pre><code>## [1] 0.9765803</code></pre>
 <pre class="r"><code>model_summary$accuracy()</code></pre>
 <pre><code>## [1] 0.999149</code></pre>
 <pre class="r"><code>model_summary$roc()</code></pre>
@@ -210,13 +215,13 @@ ggplot(aes(FPR,TPR ))+
   geom_line(col=&quot;blue&quot;)+
   geom_abline(intercept = 0,slope = 1,col=&quot;red&quot;)+
   ggtitle(&quot;the roc of model_in_spark &quot;)</code></pre>
-<p><img src="/post/sparklyr_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
+<p><img src="/sparklyr/sparklyr_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
 <p>High accuracy rate for the training set can be only the result of overfitting problem. the accuracy rate using the testing set is the more reliable one.</p>
 <pre class="r"><code>pred&lt;-ml_evaluate(model_in_spark,test)
 pred$accuracy()</code></pre>
 <pre><code>## [1] 0.9994722</code></pre>
 <pre class="r"><code>pred$area_under_roc()</code></pre>
-<pre><code>## [1] 0.9693171</code></pre>
+<pre><code>## [1] 0.9692441</code></pre>
 <p>Finally, to get the prediction we use the function <strong>ml_predict</strong></p>
 <pre class="r"><code>pred&lt;-ml_predict(model_in_spark,test)%&gt;%
 select(.,Class,prediction,probability_0,probability_1)
@@ -242,7 +247,7 @@ pred  </code></pre>
   geom_point(size=0.1)+
   geom_jitter()+
   ggtitle(&quot;Actual vs predicted&quot;)</code></pre>
-<p><img src="/post/sparklyr_files/figure-html/unnamed-chunk-22-1.png" width="672" /></p>
+<p><img src="/sparklyr/sparklyr_files/figure-html/unnamed-chunk-22-1.png" width="672" /></p>
 </div>
 <div id="streaming" class="section level2">
 <h2>Streaming</h2>
