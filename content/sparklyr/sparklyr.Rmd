@@ -2,6 +2,11 @@
 title: "Introduction to sparklyr"
 author: "Abdelkader Metales"
 date: '2019-01-23'
+summary: 'sparklyr is an R interface for spark'
+reading_time: true  # Show estimated reading time?
+share: false  # Show social sharing links?
+profile: false  # Show author profile?
+comments: true 
 output:
   html_document:
     toc: true

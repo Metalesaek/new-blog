@@ -2,6 +2,7 @@
 title: "logistic regression"
 author: "Metales Abdelkader"
 date: "2019-12-19"
+summary: 'In this paper we will fit a logistic regression model to the **heart disease** data...'
 output:
   html_document:
     toc: true
