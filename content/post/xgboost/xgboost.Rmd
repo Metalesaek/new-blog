@@ -5,7 +5,7 @@ date: '2020-01-05'
 summary: ' In this paper we learn how to implement xgboost model to predict the titanic data...'
 bibliography: "bibliography.bib"
 output:
-  blogdown::html_page:
+  html_document:
     toc: true
     toc_depth: 1
     fig_width: 6
@@ -212,12 +212,13 @@ train_final<-xgb.DMatrix(data = train_data,label=train_label)
 
 
 To train the model you must provide the inputs and specify the argument values if we do not want to keep the following values:
+
 * objective: for binary classification we use **binary:logistic**
 *  eta (default=0.3): The learning rate.
 * gamma (default=0): also called min_split_loss, the minimum loss required for spliting further a particular node.
 * max_depth(default=6): the maximum depth of the tree.
 * min_child_weight(default=1): the minimum number of instances  required in a node under which the node will be leaf.
-* subsample (default=1): with the default the model uses all the data at each tree, if 0.7 for instance, then the model randomly sample 70% og the data at each iteration, doing so we fight the overfiting problem.
+* subsample (default=1): with the default the model uses all the data at each tree, if 0.7 for instance, then the model randomly sample 70% of the data at each iteration, doing so we fight the overfiting problem.
 * colsample_bytree (default=1, select all columns): subsample ratio of columns at each iteration. 
 * nthreads (default=2): number of cpu's used in parallel processing.
 * nrounds : the number of boosting iterations.  
