@@ -190,7 +190,7 @@ model_summary</code></pre>
 ##  - weighted_true_positive_rate()</code></pre>
 <p>To extract the metric that we want we use <strong>$</strong>. we can extract for example <strong>the accuracy rate</strong>, the <strong>AUC</strong> or the <strong>roc</strong></p>
 <pre class="r"><code>model_summary$area_under_roc()</code></pre>
-<pre><code>## [1] 0.9765803</code></pre>
+<pre><code>## [1] 0.9765754</code></pre>
 <pre class="r"><code>model_summary$accuracy()</code></pre>
 <pre><code>## [1] 0.999149</code></pre>
 <pre class="r"><code>model_summary$roc()</code></pre>
@@ -221,7 +221,7 @@ ggplot(aes(FPR,TPR ))+
 pred$accuracy()</code></pre>
 <pre><code>## [1] 0.9994722</code></pre>
 <pre class="r"><code>pred$area_under_roc()</code></pre>
-<pre><code>## [1] 0.9692441</code></pre>
+<pre><code>## [1] 0.9691945</code></pre>
 <p>Finally, to get the prediction we use the function <strong>ml_predict</strong></p>
 <pre class="r"><code>pred&lt;-ml_predict(model_in_spark,test)%&gt;%
 select(.,Class,prediction,probability_0,probability_1)
