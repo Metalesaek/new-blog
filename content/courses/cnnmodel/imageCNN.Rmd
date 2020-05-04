@@ -2,6 +2,7 @@
 title: "Predicting images using Convolutional neural network"
 author: "Abdelkader Metales"
 date: "2020-12-03"
+summary: 'In this paper we will make use of the convolutional neural network, the most widely deep learning method used for image classification...' 
 output:
   blogdown::html_page:
     toc: true
