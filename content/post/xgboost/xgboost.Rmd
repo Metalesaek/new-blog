@@ -5,7 +5,7 @@ date: '2020-01-05'
 summary: ' In this paper we learn how to implement xgboost model to predict the titanic data...'
 bibliography: "bibliography.bib"
 output:
-  html_document:
+  blogdown::html_page:
     toc: true
     toc_depth: 1
     fig_width: 6
