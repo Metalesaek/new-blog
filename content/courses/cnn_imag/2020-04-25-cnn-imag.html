@@ -137,9 +137,9 @@ testy &lt;- to_categorical(testlabels)</code></pre>
 <li>Convolution layer that makes use of 128 filters with size 3x3 , and with <strong>Relu</strong> function.</li>
 <li>maxPooling layer of 2x2 with strides=2.</li>
 <li>Flatten layer to collapse all the output elements into one giant vector to be able to connect to the traditional neural network with fully connected layers.</li>
-<li>dense layers composed of 256 nodes and with <strong>leaky_relu</strong> function. The slope for thee negative part will be <strong>0.1</strong>.</li>
+<li>dense layers composed of 256 nodes and with <strong>leaky_relu</strong> function. The slope for the negative part will be <strong>0.1</strong>.</li>
 <li>Dropout layer with rate of 40%, this acts as regularization method by randomly ignoring 40% of nodes in each epoch (iteration).</li>
-<li>the last output layer with 3 nodes since we have 3 class and with <strong>softmax</strong> function.</li>
+<li>the last output layer with 3 nodes since we have 3 classes and with <strong>softmax</strong> function.</li>
 </ol>
 <p>In <strong>keras</strong> package the above steps will be coded as follows:</p>
 <pre class="r"><code>model &lt;- keras_model_sequential()
@@ -194,7 +194,7 @@ model %&gt;%
 ## Trainable params: 8,515,651
 ## Non-trainable params: 0
 ## ________________________________________________________________________________</code></pre>
-<p>As we see we have huge number of parameters <strong>8 515 651</strong>. Since the data has only 21 instances, the computation process in my laptop takes only few seconds. Howver, with large data set tihs model may take more time.</p>
+<p>As we see we have huge number of parameters <strong>8 515 651</strong>. Since the data has only 21 instances, the computation process in my laptop takes only few seconds. However, with large data set this model may take more time.</p>
 <p>The last step before running the model is to specify the loss function, the optimizer and the metric.</p>
 <ul>
 <li><p>For multiclassification problem the most widely used one is <a href="https://towardsdatascience.com/common-loss-functions-in-machine-learning-46af0ffc4d23">categorical cross entropy</a>.</p></li>
@@ -204,11 +204,10 @@ model %&gt;%
 <pre class="r"><code>model %&gt;% compile(loss= &quot;categorical_crossentropy&quot;,
                   optimizer=&quot;adam&quot;,
                   metrics=&quot;accuracy&quot;)</code></pre>
-<p>At this stage everything is ready to train our model by calling the function <strong>fit</strong>. the epoch value is the number of iterations or the gradient descent steps,and the validation_split is the holdout samples used for assessment , here four images. I have run this model before and in oreder to avoide running it again i preceed the script by #.
-if you want to run this model juste remove thid symbol.</p>
+<p>At this stage everything is ready to train our model by calling the function <strong>fit</strong>. the epoch value is the number of iterations or the gradient descent steps,and the validation_split is the holdout samples used for assessment , here four images. I have run this model before and in oreder to avoide running it again i have commented the script by #, if you want to run it juste uncomment the script.</p>
 <pre class="r"><code>#history &lt;- model %&gt;%
   #fit(trainall, trainy, epoch=50, validation_split=0.2)</code></pre>
-<p>unlike machine learning model in which we can set a seed to get the result reproducible, each time we rerun the model we get different result. In practice, we intentionally rerun the model to improve the model performance, and ones we get the best one we save it as follows:</p>
+<p>unlike machine learning model in which we can set a seed to get the result reproducible, each time we rerun the model we get different result. In practice, we intentionally rerun the model many times to improve the model performance, and ones we get the best one we save it as follows:</p>
 <pre class="r"><code>#save_model_hdf5(model, &quot;modelcnn.h5&quot;)</code></pre>
 <p>And we can load it again as follows:</p>
 <pre class="r"><code>model &lt;- load_model_hdf5(&quot;modelcnn.h5&quot;)</code></pre>
@@ -225,7 +224,7 @@ if you want to run this model juste remove thid symbol.</p>
 #  geom_point(aes(x=epoch, valid_loss), size=1, color=&quot;red&quot;)+
  # ylab(&quot;Loss&quot;)
 #ggsave(&quot;plot_loss.jpg&quot;, p1, device = &quot;jpeg&quot;, width = 20, height = 15, units = &quot;cm&quot;)</code></pre>
-<p>AS you notice all the above codes have not been executed to avoide the issue discussed above and to make things simple. here we load the plot saved.</p>
+<p>As you notice all the above codes have not been executed to avoide the issue discussed above and to make things simple. here we load the saved plot.</p>
 <pre class="r"><code>par(mar=c(0,0,0,0))
 plot(as.raster(readImage(&quot;plot_loss.jpg&quot;)))</code></pre>
 <p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-21-1.png" width="576" /></p>
@@ -240,13 +239,13 @@ The same conclusion can be induced from the following plot for the acccuracy met
 <pre class="r"><code>par(mar=c(0,0,0,0))
 plot(as.raster(readImage(&quot;plot_acc.jpg&quot;)))</code></pre>
 <p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-23-1.png" width="576" /></p>
-<p><strong>Note</strong>: we coud have used directly the plot function , plot(history), but doing so we will get ifferent plot each time we knit the document.</p>
+<p><strong>Note</strong>: we coud have used directly the plot function , plot(history), but doing so we will get different plot each time we knit the document.</p>
 </div>
 <div id="model-evaluation" class="section level2">
-<h2>model evaluation</h2>
+<h2>Model Evaluation</h2>
 <p>We can evaluate the model performance using the training set as follows:</p>
 <pre class="r"><code>train_evaluate&lt;- evaluate(model, trainall, trainy)</code></pre>
-<p>With this first architecture we get a high accuracy rate <strong>95.24%</strong> and the loss is <strong>0.0832</strong>. However, becarefull with this rate sinc it is computed from the training data which in many cases reflects the <strong>overfitting</strong> problem<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a>. the best evaluation, thus, is that based on the testing set.</p>
+<p>With this first architecture we get a high accuracy rate <strong>95.24%</strong> and the loss is <strong>0.0832</strong>. However, becarefull with this rate since it is computed from the training data which in many cases reflects the <strong>overfitting</strong> problem<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a>. the best evaluation, thus, is that based on the testing set.</p>
 <pre class="r"><code>test_evaluate&lt;- evaluate(model, testall, testy)</code></pre>
 <p>Using the testing set that is not seen by the model, the accuracy rate is about 55.56%.
 In fact this is exactly what we warned about it, indeed we have an overfiting problem where the model try to memorize every noisy pattern which will constrain the model to poorly generalize to unseen data.</p>
@@ -257,7 +256,7 @@ In fact this is exactly what we warned about it, indeed we have an overfiting pr
 <pre class="r"><code>pred &lt;- predict_classes(model,testall)
 pred</code></pre>
 <pre><code>## [1] 0 0 2 0 2 0 2 2 2</code></pre>
-<p>the following picture shows which images from the testing set are correctly classified :</p>
+<p>the following picture shows which images from the testing set are correctly classified and which are not:</p>
 <pre class="r"><code>pred[pred==0] &lt;- &quot;cat&quot;
 pred[pred==1] &lt;- &quot;dog&quot;
 pred[pred==2] &lt;- &quot;lion&quot;
@@ -293,9 +292,9 @@ foreach(i=1:21) %do% {display(train[[i]], method=&quot;raster&quot;);
 </div>
 <div id="conclusion" class="section level2">
 <h2>Conclusion</h2>
-<p>As we see this model perfectly identified cats and lions but failed to identify any of the dogs in the testing set which is not the case for the training data where the model has high accuracy, and as I mentioned earlier this the consequences of the overfiting problem. However, There are bunch of techniques that can used in such situation such as regularization methods (L2,L1), pooling, dropuot layers..ect. All these techniques will be adressed soon in further papers.
+<p>As we see this model perfectly identified lions but failed to identify any of the dogs in the testing set which is not the case for the training data where the model has high accuracy, and as I mentioned earlier this the consequences of the overfitting problem. However, There are bunch of techniques that can be used in such situation such as regularization methods (L2,L1), pooling, dropuot layers..ect. All these techniques will be adressed soon in further papers.
 Besides overfiting, we can also improve the model by playing around with hyperparameters such as changing , the number of the layers, number of the nodes in each layer, number of epochs…ect.</p>
-<p><strong>Note</strong>: Be aware that this model can not be reliable since it has used very small data. However, we may get a higher performance for this model if we implement very large dataset.</p>
+<p><strong>Note</strong>: Be aware that this model can not be reliable since it has used very small data. However, we may get a higher performance for this model if we implement very large dataset. In other words.</p>
 </div>
 <div class="footnotes">
 <hr />

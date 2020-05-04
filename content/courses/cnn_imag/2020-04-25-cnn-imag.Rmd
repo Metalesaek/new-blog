@@ -143,9 +143,9 @@ The architecture of our model will contain the following layers:
 5. Convolution layer that makes use of 128 filters with size 3x3 , and with **Relu** function.
 6. maxPooling layer of 2x2 with strides=2.
 7. Flatten layer to collapse all the output elements into one giant vector to be able to connect to the traditional neural network with fully connected layers.
-8. dense layers composed of 256 nodes and with **leaky_relu** function. The slope for thee negative part will be **0.1**.
+8. dense layers composed of 256 nodes and with **leaky_relu** function. The slope for the negative part will be **0.1**.
 9. Dropout layer with rate of 40%, this acts as regularization method by randomly ignoring 40% of nodes in each epoch (iteration).
-10. the last output layer with 3 nodes since we have 3 class and with **softmax** function.
+10. the last output layer with 3 nodes since we have 3 classes and with **softmax** function.
 
 In **keras** package the above steps will be coded as follows:
 
@@ -180,7 +180,7 @@ We can figure out this architecture and how many parameters it has by calling th
 summary(model)
 ```
 
-As we see we have huge number of parameters **8 515 651**. Since the data has only 21 instances, the computation process in my laptop takes only few seconds. Howver, with large data set tihs model may take more time.   
+As we see we have huge number of parameters **8 515 651**. Since the data has only 21 instances, the computation process in my laptop takes only few seconds. However, with large data set this model may take more time.   
 
 The last step before running the model is to specify the loss function, the optimizer and the metric. 
 
@@ -198,8 +198,7 @@ model %>% compile(loss= "categorical_crossentropy",
 
 ```
 
-At this stage everything is ready to train our model by calling the function **fit**. the epoch value is the number of iterations or the gradient descent steps,and the validation_split is the holdout samples used for assessment , here four images. I have run this model before and in oreder to avoide running it again i preceed the script by #.
-if you want to run this model juste remove thid symbol.
+At this stage everything is ready to train our model by calling the function **fit**. the epoch value is the number of iterations or the gradient descent steps,and the validation_split is the holdout samples used for assessment , here four images. I have run this model before and in oreder to avoide running it again i have commented the script by #, if you want to run it juste uncomment the script.
 
 ```{r}
 #history <- model %>%
@@ -207,7 +206,7 @@ if you want to run this model juste remove thid symbol.
 
 ```
 
-unlike machine learning model in which we can set a seed to get the result reproducible, each time we rerun the model we get different result. In practice, we intentionally rerun the model to improve the model performance, and ones we get the best one we save it as follows:
+unlike machine learning model in which we can set a seed to get the result reproducible, each time we rerun the model we get different result. In practice, we intentionally rerun the model many times to improve the model performance, and ones we get the best one we save it as follows:
 
 
 ```{r}
@@ -248,7 +247,7 @@ library(ggplot2)
 #ggsave("plot_loss.jpg", p1, device = "jpeg", width = 20, height = 15, units = "cm")
 ```
 
-AS you notice all the above codes have not been executed to avoide the issue discussed above and to make things simple. here we load the plot saved.
+As you notice all the above codes have not been executed to avoide the issue discussed above and to make things simple. here we load the saved plot.
 
 ```{r}
 par(mar=c(0,0,0,0))
@@ -276,9 +275,9 @@ plot(as.raster(readImage("plot_acc.jpg")))
 ```
 
 
-**Note**: we coud have used directly the plot function , plot(history), but doing so we will get ifferent plot each time we knit the document. 
+**Note**: we coud have used directly the plot function , plot(history), but doing so we will get different plot each time we knit the document. 
 
-## model evaluation
+## Model Evaluation
 
 We can evaluate the model performance using the training set as follows:  
 
@@ -287,7 +286,7 @@ train_evaluate<- evaluate(model, trainall, trainy)
 
 ```
 
-With this first architecture we get a high accuracy rate **95.24%** and the loss is **0.0832**. However, becarefull with this rate sinc it is computed from the training  data which in many cases reflects the **overfitting** problem^[An introduction to statistical learning, Garth et al, spring, New York, page 33, ISBN:978-1-4614-7173-0]. the best evaluation, thus, is that based on the testing set.
+With this first architecture we get a high accuracy rate **95.24%** and the loss is **0.0832**. However, becarefull with this rate since it is computed from the training  data which in many cases reflects the **overfitting** problem^[An introduction to statistical learning, Garth et al, spring, New York, page 33, ISBN:978-1-4614-7173-0]. the best evaluation, thus, is that based on the testing set.
 
 
 ```{r}
@@ -307,7 +306,7 @@ pred <- predict_classes(model,testall)
 pred
 ```
 
-the following picture shows which images from the testing set are correctly classified :
+the following picture shows which images from the testing set are correctly classified and which are not:
 
 ```{r results="hide"}
 
@@ -351,8 +350,8 @@ par(mfrow=c(1,1))
 
 ## Conclusion
 
-As we see this model perfectly identified cats and lions but failed to identify any of the dogs in the testing set which is not the case for the training data where the model has high accuracy,  and as I mentioned earlier this the consequences of the overfiting problem. However, There are bunch of techniques that can used in such situation such as regularization methods (L2,L1), pooling, dropuot layers..ect.  All these techniques will be adressed soon in further papers.
+As we see this model perfectly identified lions but failed to identify any of the dogs in the testing set which is not the case for the training data where the model has high accuracy,  and as I mentioned earlier this the consequences of the overfitting problem. However, There are bunch of techniques that can be used in such situation such as regularization methods (L2,L1), pooling, dropuot layers..ect.  All these techniques will be adressed soon in further papers.
 Besides overfiting, we can also improve the model by playing around with hyperparameters such as changing , the number of the layers, number of the nodes in each layer, number of epochs...ect.    
 
-**Note**: Be aware that this model can not be reliable since it has used very small data. However, we may get a higher performance for this model if we implement very large dataset. 
+**Note**: Be aware that this model can not be reliable since it has used very small data. However, we may get a higher performance for this model if we implement very large dataset. In other words.
 
