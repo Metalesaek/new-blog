@@ -41,11 +41,11 @@ library(EBImage)
 library(keras)
 library(foreach)
 
-mytrain <- c(paste0("images/cat",1:7,".jpg"),paste0("images/dog",1:7,".jpg"),
-        paste0("images/lion",1:7,".jpg"))
+mytrain <- c(paste0("../images/cat",1:7,".jpg"),paste0("../images/dog",1:7,".jpg"),
+        paste0("../images/lion",1:7,".jpg"))
 
-mytest <- c(paste0("images/cat",8:10,".jpg"),paste0("images/dog",8:10,".jpg"),
-        paste0("images/lion",8:10,".jpg"))
+mytest <- c(paste0("../images/cat",8:10,".jpg"),paste0("../images/dog",8:10,".jpg"),
+        paste0("../images/lion",8:10,".jpg"))
 
 train <- lapply(mytrain, readImage)
 test <- lapply(mytest, readImage)

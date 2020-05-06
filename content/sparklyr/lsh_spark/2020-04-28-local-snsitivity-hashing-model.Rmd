@@ -1,0 +1,385 @@
+---
+title: Local Snsitivity Hashing Model
+author: Metales abdelkader
+date: '2020-04-28'
+slug: local-snsitivity-hashing-model
+categories:
+  - R
+tags:
+  - lsh
+subtitle: ''
+output:
+  blogdown::html_page:
+    toc: true
+    fig_width: 6
+    dev: "svg"
+summary: 'This model is an approximate version of knn model which is  difficult to be implemented with large data set...'
+authors: []
+lastmod: ''
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, tidy = TRUE, tidy.opts = list(comment = FALSE))
+```
+
+
+## Introduction
+
+This model is an approximate version of knn model which is  difficult to be implemented with large data set. In contrast to knn model that looks for the exact number of nearest neighbours, this model looks for neighbours with high probabilities. Spark provides two methods to find out the approximate neighbours that depend on the data type at hand, **Bucketed random projection** and **Minhash for jaccard distance**.
+
+The first method projects the data in lower dimension hash in which similar hashes indicate that the associated points (or observations) are close to each other. The mathematical basis of this technique is the following formula.
+
+$$h^{x,b}(\vec\upsilon)=\lfloor \frac{\vec\upsilon.\vec x}{w}\rfloor$$
+
+Where $h$ is the hashing function, $\vec\upsilon$ is the feature vector, $x$ is standard normal vector that has the same length, and $w$ is the bin width of the hashing bins, and the symbol $\lfloor \rfloor$ to coerce the result to be integer value. The idea is simple, we take the dot product of each feature vector with noisy vector, then the resulted projections (which are random) will be grouped into buckets, these buckets are supposed to include similar points. This process can be repeated many times with different noisy vector at each time to fine the similarity. For more detail about this technique click [here](https://spark.apache.org/docs/latest/ml-features.html#locality-sensitive-hashing)
+
+## Data Preparation
+
+For those who do not know much about sparklyr check my article [introduction to sparklyr](https://modelingwithr.rbind.io/sparklyr/sparklyr/) 
+
+First let's call sparklyr and tidyverse packages, then we set the connection to spark and call the titanic data.
+
+```{r,message=FALSE , comment=""}
+
+library(sparklyr, warn.conflicts = FALSE)
+library(tidyverse, warn.conflicts = FALSE)
+sc<-spark_connect(master="local")
+mydata<-spark_read_csv(sc,"titanic",path = "C://Users/dell/Documents/new-blog/content/post/train.csv")
+glimpse(mydata)
+
+```
+
+
+If wou notice this data is not large, but we intentially choose this data due to its familiarity and simplicity which make understanding the implementation of this model super easy. In other words, when we want to implement this model with very large data sets we repeat the same general basic steps.     
+
+Then we remove some varaibles that we think they are not much relevant for out puptose except for the **PassengerId** variable because we need it later (but we give it a shorter name). 
+
+
+```{r comment=""}
+newdata<- mydata%>%
+  select(c(1,2,3,5,6,7,8,10,12))%>%
+  rename(id=PassengerId) %>% 
+  glimpse()
+
+```
+
+
+May be the first thing we do in explaratory analysis is to check  the missing values.
+
+```{r warning=FALSE,comment=""}
+newdata%>%
+  mutate_all(is.na)%>%
+  mutate_all(as.numeric)%>%
+  summarise_all(sum)
+ 
+```
+
+Since we have a large number of missing values it would be better to imput thes values rather than removing them. For the numeric variable **Age** we replace them by the median using the sparklyr function **ft_imputer**, and for categorical variable **Embarked** we use the most frequantly level which is here **S** port. But before this we should split the data first into training and testing sets to make sure that the testing set is completely isolated from the training set, then we impute each separately.
+
+Since the data are a little bit imbalanced we randomly split the data separately with respect to the target variable **Survived** in order to preserve the same proportions of the Survived varaible levels as the original data, then we rebind the corresponding sets again.
+
+
+```{r}
+data_surv<-newdata%>%
+  filter(Survived==1)
+data_not<-newdata%>%
+  filter(Survived==0)
+partition_surv<-data_surv%>%
+  sdf_random_split(training=0.8,test=0.2,seed = 123)
+partition_not<-data_not%>%
+  sdf_random_split(training=0.8,test=0.2,seed = 123)
+
+train<-sdf_bind_rows(partition_surv$training,partition_not$training)%>%
+  ft_imputer(input_cols = "Age",output_cols="Age",strategy="median")%>%
+  na.replace(Embarked="S")%>%
+  compute("train")
+  
+test<-sdf_bind_rows(partition_surv$test,partition_not$test)%>%
+  ft_imputer(input_cols = "Age",output_cols="Age",strategy="median")%>%
+  na.replace(Embarked="S")%>%
+  compute("test")
+  
+```
+
+
+Not that we use **compute** function to cache the output into spark memory.
+
+Before fitting any model the data must be processed in a way that can be consumed by the model. For our model, such as the most machine learning models, requires numeric features, we convert thus categorical variables to integers using the function **ft_string_indexer**, after that we convert them to dumy variables using the function **ft_one hot_encoder_estimator**, because the last function expects the inputs to be numeric. 
+
+For models build in sparklyr, the input variables should be stacked into one column vector on each other, this can be easily done by using the function **ft_vector_assembler**. However, this step does not prevent us to apply some other transformation even the features are in one column. For instance, to run efficiently our model we can transform the variables to be of the same scale, to do so we can either use standardization (sa we do here) or normalization method.
+
+It is a good practice to save this preocessed set into the spark memory under an object name using the function **compute** 
+
+```{r}
+trained<- train%>%
+  ft_string_indexer(input_col = "Sex",output_col="Sex_indexed")%>%
+  ft_string_indexer(input_col = "Embarked",output_col="Embarked_indexed")%>%
+  ft_one_hot_encoder_estimator(
+    input_cols = c("Pclass","Sex_indexed","Embarked_indexed"),
+    output_cols=c("Pc_encod","Sex_encod","Emb_encod")
+  )%>%
+  ft_vector_assembler(input_cols = c("Pc_encod","Sex_encod","Age","SibSp",
+                                     "Parch","Fare","Emb_encod"),
+                      output_col="features")%>%
+  ft_standard_scaler(input_col = "features",output_col="scaled",
+                     with_mean=TRUE)%>%
+  select(id,Survived,scaled)%>%
+  compute("trained")
+```
+
+The same transformations above will be applied to the testing set **test** as follows.
+
+```{r}
+tested<-test%>%
+  ft_string_indexer(input_col = "Sex",output_col="Sex_indexed")%>%
+  ft_string_indexer(input_col = "Embarked",output_col="Embarked_indexed")%>%
+  ft_one_hot_encoder_estimator(
+    input_cols = c("Pclass","Sex_indexed","Embarked_indexed"),
+    output_cols=c("Pc_encod","Sex_encod","Emb_encod")
+  )%>%
+  ft_vector_assembler(input_cols = c("Pc_encod","Sex_encod","Age","SibSp",
+                                     "Parch","Fare","Emb_encod"),
+                      output_col="features")%>%
+  ft_standard_scaler(input_col = "features",output_col="scaled",
+                     with_mean=TRUE)%>%
+  select(id,Survived,scaled)%>%
+  compute("tested")
+ 
+```
+
+
+Now we are ready to project the data on the lower dimension hash using the function **ft_bucketed_random_projection_lsh** with buckets of length 3 and 5 hash tables.
+
+```{r}
+lsh_vector<-ft_bucketed_random_projection_lsh(sc,
+                                             input_col = "scaled",
+                                             output_col = "hash",
+                                             bucket_length = 3,
+                                             num_hash_tables = 5,
+                                             seed=444)
+```
+
+
+To fit this model we feed the function **ml_fit** by the training data **trained**. 
+
+```{r}
+model_lsh<-ml_fit(lsh_vector,trained)
+```
+
+
+## Prediction
+
+At the prediction stage this model of classification gives us two alternatives for how we define the nearest neighbours:
+
+- define a threshold value from which we decide if two observations are considered as nearest neighbours or not, small value leads to take small number of neighbours. in sparklyr we can achive that using the function  **ml_approx_similarity_join** and we specify the the threshold value for the minimum distance. the distance used by this function is the classical euclidien distance.
+
+
+- prespecify the number of the nearest neighbours regardeless of the distance between observations. This second alternative can be achieved using **ml_approx_nearest_neighbors**.
+
+Each of which has its advantages and drawbacks depending on the problem at hand. for instance in medecine if you are more interested to check the similarities among patients at some level then the first option would be your choice but you may not be able to predict new cases that are not similar to any of the training cases constrained by this threshold value. In contrast, if your goal is to predict all your new cases then you would opt for the second option, but with the cost of including neighbours  that are far a way constrained by the fixed number of neighbours.
+To better understand what hppens with each option, let's use the following data.  
+
+```{r}
+suppressPackageStartupMessages(library(plotrix))
+X<-c(55,31,35,34,15,28,8,38,35,19,27,40,39,19,66,28,42,21,18,14,40,27,3,19,21,32,13,18,7,21,49)
+Y<-c(16,18,26,13,8.0292,35.5,21.075,31.3875,7.225,263,7.8958,27.7208,146.5208,7.75,10.5,82.1708,52,8.05,18,11.2417,9.475,21,41.5792,7.8792,8.05,15.5,7.75,17.8,39.6875,7.8,76.7292)
+Z<-factor(c(1,0,0,1,1,1,0,1,0,0,0,0,1,1,0,0,0,0,0,1,0,0,1,1,0,0,1,0,0,0,1))
+plot(X,Y,col=Z,ylim = c(0,55),pch=16)
+points(x=32,y=20,col="blue",pch=8)
+draw.circle(x=32,y=20,nv=1000,radius = 6,lty=2)
+points(x=55,y=42,col="green",pch=8)
+draw.circle(x=55,y=42,nv=1000,radius = 6,lty=2)
+
+
+```
+
+Using the fake data above to illustrate the difference between the two methods.
+Setting the threshold at 6 for the first option, we see the blue dot has 5 neighbours and this dot would be predicted as black using the majority vote. However, with this threshold the green dot does not have any neighbour around and hence it will be left without prediction.   
+
+```{r}
+plot(X,Y,pch=16,col=Z,ylim = c(0,55))
+points(x=32,y=20,col="blue",pch=8)
+points(x=55,y=42,col="green",pch=8)
+draw.circle(x=55,y=42,nv=1000,radius = 21.8,lty=2)
+draw.circle(x=32,y=20,nv=1000,radius = 6,lty=2)
+
+```
+
+In contrast to the above plot, using the second option, the green dot can be predicted as black since it has 5 neighbours in whcih 3 are block, but this prediction casts doubt about its quality since all the neighbours are far a way from the dot of interest, and this is the major drawback of this method.     
+
+**Note**: In fact we can overcome the drawbacks of each method by tuning the hyperparameters. To get predictions of all the new cases we can increase the distance threshold  using the first method so that all the cases will be predicted (but we may lose accuracy if we have any single outlier). And we can reduce the number for the nearest neighbours number to get meaningful similarities (but we may lose accuracy with dots spread out from each other).      
+
+### Similarity based on distance
+
+To show the neighbours of each point we use the function
+**ml_approx_similarity_join** provided that the data has an **id** column, this is thus the reason why we have created this id before.   
+
+
+```{r comment=""}
+approx_join<-ml_approx_similarity_join(model_lsh,
+                                       trained,
+                                       trained,
+                                       threshold=1,
+                                     dist_col="dist")
+approx_join
+
+```
+
+This function joined the data **trained** with itself to get the similar observations. The threshold determines the value from which we consider two observations as similar. In othe words, cases that has dist value less than 1 will be similar. let's for instance pick up some similar observations and check out how they are similar.
+
+```{r comment=""}
+train%>%
+  filter(id %in% c(29,654,275,199,45))
+```
+
+
+As we see all these passengers are all survived females in the same class (third class)  without children or parents or siblings embarked from the same port, approximately paied the same ticket price, have the same age (except for 45 with age 19), so they are higly likely to be friends traveling togather.
+To predict the test set **tested** we use the function **ml_predict**, then we extrat the similarities with the fuction **ml_approx_similarity_join**.
+
+```{r  comment=""}
+hashed<-ml_predict(model_lsh,tested)%>%
+  ml_approx_similarity_join(model_lsh,
+                            trained,
+                            .,
+                            threshold=1,
+                            dist_col="dist")
+hashed
+```
+
+
+we can now shoose a particular person, say id_b=33, and then find his/her similar persons in the training set. By using the majority vote we decide if that person is survived or not.  
+
+```{r comment=""}
+m<-33
+ids_train<-hashed%>%
+  filter(id_b==m)%>%
+  pull(id_a)
+df1<-train%>% 
+  filter(id %in% ids_train)  
+df2<-test%>%
+  filter(id==m)
+df<-sdf_bind_rows(df1,df2)
+df
+```
+
+
+
+The last row in this table contains our test instance 33, and it has 17 neighbours from the training data with mixture of died and survived persons.
+
+```{r}
+df%>%
+  filter(id!=m)%>%
+  select(Survived)%>%
+  collect()%>%
+  table()
+```
+
+
+Using the majority vote this person will be classified as survived since the non survived persons number (5) is less than survived persons number (12), and hence this person is correctly classified.
+
+### The similarity based on the number of nearest neighbours
+
+Using the same above steps but here with the function
+
+**ml_approx_nearest_neighbors** we can predict any point. for example let's take our previous passenger 120 in the testing set. But first we have to extract the values related to this person from the transformed testing set **tested**. 
+
+```{r}
+id_input <- tested %>%
+  filter(id==m)%>%
+    pull(scaled) %>%
+  unlist()
+id_input
+```
+
+These are the values of all the standardized vectors in the column **scaled** that will be used to get its closest neighbours in the training data, and here we specify the number of neighbours to be 7. 
+
+```{r comment=""}
+knn<-ml_approx_nearest_neighbors(
+  model_lsh,
+  trained,
+  key = id_input,
+  dist_col = 'dist',
+  num_nearest_neighbors = 7
+)
+knn
+
+```
+
+Theses are the neighbours of our passenger with thir id's. We can get the fraction of surived ones as follows. 
+
+```{r}
+n<-sdf_nrow(knn)
+pred<-knn %>% 
+  select(Survived)%>%
+  summarise(p=sum(Survived)/n)
+pred
+```
+
+
+Since this probability is greater than 0.5 we predict this passenger as survived, and here also is correctly classified. however, in some cases we can get different predictions.
+
+To get the accuracy of the whole testing set, we use the following for loop, which requires a lot of computing time since at the end of each iteration we collect the results into R. Consequently it will not usefull with large dataset. 
+
+
+```{r comment=""}
+mypred<-numeric(0)
+M <- tested %>% collect() %>% .$id
+for (i in M) {
+  id_input <- tested %>%
+  filter(id==i)%>%
+    pull(scaled) %>%
+  unlist()
+knn<-ml_approx_nearest_neighbors(
+  model_lsh,
+  trained,
+  key = id_input,
+  dist_col = 'dist',
+  num_nearest_neighbors = 7
+)
+n<-sdf_nrow(knn)
+pred<-knn%>%select(Survived)%>%
+  summarise(p=sum(Survived)/n)%>%
+  collect()
+mypred<-rbind(mypred,pred)
+}
+mypred
+```
+
+
+Now first we convert the probabilities into class labels, next we join this data frame with the testing data, and finally we use the function **confusionmatrix** from **caret** package.  
+
+```{r comment=""}
+tested_R<-tested%>%
+  select(Survived)%>%
+  collect()
+new<-cbind(mypred,tested_R)%>%
+  mutate(predicted=ifelse(p>0.5,"1","0"))
+  caret::confusionMatrix(as.factor(new$Survived),as.factor(new$predicted))
+  
+```
+
+The accuracy rate is pretty good with 79%.
+
+Finally, do not forget to dsiconnect when your work is completed.
+
+```{r}
+spark_disconnect(sc)
+```
+
+
+
+## Conclusion
+
+The LSH model is an approximation of knn when we have large dataset. We could increase the model performance by playing around with the threshold value or the number of the neighbours. 
+
+## Further reading
+
+* https://therinspark.com
+* https://spark.apache.org/docs/latest/ml-features.html#locality-sensitive-hashing
