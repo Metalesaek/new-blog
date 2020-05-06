@@ -7,8 +7,8 @@ bibliography: "bibliography.bib"
 output:
   blogdown::html_page:
     toc: true
-    toc_depth: 1
     fig_width: 6
+    dev: "svg"
 tags:
 - xgboost
 - boosting
@@ -17,6 +17,17 @@ categories: R
 
 <script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
 
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#data-preparation">Data preparation</a></li>
+<li><a href="#data-visualization">Data visualization</a></li>
+<li><a href="#data-partition">Data partition</a></li>
+<li><a href="#model-training">Model training</a></li>
+<li><a href="#fine-tune-the-hyperparameters">Fine tune the hyperparameters</a></li>
+<li><a href="#conclusion">Conclusion:</a></li>
+</ul>
+</div>
 
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
@@ -93,42 +104,42 @@ We will opt for random forest method since in most cases can be the best choice.
 ggplot(mydata,aes(Sex,Survived,color=Sex))+
   geom_point()+
   geom_jitter()</code></pre>
-<p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-5-1.png" width="576" /></p>
+<p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-5-1.svg" width="576" /></p>
 <p>The left side of the plot shows that higher fraction of females survived, whreas the right side shows the reverse situation for males where most of them died. We can induce from this plot that, ceteris paribus, this predictor is likely to be relevant for prediction.</p>
 <pre class="r"><code>ggplot(mydata,aes(Pclass,Survived,color=Pclass))+
   geom_point()+
   geom_jitter()</code></pre>
-<p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-6-1.png" width="576" /></p>
+<p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-6-1.svg" width="576" /></p>
 <p>in this plot most of the first class passengers survived in contrast with the third class passegers where most of them died. However, for the second class, it seems equally ballanced. Again this predictor also can be relevant.</p>
 <pre class="r"><code>ggplot(mydata,aes(SibSp,Survived,color=SibSp))+
   geom_point()+
   geom_jitter()</code></pre>
-<p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-7-1.png" width="576" /></p>
+<p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-7-1.svg" width="576" /></p>
 <p>This predictor refers to the number of siblings a passenger has. It seems to be equally distibuted given the taregt variable, and hence can be highlly irrelvant. In other words, knowing the number of siblings of a particular passenger does not help to predict if this passenger survived or died.</p>
 <pre class="r"><code>ggplot(mydata,aes(Parch,Survived,color=Parch))+
   geom_point()+
   geom_jitter()</code></pre>
-<p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-8-1.png" width="576" /></p>
+<p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-8-1.svg" width="576" /></p>
 <p>This predictor refers to the number of parents and children a passenger has. It seems that this predictor is slightly dsicriminative if we look closely at the level 0, passengeers with no parents or children.</p>
 <pre class="r"><code>ggplot(mydata,aes(Embarked,Survived,color=Embarked))+
   geom_point()+
   geom_jitter()</code></pre>
-<p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-9-1.png" width="576" /></p>
+<p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-9-1.svg" width="576" /></p>
 <p>We see that a passsenger who is embarked from the port <strong>S</strong> is slightly highly to died, while the other ports seem to be eequally distributed.</p>
 <p>For numeric variables we use the empirical densitiy givan the target variable as follows.</p>
 <pre class="r"><code>ggplot(mydata[complete.cases(mydata),], aes(Age,fill=as.factor(Survived)))+
   geom_density(alpha=.5)</code></pre>
-<p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-10-1.png" width="576" /></p>
+<p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-10-1.svg" width="576" /></p>
 <p>We see that some signicant overlaping between the two conditional distribution may indicating less relevance related to this variable.</p>
 <pre class="r"><code>ggplot(mydata, aes(Fare,fill=as.factor(Survived)))+
   geom_density(alpha=.5)</code></pre>
-<p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-11-1.png" width="576" /></p>
+<p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-11-1.svg" width="576" /></p>
 <p>For this variables the conditional distribution are different, we see a spike close to zero reflecting the more death among third class.</p>
 <p>we can also plot two predictors against eeach other. For instance let’s try with the two predictors, Sex and Pclass:</p>
 <pre class="r"><code>ggplot(mydata,aes(Sex,Pclass,color=as.factor(Survived)))+
   geom_point(col=&quot;green&quot;,pch=16,cex=7)+
   geom_jitter()</code></pre>
-<p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-12-1.png" width="576" /></p>
+<p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-12-1.svg" width="576" /></p>
 <p>The majority of the survived females (blue points on the left) came from the first and the second class, while the majority of died males (red points on the right) came from the third class.</p>
 </div>
 <div id="data-partition" class="section level2">
@@ -234,7 +245,7 @@ It the data is of class <strong>xgb.DMatrix</strong> that contain both the predi
 <pre class="r"><code> mymodel$evaluation_log %&gt;%   
   ggplot(aes(iter, train_error))+
   geom_point()</code></pre>
-<p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-21-1.png" width="576" /></p>
+<p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-21-1.svg" width="576" /></p>
 <p>To evaluate the model we will use the test data that should follow all the above steps as the training data exept for the missing values. since the test set is only used to evaluate the model so we will remove all the missing values.</p>
 <pre class="r"><code>test1 &lt;- test[complete.cases(test),]
 test2&lt;-sparse.model.matrix(Survived ~. -1,data=test1)
