@@ -4,8 +4,10 @@ author: "Metales Abdelkader"
 date: "2019-12-19"
 summary: 'In this paper we will fit a logistic regression model to the **heart disease** data...'
 output:
-  html_document:
+  blogdown::html_page:
     toc: true
+    fig_width: 6
+    dev: "svg"
 tags:
 - Logistic regression
 categories: R
@@ -28,8 +30,8 @@ For the data preparation we will follow the same steps as we did in my previous 
 First we call our data with the required packages
 
 ```{r}
-library(tidyverse)
-library(caret)
+library(tidyverse, warn.conflicts = FALSE)
+library(caret, warn.conflicts = FALSE)
 mydata<-read.csv("heart.csv",header = TRUE)
 names(mydata)[1]<-"age"
 glimpse(mydata)

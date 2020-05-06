@@ -4,8 +4,10 @@ author: "Metales Abdelkader"
 date: "2019-12-19"
 summary: 'In this paper we will fit a logistic regression model to the **heart disease** data...'
 output:
-  html_document:
+  blogdown::html_page:
     toc: true
+    fig_width: 6
+    dev: "svg"
 tags:
 - Logistic regression
 categories: R
@@ -13,6 +15,16 @@ categories: R
 
 <script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
 
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#data-preparation">Data preparation</a></li>
+<li><a href="#data-partition">Data partition</a></li>
+<li><a href="#train-the-model">train the model</a></li>
+<li><a href="#prediction-and-confusion-matrix">prediction and confusion matrix</a></li>
+<li><a href="#altering-the-link-function">altering the link function</a></li>
+</ul>
+</div>
 
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
@@ -22,8 +34,8 @@ categories: R
 <div id="data-preparation" class="section level2">
 <h2>Data preparation</h2>
 <p>First we call our data with the required packages</p>
-<pre class="r"><code>library(tidyverse)
-library(caret)
+<pre class="r"><code>library(tidyverse, warn.conflicts = FALSE)
+library(caret, warn.conflicts = FALSE)
 mydata&lt;-read.csv(&quot;heart.csv&quot;,header = TRUE)
 names(mydata)[1]&lt;-&quot;age&quot;
 glimpse(mydata)</code></pre>
@@ -141,15 +153,15 @@ glimpse(mydata)</code></pre>
 <p>Let’s plot the relationships between the target variabl and the other features.</p>
 <pre class="r"><code>ggplot(mydata,aes(sex,target,color=target))+
   geom_jitter()</code></pre>
-<p><img src="/post/logimodel/logimodel_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p><img src="/post/logimodel/logimodel_files/figure-html/unnamed-chunk-5-1.svg" width="576" /></p>
 <p>If we look only at the red points (healthy patients) we can wrongly interpret that females are less healthy than males. This is because we do not take into account that we have imbalanced number of each sex level (96 females , 207 males). in contrast, if we look only at females we can say that a particular female are more likely to have the disease than not.</p>
 <pre class="r"><code>ggplot(mydata,aes(cp, fill = target))+
   geom_bar(stat = &quot;count&quot;, position = &quot;dodge&quot;)</code></pre>
-<p><img src="/post/logimodel/logimodel_files/figure-html/unnamed-chunk-6-1.png" width="672" /></p>
+<p><img src="/post/logimodel/logimodel_files/figure-html/unnamed-chunk-6-1.svg" width="576" /></p>
 <p>From this plot we can conclude that if the patient does not have any chest pain he/she will be highly unlikely to get the disease, otherwise for any chest type the patient will be more likely to be pathologique by this disease. we can expect therfore that this predictor will have a significant importance on the training model.</p>
 <pre class="r"><code>ggplot(mydata, aes(age,fill=target))+
   geom_density(alpha=.5)</code></pre>
-<p><img src="/post/logimodel/logimodel_files/figure-html/unnamed-chunk-7-1.png" width="672" /></p>
+<p><img src="/post/logimodel/logimodel_files/figure-html/unnamed-chunk-7-1.svg" width="576" /></p>
 </div>
 <div id="data-partition" class="section level2">
 <h2>Data partition</h2>
