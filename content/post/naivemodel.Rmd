@@ -6,8 +6,8 @@ summary: '**Naive bayes** model based on a strong assumption that the features a
 output:
   blogdown::html_page:
     toc: true
-    toc_depth: 1
     fig_width: 6
+    dev: "svg"
 tags:
 - naive bayes
 categories: R
