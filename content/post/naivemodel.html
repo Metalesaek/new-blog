@@ -6,8 +6,8 @@ summary: '**Naive bayes** model based on a strong assumption that the features a
 output:
   blogdown::html_page:
     toc: true
-    toc_depth: 1
     fig_width: 6
+    dev: "svg"
 tags:
 - naive bayes
 categories: R
@@ -15,6 +15,17 @@ categories: R
 
 <script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
 
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#data-preparation">Data preparation</a></li>
+<li><a href="#data-partition">Data partition</a></li>
+<li><a href="#train-the-model">train the model</a></li>
+<li><a href="#evaluate-the-model">Evaluate the model</a></li>
+<li><a href="#fine-tune-the-model">Fine tune the model:</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul>
+</div>
 
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
@@ -188,20 +199,20 @@ glimpse(mydata)</code></pre>
 <p>Let’s plot the relationships between the target variabl and the other features.</p>
 <pre class="r"><code>ggplot(mydata,aes(sex,target,color=target))+
   geom_jitter()</code></pre>
-<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-6-1.png" width="576" /></p>
+<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-6-1.svg" width="576" /></p>
 <p>If we look only at the red points (healthy patients) we can wrongly interpret that females are less healthy than males. This is because we do not take into account that we have imbalanced number of each sex level (96 females , 207 males). in contrast, if we look only at females we can say that a particular female are more likely to have the disease than not.</p>
 <pre class="r"><code>ggplot(mydata,aes(cp,fill= target))+
   geom_bar(stat = &quot;count&quot;,position = &quot;dodge&quot;)</code></pre>
-<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-7-1.png" width="576" /></p>
+<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-7-1.svg" width="576" /></p>
 <p>From this plot we can conclude that if the patient does not have any chest pain he/she will be highly unlikely to get the disease, otherwise for any chest type the patient will be more likely to be pathologique by this disease. we can expect therfore that this predictor will have a significant importance on the training model.</p>
 <pre class="r"><code>ggplot(mydata, aes(age,fill=target))+
   geom_density(alpha=.5)</code></pre>
-<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-8-1.png" width="576" /></p>
+<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-8-1.svg" width="576" /></p>
 <p>Even there exist a large amount of overlapping between the two densities which may violate the independence assumption, it still exist some difference since these are drawn from the sample not the from the true distributions. However, we do not care much about it since we will evaluate the resulted model by using the testing set.<br />
 we can also check this assumption with the corralation matrix.</p>
 <pre class="r"><code>library(psych)
 pairs.panels(mydata[,-11])</code></pre>
-<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-9-1.png" width="576" /></p>
+<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-9-1.svg" width="576" /></p>
 <p>AS we see all the correlations are less than 50% so we can go ahead and train our model.</p>
 </div>
 <div id="data-partition" class="section level2">
@@ -297,7 +308,7 @@ modelnv</code></pre>
 ## [1] &quot;naive_bayes&quot;</code></pre>
 <p>we can visualize the above reults with the fuction plot that provides us by plot the distribution of each features, densities for numeric features and bars for factors. .</p>
 <pre class="r"><code>plot(modelnv)</code></pre>
-<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-1.png" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-2.png" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-3.png" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-4.png" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-5.png" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-6.png" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-7.png" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-8.png" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-9.png" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-10.png" width="576" /></p>
+<p><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-1.svg" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-2.svg" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-3.svg" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-4.svg" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-5.svg" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-6.svg" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-7.svg" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-8.svg" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-9.svg" width="576" /><img src="/post/naivemodel_files/figure-html/unnamed-chunk-13-10.svg" width="576" /></p>
 </div>
 <div id="evaluate-the-model" class="section level2">
 <h2>Evaluate the model</h2>
