@@ -3,6 +3,11 @@ title: "knn model"
 author: "Metales Abdelkader"
 date: '2019-12-16'
 summary: 'In this paper we will explore the **k nearest neighbors** model using two data sets, the first is **Tiatanic** data to which we will fit this model for  classification, and the second data is **BostonHousing** data (from **mlbench** package) that will be used to fit a regression model...'
+output:
+  blogdown::html_page:
+    toc: true
+    fig_width: 6
+    dev: "svg"
 tags:
 - knn
 - Titanic data
@@ -12,6 +17,18 @@ categories: R
 
 <script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
 
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#classification">Classification</a></li>
+<li><a href="#data-partition">Data partition</a></li>
+<li><a href="#train-the-model">Train the model</a></li>
+<li><a href="#prediction-and-confusion-matrix">Prediction and confusion matrix</a></li>
+<li><a href="#fine-tuning-the-model">Fine tuning the model</a></li>
+<li><a href="#comparison-between-knn-and-svm-model">Comparison between knn and svm model</a></li>
+<li><a href="#regression">Regression</a></li>
+</ul>
+</div>
 
 <div id="introduction" class="section level3">
 <h3>Introduction</h3>
@@ -31,7 +48,7 @@ plot(train$Age[10:40],pch=16,train$Fare[10:40],
 points(x=32,y=20,col=&quot;blue&quot;,pch=8)
 draw.circle(x=32,y=20,nv=1000,radius = 5.5,lty=2)
 draw.circle(x=32,y=20,nv=1000,radius = 10)</code></pre>
-<p><img src="/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-2-1.png" width="672" /></p>
+<p><img src="/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-2-1.svg" width="576" /></p>
 <p>The last things we should do before training the model is converting the factors to be numerics and standardizing all the predictors for both sets (train and test), and finally we rename the target variable levels</p>
 <pre class="r"><code>train1 &lt;- train %&gt;% mutate_at(c(2,3,8),funs(as.numeric))
 test1 &lt;- test %&gt;% mutate_at(c(2,3,8),funs(as.numeric))
@@ -99,7 +116,7 @@ modelknn</code></pre>
 ## The final value used for the model was k = 17.</code></pre>
 <p>The metric used to get the best parameter value is the <strong>accuracy</strong> rate , for which the best value is about 81.47% obtained at k=17. we can also get these values from the plot</p>
 <pre class="r"><code>plot(modelknn)</code></pre>
-<p><img src="/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-5-1.png" width="672" /></p>
+<p><img src="/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-5-1.svg" width="576" /></p>
 <p>For the contributions of the predictors, the measure of importance scaled from 0 to 100 shows that the most important one is far the <strong>Sex</strong>, followed by <strong>Fare</strong> and <strong>Pclass</strong> , and the least important one is <strong>SibSp</strong></p>
 <pre class="r"><code>varImp(modelknn)</code></pre>
 <pre><code>## ROC curve variable importance
@@ -329,7 +346,7 @@ summary(comp)</code></pre>
 ## knn 0.5865385 0.6741573 0.6989247 0.7055821 0.7252747 0.8191489    0</code></pre>
 <p>we can also plot the models’ matric values togather.</p>
 <pre class="r"><code>dotplot(comp,metric=&quot;ROC&quot;)</code></pre>
-<p><img src="/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-13-1.png" width="672" /></p>
+<p><img src="/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-13-1.svg" width="576" /></p>
 </div>
 <div id="regression" class="section level2">
 <h2>Regression</h2>
@@ -445,7 +462,7 @@ modelknnR</code></pre>
 <p>The best model with k=7 for which the minimum RMSE is about 4.3757.</p>
 <p>We can also get the importance of the predictors.</p>
 <pre class="r"><code>plot(varImp(modelknnR))</code></pre>
-<p><img src="/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-17-1.png" width="672" /></p>
+<p><img src="/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-17-1.svg" width="576" /></p>
 <p>Then we get the prediction and the root mean squared error <strong>RMSE</strong> as follows.</p>
 <pre class="r"><code>pred&lt;-predict(modelknnR,testscaled)
 head(pred)</code></pre>
@@ -458,5 +475,5 @@ Finally we can plot the predictted values vs the observed values to get insight 
   geom_point(col=&quot;blue&quot;)+
   geom_abline(col=&quot;red&quot;)+
   ggtitle(&quot;actual values vs predicted values&quot;)</code></pre>
-<p><img src="/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
+<p><img src="/post/2015-07-23-r-rmarkdown_files/figure-html/unnamed-chunk-19-1.svg" width="576" /></p>
 </div>
