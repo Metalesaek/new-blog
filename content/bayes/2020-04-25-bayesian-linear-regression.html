@@ -1,0 +1,267 @@
+---
+title: Bayesian linear regression
+author: Metales Abdelkader
+date: '2020-04-25'
+slug: bayesian-linear-regression
+categories: []
+tags:
+  - naive bayes
+  - MCMC
+subtitle: ''
+summary: 'For statistical inferences we have tow general approaches or frameworks...'
+output:
+  blogdown::html_page:
+    toc: true
+    fig_width: 6
+    dev: "svg"
+authors: []
+lastmod: ''
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#data-preparation">Data preparation</a></li>
+<li><a href="#classical-linear-regression-model">Classical linear regression model</a></li>
+<li><a href="#bayesian-regression">Bayesian regression</a></li>
+<li><a href="#bayesian-inferences">Bayesian inferences</a></li>
+<li><a href="#pd-and-p-value">PD and P-value</a></li>
+</ul>
+</div>
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>For statistical inferences we have tow general approaches or frameworks:</p>
+<ul>
+<li><p><strong>Frequentist</strong> approach in which the data sampled from the population is considered as random and the population parameter values, known as null hypothesis, as fixed (but unknown). To estimate thus this null hypothesis we look for the sample parameters that maximize the likelihood of the data. However, the data at hand, even it is sampled randomly from the population, it is fixed now, so how can we consider this data as random. The answer is that we assume that the population distribution is known and we work out the maximum likelihood of the data using this distribution. Or we repeat the study many times with different samples then we average the results. So if we get very small value for the likelihood of the data which is known as <strong>p-value</strong> we tend to reject the null hypothesis.
+The main problem, however, is the misunderstanding and misusing of this p-value when we decide to reject the null hypothesis based on some threshold, from which we wrongly interpreting it as the probability of rejecting the null hypothesis. For more detail about p-value click <a href="http://www.statlit.org/pdf/2016-Neath-ASA.pdf">here</a>.</p></li>
+<li><p><strong>Bayesian</strong> approach, in contrast, provides true probabilities to quantify the uncertainty about a certain hypothesis, but requires the use of a first belief about how likely this hypothesis is true, known as <strong>prior</strong>, to be able to derive the probability of this hypothesis after seeing the data known as <strong>posterior probability</strong>. This approach called bayesian because it is based on the <a href="https://www.probabilisticworld.com/what-is-bayes-theorem/">bayes’ theorem</a>, for instance if a have population parameter to estimate <span class="math inline">\(\theta\)</span> , and we have some data sampled randomly from this population <span class="math inline">\(D\)</span>, the posterior probability thus will be <span class="math display">\[\overbrace{p(\theta/D)}^{Posterior}=\frac{\overbrace{p(D/\theta)}^{Likelihood}.\overbrace{p(\theta)}^{Prior}}{\underbrace{p(D)}_{Evidence}}\]</span>
+The <strong>Evidence</strong> is the probability of the data at hand regardless the parameter <span class="math inline">\(\theta\)</span>.</p></li>
+</ul>
+</div>
+<div id="data-preparation" class="section level2">
+<h2>Data preparation</h2>
+<p>For simplicity we use the <strong>BostonHousing</strong> data from <strong>mlbench</strong> package, For more detail about this data run this command <code>?BostonHousing</code> after calling the package. But first Let’s call all the packages that we need throughout this article.</p>
+<pre class="r"><code>suppressPackageStartupMessages(library(mlbench))
+suppressPackageStartupMessages(library(rstanarm))
+suppressPackageStartupMessages(library(bayestestR))
+suppressPackageStartupMessages(library(bayesplot))
+suppressPackageStartupMessages(library(insight))
+suppressPackageStartupMessages(library(broom))</code></pre>
+<pre class="r"><code>data(&quot;BostonHousing&quot;)
+str(BostonHousing)</code></pre>
+<pre><code>## &#39;data.frame&#39;:    506 obs. of  14 variables:
+##  $ crim   : num  0.00632 0.02731 0.02729 0.03237 0.06905 ...
+##  $ zn     : num  18 0 0 0 0 0 12.5 12.5 12.5 12.5 ...
+##  $ indus  : num  2.31 7.07 7.07 2.18 2.18 2.18 7.87 7.87 7.87 7.87 ...
+##  $ chas   : Factor w/ 2 levels &quot;0&quot;,&quot;1&quot;: 1 1 1 1 1 1 1 1 1 1 ...
+##  $ nox    : num  0.538 0.469 0.469 0.458 0.458 0.458 0.524 0.524 0.524 0.524 ...
+##  $ rm     : num  6.58 6.42 7.18 7 7.15 ...
+##  $ age    : num  65.2 78.9 61.1 45.8 54.2 58.7 66.6 96.1 100 85.9 ...
+##  $ dis    : num  4.09 4.97 4.97 6.06 6.06 ...
+##  $ rad    : num  1 2 2 3 3 3 5 5 5 5 ...
+##  $ tax    : num  296 242 242 222 222 222 311 311 311 311 ...
+##  $ ptratio: num  15.3 17.8 17.8 18.7 18.7 18.7 15.2 15.2 15.2 15.2 ...
+##  $ b      : num  397 397 393 395 397 ...
+##  $ lstat  : num  4.98 9.14 4.03 2.94 5.33 ...
+##  $ medv   : num  24 21.6 34.7 33.4 36.2 28.7 22.9 27.1 16.5 18.9 ...</code></pre>
+<p>To well understand how the bayesian regression works we keep only three features, two numeric variables <strong>age</strong>, <strong>dis</strong> and one categorical <strong>chas</strong>, with the target variable <strong>medv</strong> the median value of owner-occupied homes.</p>
+<pre class="r"><code>bost &lt;- BostonHousing[,c(&quot;medv&quot;,&quot;age&quot;,&quot;dis&quot;,&quot;chas&quot;)]
+summary(bost)</code></pre>
+<pre><code>##       medv            age              dis         chas   
+##  Min.   : 5.00   Min.   :  2.90   Min.   : 1.130   0:471  
+##  1st Qu.:17.02   1st Qu.: 45.02   1st Qu.: 2.100   1: 35  
+##  Median :21.20   Median : 77.50   Median : 3.207          
+##  Mean   :22.53   Mean   : 68.57   Mean   : 3.795          
+##  3rd Qu.:25.00   3rd Qu.: 94.08   3rd Qu.: 5.188          
+##  Max.   :50.00   Max.   :100.00   Max.   :12.127</code></pre>
+<p>From the summary we do not have any special issues like missing values for example.</p>
+</div>
+<div id="classical-linear-regression-model" class="section level2">
+<h2>Classical linear regression model</h2>
+<p>To highlight the difference between the bayesian regression and the traditional linear regression (frequentist approach), Let’s first fit the latter to our data.</p>
+<pre class="r"><code>model_freq&lt;-lm(medv~., data=bost)
+tidy(model_freq)</code></pre>
+<pre><code>## # A tibble: 4 x 5
+##   term        estimate std.error statistic  p.value
+##   &lt;chr&gt;          &lt;dbl&gt;     &lt;dbl&gt;     &lt;dbl&gt;    &lt;dbl&gt;
+## 1 (Intercept)   32.7      2.25      14.6   2.33e-40
+## 2 age           -0.143    0.0198    -7.21  2.09e-12
+## 3 dis           -0.246    0.265     -0.928 3.54e- 1
+## 4 chas1          7.51     1.46       5.13  4.16e- 7</code></pre>
+<p>Using the p.value of each regressor, all the regressors ar significant. except for the <strong>dis</strong> variable. Since the variable <strong>chas</strong> is categorical with twolevels The coefficient of <strong>chas1</strong> is the different between the madian price of houses on the bounds charles River and that of the others, so the median price of the former are higher about 7.513.</p>
+</div>
+<div id="bayesian-regression" class="section level2">
+<h2>Bayesian regression</h2>
+<p>To fit a bayesian regresion we use the function <code>stan_glm</code> from the <a href="https://cran.r-project.org/web/packages/rstanarm/rstanarm.pdf">rstanarm</a> package. This function as the above <strong>lm</strong> function requires providing the <strong>formula</strong> and the data that will be used, and leave all the following arguments with their default values:</p>
+<ul>
+<li><strong>family</strong> : by default this function uses the <strong>gaussian</strong> distribution as we do with the classical <code>glm</code> function to perform <code>lm</code> model.</li>
+<li><strong>prior</strong> : The prior distribution for the regression coefficients, By default the normal prior is used. There are subset of functions used for the prior provided by rstanarm like , <strong>student t family</strong>, <strong>laplace family</strong>…ect. To get the full list with all the details run this command <code>?priors</code>. If we want a flat uniform prior we set this to <strong>NULL</strong>.</li>
+<li><strong>prior_intercept</strong>: prior for the intercept, can be normal, student_t , or cauchy. If we want a flat uniform prior we set this to <strong>NULL</strong>.</li>
+<li><strong>prior_aux</strong>: prior fo auxiliary parameters such as the error standard deviation for the gaussion family.</li>
+<li><strong>algorithm</strong>: The estimating approach to use. The default is "sampling MCMC<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>.</li>
+<li><strong>QR</strong>: FALSE by default, if true QR decomposition applied on the design matrix if we have large number of predictors.</li>
+<li><strong>iter</strong> : is the number of iterations if the MCMC method is used, the default is 2000.</li>
+<li><strong>chains</strong> : the number of Markov chains, the default is 4.</li>
+<li><strong>warmup</strong> : also known as burnin, the number of iterations used for adaptation, and should not be used for inference. By default it is half of the iterations.</li>
+</ul>
+<pre class="r"><code>model_bayes&lt;- stan_glm(medv~., data=bost, seed=111)</code></pre>
+<p>if we print the model we get the following</p>
+<pre class="r"><code>print(model_bayes, digits = 3)</code></pre>
+<pre><code>## stan_glm
+##  family:       gaussian [identity]
+##  formula:      medv ~ .
+##  observations: 506
+##  predictors:   4
+## ------
+##             Median MAD_SD
+## (Intercept) 32.656  2.221
+## age         -0.143  0.020
+## dis         -0.244  0.268
+## chas1        7.496  1.428
+## 
+## Auxiliary parameter(s):
+##       Median MAD_SD
+## sigma 8.319  0.261 
+## 
+## ------
+## * For help interpreting the printed output see ?print.stanreg
+## * For info on the priors used see ?prior_summary.stanreg</code></pre>
+<p>The <strong>Median</strong> estimate is the median computed from the MCMC simulation, and <strong>MAD_SD</strong> is the median absolute deviation computed from the same simulation. To well understand how getting these outputs let’s plot the MCMC simulation of each predictor using <a href="https://cran.r-project.org/web/packages/bayesplot/bayesplot.pdf">bayesplot</a></p>
+<pre class="r"><code>mcmc_dens(model_bayes, pars = c(&quot;age&quot;))+
+  vline_at(-0.143, col=&quot;red&quot;)</code></pre>
+<p><img src="/bayes/2020-04-25-bayesian-linear-regression_files/figure-html/unnamed-chunk-7-1.svg" width="576" /></p>
+<p>As you see the point estimate of <strong>age</strong> falls on the median of this distribution (red line). The same thing is true for <strong>dis</strong> and <strong>shas</strong> predictors.</p>
+<pre class="r"><code>mcmc_dens(model_bayes, pars=c(&quot;chas1&quot;))+
+  vline_at(7.496, col=&quot;red&quot;)</code></pre>
+<p><img src="/bayes/2020-04-25-bayesian-linear-regression_files/figure-html/unnamed-chunk-8-1.svg" width="576" /></p>
+<pre class="r"><code>mcmc_dens(model_bayes, pars=c(&quot;dis&quot;))+
+  vline_at(-0.244, col=&quot;red&quot;)</code></pre>
+<p><img src="/bayes/2020-04-25-bayesian-linear-regression_files/figure-html/unnamed-chunk-9-1.svg" width="576" /></p>
+<p>Now how can we evaluate the model parameters? The answer is by analyzing the posteriors using some specific statistics. To get the full statistics provided by <a href="https://cran.r-project.org/web/packages/bayestestR/bayestestR.pdf">bayestestR</a> package, we make use of the function <code>describe_posterior</code>.</p>
+<pre class="r"><code>describe_posterior(model_bayes)</code></pre>
+<pre><code>## Possible multicollinearity between dis and age (r = 0.75). This might lead to inappropriate results. See &#39;Details&#39; in &#39;?rope&#39;.</code></pre>
+<pre><code>## # Description of Posterior Distributions
+## 
+## Parameter   | Median | CI | CI_low | CI_high |    pd | ROPE_CI | ROPE_low | ROPE_high | ROPE_Percentage |  Rhat |  ESS
+## ----------------------------------------------------------------------------------------------------------------------
+## (Intercept) | 32.656 | 89 | 29.244 |  36.332 | 1.000 |      89 |   -0.920 |     0.920 |               0 | 1.000 | 2315
+## age         | -0.143 | 89 | -0.175 |  -0.112 | 1.000 |      89 |   -0.920 |     0.920 |               1 | 1.000 | 2417
+## dis         | -0.244 | 89 | -0.662 |   0.168 | 0.824 |      89 |   -0.920 |     0.920 |               1 | 1.000 | 2452
+## chas1       |  7.496 | 89 |  5.348 |   9.944 | 1.000 |      89 |   -0.920 |     0.920 |               0 | 1.000 | 3752</code></pre>
+<p>Before starting analyzing the table we shoud first understanding the above various statistics commonly used in bayes regression.</p>
+<ul>
+<li><strong>CI</strong> : <a href="https://freakonometrics.hypotheses.org/18117">Credible Interval</a>, it is used to quantify the uncertainty about the regression coefficients. Ther are tow methods to compute <strong>CI</strong>, the <a href="https://www.sciencedirect.com/topics/mathematics/highest-density-interval">highest density interval</a> <code>HDI</code> which is the default, and the <a href="https://www.sciencedirect.com/topics/mathematics/credible-interval">Equal-tailed Interval</a> <code>ETI</code>. with 89% probability (given the data) that a coefficient lies above the <strong>CI_low</strong> value and under <strong>CI_high</strong> value. This strightforward probabilistic interpretation is completely diffrent from the confidence interval used in classical linear regression where the coefficient fall inside this confidence interval (if we choose 95% of confidence) 95 times if we repeat the study 100 times.<br />
+</li>
+<li><strong>pd</strong> : <a href="https://www.r-bloggers.com/the-p-direction-a-bayesian-equivalent-of-the-p-value/">Probability of Direction</a> , which is the probability that the effect goes to the positive or to the negative direction, and it is considered as the best equivalent for the p-value.</li>
+<li><strong>ROPE_CI</strong>: <a href="https://cran.r-project.org/web/packages/bayestestR/vignettes/region_of_practical_equivalence.html">Region of Practical Equivalence</a>, since bayes method deals with true probabilities , it does not make sense to compute the probability of getting the effect equals zero (the null hypothesis) as a point (probability of a point in continuous intervals equal zero ). Thus, we define instead a small range around zero which can be considered practically the same as no effect (zero), this range therefore is called <strong>ROPE</strong>. By default (according to Cohen, 1988) The Rope is [-0.1,0.1] from the standardized coefficients.</li>
+<li><strong>Rhat</strong>: <a href="https://arxiv.org/pdf/1903.08008.pdf">scale reduction factor <span class="math inline">\(\hat R\)</span></a>, it is computed for each scalar quantity of interest, as the standard deviation of that quantity from all the chains included together, divided by the root mean square of the separate within-chain standard deviations. When this value is close to 1 we do not have any convergence problem with MCMC.</li>
+<li><strong>ESS</strong> : <a href="https://arxiv.org/pdf/1903.08008.pdf">effective sample size</a>, it captures how many independent draws contain the same amount of information as the dependent sample obtained by the MCMC algorithm, the higher the ESS the better. The threshold used in practice is 400.</li>
+</ul>
+<p>Aternatively, we can get the coefficeient estimates (which are the medians by default) separatly by using the package <strong>insight</strong></p>
+<pre class="r"><code>post &lt;- get_parameters(model_bayes)
+print(purrr::map_dbl(post,median),digits = 3)</code></pre>
+<pre><code>## (Intercept)         age         dis       chas1 
+##      32.656      -0.143      -0.244       7.496</code></pre>
+<p>We can also compute the Maximum A posteriori (MAP), and the mean as follows</p>
+<pre class="r"><code>print(purrr::map_dbl(post, map_estimate),digits = 3)</code></pre>
+<pre><code>## (Intercept)         age         dis       chas1 
+##      32.273      -0.143      -0.255       7.192</code></pre>
+<pre class="r"><code>print(purrr::map_dbl(post, mean),digits = 3)</code></pre>
+<pre><code>## (Intercept)         age         dis       chas1 
+##      32.734      -0.143      -0.244       7.506</code></pre>
+<p>As we see the values are closer to each other due to the like normality of the distribution of the posteriors where all the central statistics (mean, median, mode) are closer to each other.
+Using the following plot to visualize the age coefficient using different statistics as follows</p>
+<pre class="r"><code>mcmc_dens(model_bayes, pars=c(&quot;age&quot;))+
+  vline_at(median(post$age), col=&quot;red&quot;)+
+  vline_at(mean(post$age), col=&quot;yellow&quot;)+
+  vline_at(map_estimate(post$age), col=&quot;green&quot;)</code></pre>
+<p><img src="/bayes/2020-04-25-bayesian-linear-regression_files/figure-html/unnamed-chunk-13-1.svg" width="576" /></p>
+<p>As expected they are approximately on top of each other.</p>
+</div>
+<div id="bayesian-inferences" class="section level2">
+<h2>Bayesian inferences</h2>
+<p>As we do with classical regression (frequentist), we can test the significance of the bayesian regression coefficients by checking whether the corresponding credible interval contains zero or not, if no then this coefficient is significant. Let’s go back to our model and check the significance of each coefficient (using credible based on the default <code>hdi</code>).</p>
+<pre class="r"><code>hdi(model_bayes)</code></pre>
+<pre><code>## # Highest Density Interval
+## 
+## Parameter   |        89% HDI
+## ----------------------------
+## (Intercept) | [29.24, 36.33]
+## age         | [-0.17, -0.11]
+## dis         | [-0.66,  0.17]
+## chas1       | [ 5.35,  9.94]</code></pre>
+<p>And based on the <code>eti</code></p>
+<pre class="r"><code>eti(model_bayes)</code></pre>
+<pre><code>## # Equal-Tailed Interval
+## 
+## Parameter   |        89% ETI
+## ----------------------------
+## (Intercept) | [29.21, 36.32]
+## age         | [-0.17, -0.11]
+## dis         | [-0.66,  0.17]
+## chas1       | [ 5.17,  9.79]</code></pre>
+<p>Using both methods, the only non significant coefficient is <strong>dis</strong> variable, which is inline with the classical regression.</p>
+<p><strong>Note</strong>: this similar result between frequentist and bayesian regression may due to the normality assumption for the former that is well satisfied which gives satisfied results and due to the normal prior used in the latter. However, in real world it is less often to be sure about the normality assumption which may give contradict conclusions between the two approaches.</p>
+<p>Another way to test the significance by checking the part of the credible interval that falls inside the ROPE interval. we can get this by calling the <code>rope</code> from <strong>bayestestR</strong> package</p>
+<pre class="r"><code>rope(post$age)</code></pre>
+<pre><code>## # Proportion of samples inside the ROPE [-0.10, 0.10]:
+## 
+## inside ROPE
+## -----------
+## 0.00 %</code></pre>
+<p>For age almost all the credible interval (HDI) is outside the ROPE range, which means that coefficient is highly significant.</p>
+<pre class="r"><code>rope(post$chas1)</code></pre>
+<pre><code>## # Proportion of samples inside the ROPE [-0.10, 0.10]:
+## 
+## inside ROPE
+## -----------
+## 0.00 %</code></pre>
+<pre class="r"><code>rope(post$`(Intercept)`)</code></pre>
+<pre><code>## # Proportion of samples inside the ROPE [-0.10, 0.10]:
+## 
+## inside ROPE
+## -----------
+## 0.00 %</code></pre>
+<p>The same thing is true for the <strong>chas</strong> and <strong>intercept</strong> variable.</p>
+<pre class="r"><code>rope(post$dis)</code></pre>
+<pre><code>## # Proportion of samples inside the ROPE [-0.10, 0.10]:
+## 
+## inside ROPE
+## -----------
+## 23.28 %</code></pre>
+<p>In contrast, almost the quarter of the credible interval of <strong>dis</strong> variable is inside the ROPE interval. In other words, the probability of this coefficient to be zero is 23.28%.</p>
+<pre class="r"><code>rope_range(model_bayes)</code></pre>
+<pre><code>## [1] -0.9197104  0.9197104</code></pre>
+</div>
+<div id="pd-and-p-value" class="section level2">
+<h2>PD and P-value</h2>
+<p>Sometimes we are only interested to check the direction of the coefficient (positive or negative). this is the role of <strong>pd</strong> statistic in the above table, high value means that the associated effect is concentrated on the same side as the median. For our model, since pd’s equal to 1, almost all the posteriors of the two variables <strong>age</strong> and <strong>chas1</strong> and the intercept are on the same side (if median negative all other values are negatives). However, it should be noted that this statistic does not assess the significance of the effect.
+Something more important to mention is that it exists a strong relation between this probability and the p-value approximated as follows: <span class="math inline">\(p-value=1-pd\)</span>. let’s check this with our variables.</p>
+<pre class="r"><code>df1 &lt;-dplyr::select(tidy(model_freq), c(term,p.value))
+df1$p.value &lt;- round(df1$p.value, digits = 3)
+df2 &lt;- 1- purrr::map_dbl(post, p_direction)
+df &lt;- cbind(df1,df2)
+df</code></pre>
+<pre><code>##                    term p.value   df2
+## (Intercept) (Intercept)   0.000 0.000
+## age                 age   0.000 0.000
+## dis                 dis   0.354 0.176
+## chas1             chas1   0.000 0.000</code></pre>
+<p>## Conclusion</p>
+<p>within the last decade more practitioner , specially in some fields such as medicine and psychology, are turning towards bayesian analysis since almost every thing can be interpreted straightforwardly with a probabilistic manner. However, the bayesian analysis has also some drawback , like the subjective way to define the priors (which play an important role to compute the posterior), or for problems that do not have conjugate prior, not always the mcmc alghoritm converges easily to the right values (specially with complex data).</p>
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>Kevin P.murphy, Machine Learning: A Probabilistic Perspective, 2012, page 589<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+</ol>
+</div>
