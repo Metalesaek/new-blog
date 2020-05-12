@@ -1,0 +1,450 @@
+---
+title: Methods for dealing with imbalanced data
+author: Metales Abdelkader
+date: '2019-04-10'
+slug: methods-to-deal-with-imbalanced-data
+categories: []
+tags:
+  - imbalanced
+subtitle: ''
+summary: ''
+output:
+  blogdown::html_page:
+    toc: true
+    fig_width: 6
+    dev: "svg"
+authors: []
+lastmod: '2020-05-11T22:53:32+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, tidy = TRUE, tidy.opts = list(comment = FALSE))
+spsm <- suppressPackageStartupMessages
+```
+
+
+
+## Introduction
+
+the imbalanced data is the common feature of some type of data such as fraudulent credit card where the number of fraudulent cards is usually very small compared to the number of non fraudulent cards. The problem with imbalanced data is that the model being trained would be dominated by the majority class such as **knn** and **svm** models, and hence they would predict the majority class more effectively than the minority class which in turn would result in high value for sensitivity rate and low value for specificity rate (in binary classification).
+
+The simple technique to reduce the negative impact of this problem is by subsampling the data. the common subsampling methods used in practice are the following.
+
+* **Upsampling**: this method increases the size of the minority class by sampling with replacement so that the classes will have the same size.
+
+* **Downsampling**: in contrast to the above method, this one decreases the size of the majority class to be the same or closer to the minority class size by just taking out a random sample.
+
+* **Hybrid methods** :  The well known hybrid methods are **ROSE** (Random oversampling examples), and **SMOTE** (Synthetic minority oversampling technique), they downsample the majority class, and creat new artificial points in the minority class. For more detail about **SMOTE** method click [here](https://journals.sagepub.com/doi/full/10.1177/0272989X14560647), and for **ROSE** click [here](https://www.rdocumentation.org/packages/ROSE/versions/0.0-3/topics/ROSE
+).
+
+**Note**: all the above methods should be applied only on the training set , the testing set must be never touched until the final model evaluation step.   
+
+Some type of models can handle imbalanced data such as **deep learning** model with the argument  **class_weight** wich adds more weights to the minority class cases. Other models, however, such as **svm** or **knn** we have to make use of one of the above methods before training these type of models.
+
+In this article we will make use of the **creditcard** data from kaggle website -click [here](https://www.kaggle.com/arvindratan/creditcard#creditcard.csv) to upload this data, which is highly imbalanced- and we will train a **logistic regression** model on the raw data and on the transformed data after applying the above methods and comparing the results. Also, we will use a simple deep learning model with and without taking into account the imbalanced problem.    
+
+First we call the data. 
+
+```{r, message=FALSE}
+spsm(library(tidyverse))
+data<-read.csv("../sparklyr/creditcard.csv",header=TRUE)
+```
+
+
+For privacy purposes the original features are replaced by the PCA variables from v1 to v28 and only **Time** and **Amount** features that are left from the original features. 
+
+Let's first check **Class** variable levels frequency (after having been converted to a factor type).
+
+```{r}
+data$Class<-as.factor(data$Class)
+prop.table(table(data$Class))
+```
+
+
+As we see the minority class number "1" is only about 0.17% of the total cases.
+We also need to show the summary of the data to take an overall look at all the features to be aware of missing values or unusual outliers.
+
+```{r}
+summary(data)
+```
+
+looking at this summary, we do not have any critical issues like missing values for instance.
+
+## Data partition
+
+Before applying any subsampling method we split the data first between the training set and the testing set and we use only the former to be subsampled.
+
+
+```{r, message=FALSE}
+spsm(library(caret))
+set.seed(1234)
+index<-createDataPartition(data$Class,p=0.8,list=FALSE)
+train<-data[index,]
+test<-data[-index,]
+```
+
+
+## Subsampling the training data
+
+
+### **Upsampling** : 
+
+The **caret** package provides a function called **upSample** to perform upsampling technique.
+
+```{r}
+set.seed(111)
+
+trainup<-upSample(x=train[,-ncol(train)],
+                  y=train$Class)
+
+table(trainup$Class)
+```
+
+
+As we see the two classes now have the same size **227452**
+
+### **downsampling**: 
+
+By the some way we make use of the caret function **downSample**
+
+
+```{r}
+set.seed(111)
+traindown<-downSample(x=train[,-ncol(train)],
+                  y=train$Class)
+
+table(traindown$Class)
+```
+
+now the size of each class is **394**
+
+
+### **ROSE**: 
+
+To use this technique we have to call the **ROSE** package
+
+```{r}
+spsm(library(ROSE))
+set.seed(111)
+
+trainrose<-ROSE(Class~.,data=train)$data
+
+table(trainrose$Class)
+```
+
+since this technique add new synthetic data points to the minority class and daownsamples the majority class the size now is about **114019** for minority class and **113827** for the majority class.
+
+### **SMOTE**: 
+
+this technique requires the **DMwR** package.
+
+
+```{r}
+spsm(library(DMwR))
+set.seed(111)
+
+trainsmote <- SMOTE(Class~.,data = train)
+
+table(trainsmote$Class)
+```
+
+The size of the majority class is **113827** and for the minority class is **114019** .
+
+
+## training logistic regression model.
+
+we are now ready to fit logit model to the original training set without subsampling, and to each of the above subsampled training sets.
+
+### without subsampling
+
+
+```{r}
+set.seed(123)
+model <- glm(Class~., data=train, family = "binomial")
+                
+summary(model)
+```
+
+At this step and to make things more simpler, we remove the insignificant variables (without asterix) and we keep the remaining ones to use in all the following models. 
+
+```{r}
+set.seed(123)
+model1 <- glm(Class~.-Time-V2-V3-V6-V7-V9-V11-V12-V15-V16-V17-V18-V19-V24-V25-V26, data=train, family = "binomial")
+                
+summary(model1)
+```
+
+We have now two predictors that are non significant  **V1** and **Amount**, they should be also removed.
+
+
+```{r}
+set.seed(123)
+finalmodel <- glm(Class~.-Time-V1-V2-V3-V6-V7-V9-V11-V12-V15-V16-V17-V18-V19-V24-V25-V26-Amount, data=train, family = "binomial")
+                
+summary(finalmodel)
+```
+
+For the other training sets we will use only these significant predictors from the above model.
+
+Now let's get the final results from the confusion matrix.
+
+
+```{r}
+pred <- predict(finalmodel,test, type="response")
+pred <- as.integer(pred>0.5)
+confusionMatrix(as.factor(pred),test$Class)
+
+```
+ 
+As we see we have a large accuracy rate about **99.92%**. However, this rate is almost the same as the  no information rate **99.83%** (if we predict all the cases as class label 0). In other words this high rate is not due to the quality of the model but rather due to the imbalanced classes.
+if we look at the specificity rate. it is about **58.16%** indicating that the model poorly predict the fraudulent cards which is the most important class label that we want to predict correctly.
+Among the available metrics, the best one for imbalanced data is [cohen's kappa](https://towardsdatascience.com/interpretation-of-kappa-values-2acd1ca7b18f) statistic. and according to the scale of kappa value interpretation suggested by Landis & Koch (1977), the kappa value obtained here **0.7033** is a good score.
+
+But here we stick with accuracy rate for pedagogic purposes to show the  effectiveness of the above discussed methods. 
+
+
+### Upsampling the train set 
+
+Now let's use the training data resulted from the upsmpling method. 
+
+```{r}
+set.seed(123)
+modelup <- glm(Class~V4+V5+V8+V10+V13+V14+V20+V21+V22+V23+V27+V28, data=trainup, family = "binomial")
+                
+summary(modelup)
+```
+
+
+
+
+```{r}
+pred <- predict(modelup,test, type="response")
+pred <- as.integer(pred>0.5)
+confusionMatrix(as.factor(pred),test$Class)
+
+```
+
+
+
+Now we have a smaller accuracy rate **97.29%**, but we have a larger  specificity rate **87.75%** which increases the power of the model to predict the fraudulent cards.
+
+
+### Down sampling the training set.
+
+
+
+```{r}
+set.seed(123)
+modeldown <- glm(Class~V4+V5+V8+V10+V13+V14+V20+V21+V22+V23+V27+V28, data=traindown, family = "binomial")
+pred <- predict(modeldown,test, type="response")
+pred <- as.integer(pred>0.5)
+confusionMatrix(as.factor(pred),test$Class)
+                
+```
+
+With downsampling method, we get  approximately the same specificity rate **87.75%** with a slight decrease of the over all accuracy rate **96.42%**, and the sensitivity rate has decreased to **96.43%** since we have decreased the majority class size by downsampling.
+
+### subsampline the train set by ROSE technique
+
+
+```{r}
+set.seed(123)
+modelrose <- glm(Class~V4+V5+V8+V10+V13+V14+V20+V21+V22+V23+V27+V28, data=trainrose, family = "binomial")
+pred <- predict(modelrose,test, type="response")
+pred <- as.integer(pred>0.5)
+confusionMatrix(as.factor(pred),test$Class)
+                
+```
+
+Using this method the sensitivity rate is slightly smaller than the previous ones **85.71%** but still a large improvement in predicting fraudulent cards compared to the model trained with the original imbalanced data.
+
+
+### Subsampling the train set by SMOTE technique
+
+
+```{r}
+set.seed(123)
+modelsmote <- glm(Class~V4+V5+V8+V10+V13+V14+V20+V21+V22+V23+V27+V28, data=trainsmote, family = "binomial")
+pred <- predict(modelsmote,test, type="response")
+pred <- as.integer(pred>0.5)
+confusionMatrix(as.factor(pred),test$Class)
+                
+```
+
+With this method we get the same specificity rate **85.71%** such as ROSE method.
+
+
+## deep learning model (without class weight).
+
+When we use deep learning models via some software we can assign a weight to the labels of the target variables. For us we will make use of [keras](https://keras.rstudio.com) package. We will first train the model without weighting the data , Then we retrain the same model after assigning weight to the minority class.   
+To train this model we should first convert the data (train and test sets) into numeric matrix and remove the column names (we convert also the **Class** to numeric type). However, in order to be inline with the above models we keep only their features, but this time it would be better to be normalized since this helps the gradient running more faster. 
+
+
+```{r}
+spsm(library(keras))
+train1 <-train[,c('V4','V5','V8','V10','V13','V14','V20','V21','V22','V23','V27','V28','Class')]
+test1 <-test[,c('V4','V5','V8','V10','V13','V14','V20','V21','V22','V23','V27','V28','Class')]
+train1$Class<-as.numeric(train1$Class)
+test1$Class<-as.numeric(test1$Class)
+train1[,'Class']<-train1[,'Class']-1
+test1[,'Class']<-test1[,'Class']-1
+trainx <- train1[,-ncol(train1)]
+testx <- test1[,-ncol(test1)]
+trained<-as.matrix(trainx)
+tested <- as.matrix(testx)
+trainy <- train1$Class
+testy <- test1$Class
+dimnames(trained)<-NULL
+dimnames(tested)<-NULL
+
+```
+
+then we apply one hot encoding on the target variable. 
+
+```{r}
+trainlabel<-to_categorical(trainy)
+testlabel<-to_categorical(testy)
+```
+
+The final step now is normalizing the matrices (trained and tested)
+
+```{r}
+trained1<-normalize(trained)
+tested1<-normalize(tested)
+```
+
+Now we are ready to create the model with two hidden layers followed by [dropout layers](https://keras.rstudio.com/reference/index.html#section-dropout-layers).
+
+
+```{r}
+modeldeep <- keras_model_sequential()
+
+modeldeep %>%
+    layer_dense(units=32, activation = "relu",
+              kernel_initializer = "he_normal",input_shape =c(12))%>%
+    layer_dropout(rate=0.2)%>%
+    layer_dense(units=64, activation = "relu",
+              kernel_initializer = "he_normal")%>%
+    layer_dropout(rate=0.4)%>%
+        layer_dense(units=2, activation = "sigmoid")
+
+summary(modeldeep)
+```
+
+we will use the **accuracy** rate as the metric. The loss function will be **binary crossentropy** since we deal with binary classification problem. and for the optimizer we will use [adam](https://arxiv.org/pdf/1412.6980v8.pdf) optimizer.
+  
+
+```{r}
+modeldeep %>%
+  compile(loss="binary_crossentropy",
+          optimizer="adam",
+          metric="accuracy")
+```
+
+
+During training, the model will use 10 epochs (the default), 5 sample as batch size to update the weights, and keep 20% of the inputs (training samples) out to assess the model    
+
+
+```{r}
+#history<- modeldeep %>%
+  #fit(trained1,trainlabel,batch_size=5, validation_split=0.2)
+  
+```
+
+You can run this model many times untill you get satisfied with the results, then it will be better to save it and load it again each time you need it as follows.
+
+```{r}
+#save_model_hdf5(modeldeep,"modeldeep.h5")
+modeldeep<-load_model_hdf5("modeldeep.h5")
+
+```
+
+
+All the above metric values are used in the training process, so they are not much reliable. The more reliable ones are those computed from unseen data.
+
+
+
+```{r}
+pred<-  modeldeep %>%
+  predict_classes(tested1)
+confusionMatrix(as.factor(pred),as.factor(testy))
+
+```
+
+The same as the above models, the specificity rate is even worst than the other models **0.3469** which is also caused  by the imbalanced data.
+ 
+
+### deep learning model with class weights
+
+Now let's try the previous model by taking into account the class imbalance
+
+
+```{r}
+modeldeep1 <- keras_model_sequential()
+
+modeldeep1 %>%
+    layer_dense(units=32, activation = "relu",
+              kernel_initializer = "he_normal",input_shape =c(12))%>%
+    layer_dropout(rate=0.2)%>%
+    layer_dense(units=64, activation = "relu",
+              kernel_initializer = "he_normal")%>%
+    layer_dropout(rate=0.4)%>%
+        layer_dense(units=2, activation = "sigmoid")
+
+modeldeep1 %>%
+  compile(loss="binary_crossentropy",
+          optimizer="adam",
+          metric="accuracy")
+
+```
+
+
+To define the appropriate weight, we divide the fraction of the majority class by the fraction of the minority class to get how many times the former is larger than the latter.
+
+
+```{r}
+prop.table(table(data$Class))[1]/prop.table(table(data$Class))[2]
+```
+
+Now we include this value as weight in the **class_weight** argument. 
+
+```{r}
+#history1<- modeldeep1 %>%
+  #fit(trained1,trainlabel,batch_size=5,  #validation_split=0.2,class_weight=list("0"=1,"1"=577))
+
+
+```
+
+Again i should save this model before kniting the document. For you if you want to run the above code just uncomment it.
+
+```{r}
+#save_model_hdf5(modeldeep1,"modeldeep1.h5")
+modeldeep1<-load_model_hdf5("modeldeep1.h5")
+
+```
+
+
+Now let's get the confusion matrix.
+
+
+```{r}
+pred<-  modeldeep1 %>%
+  predict_classes(tested1)
+confusionMatrix(as.factor(pred),as.factor(testy))
+
+```
+
+
+Using this model we get less accuracy rate **0.9724**, but the specificity rate is higher compared to the previous model so that this model can well predict the negative class label as well as the postive class label.
+
+## Conclusion
+
+With the imbalanced data most machine learning model tend to more  efficiently predict the majority class than the minority class. To correct thus this  behavior we can use one of the above discussed methods to get more closer accuracy rates between classes. However, deep learning model can easily handle this problem by specifying the class weights. 
+

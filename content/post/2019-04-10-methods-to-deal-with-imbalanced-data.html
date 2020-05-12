@@ -1,0 +1,739 @@
+---
+title: Methods for dealing with imbalanced data
+author: Metales Abdelkader
+date: '2019-04-10'
+slug: methods-to-deal-with-imbalanced-data
+categories: []
+tags:
+  - imbalanced
+subtitle: ''
+summary: ''
+output:
+  blogdown::html_page:
+    toc: true
+    fig_width: 6
+    dev: "svg"
+authors: []
+lastmod: '2020-05-11T22:53:32+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#data-partition">Data partition</a></li>
+<li><a href="#subsampling-the-training-data">Subsampling the training data</a>
+<ul>
+<li><a href="#upsampling"><strong>Upsampling</strong> :</a></li>
+<li><a href="#downsampling"><strong>downsampling</strong>:</a></li>
+<li><a href="#rose"><strong>ROSE</strong>:</a></li>
+<li><a href="#smote"><strong>SMOTE</strong>:</a></li>
+</ul></li>
+<li><a href="#training-logistic-regression-model.">training logistic regression model.</a>
+<ul>
+<li><a href="#without-subsampling">without subsampling</a></li>
+<li><a href="#upsampling-the-train-set">Upsampling the train set</a></li>
+<li><a href="#down-sampling-the-training-set.">Down sampling the training set.</a></li>
+<li><a href="#subsampline-the-train-set-by-rose-technique">subsampline the train set by ROSE technique</a></li>
+<li><a href="#subsampling-the-train-set-by-smote-technique">Subsampling the train set by SMOTE technique</a></li>
+</ul></li>
+<li><a href="#deep-learning-model-without-class-weight.">deep learning model (without class weight).</a>
+<ul>
+<li><a href="#deep-learning-model-with-class-weights">deep learning model with class weights</a></li>
+</ul></li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul>
+</div>
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>the imbalanced data is the common feature of some type of data such as fraudulent credit card where the number of fraudulent cards is usually very small compared to the number of non fraudulent cards. The problem with imbalanced data is that the model being trained would be dominated by the majority class such as <strong>knn</strong> and <strong>svm</strong> models, and hence they would predict the majority class more effectively than the minority class which in turn would result in high value for sensitivity rate and low value for specificity rate (in binary classification).</p>
+<p>The simple technique to reduce the negative impact of this problem is by subsampling the data. the common subsampling methods used in practice are the following.</p>
+<ul>
+<li><p><strong>Upsampling</strong>: this method increases the size of the minority class by sampling with replacement so that the classes will have the same size.</p></li>
+<li><p><strong>Downsampling</strong>: in contrast to the above method, this one decreases the size of the majority class to be the same or closer to the minority class size by just taking out a random sample.</p></li>
+<li><p><strong>Hybrid methods</strong> : The well known hybrid methods are <strong>ROSE</strong> (Random oversampling examples), and <strong>SMOTE</strong> (Synthetic minority oversampling technique), they downsample the majority class, and creat new artificial points in the minority class. For more detail about <strong>SMOTE</strong> method click <a href="https://journals.sagepub.com/doi/full/10.1177/0272989X14560647">here</a>, and for <strong>ROSE</strong> click <a href="https://www.rdocumentation.org/packages/ROSE/versions/0.0-3/topics/ROSE">here</a>.</p></li>
+</ul>
+<p><strong>Note</strong>: all the above methods should be applied only on the training set , the testing set must be never touched until the final model evaluation step.</p>
+<p>Some type of models can handle imbalanced data such as <strong>deep learning</strong> model with the argument <strong>class_weight</strong> wich adds more weights to the minority class cases. Other models, however, such as <strong>svm</strong> or <strong>knn</strong> we have to make use of one of the above methods before training these type of models.</p>
+<p>In this article we will make use of the <strong>creditcard</strong> data from kaggle website -click <a href="https://www.kaggle.com/arvindratan/creditcard#creditcard.csv">here</a> to upload this data, which is highly imbalanced- and we will train a <strong>logistic regression</strong> model on the raw data and on the transformed data after applying the above methods and comparing the results. Also, we will use a simple deep learning model with and without taking into account the imbalanced problem.</p>
+<p>First we call the data.</p>
+<pre class="r"><code>spsm(library(tidyverse))
+data&lt;-read.csv(&quot;../sparklyr/creditcard.csv&quot;,header=TRUE)</code></pre>
+<p>For privacy purposes the original features are replaced by the PCA variables from v1 to v28 and only <strong>Time</strong> and <strong>Amount</strong> features that are left from the original features.</p>
+<p>Let’s first check <strong>Class</strong> variable levels frequency (after having been converted to a factor type).</p>
+<pre class="r"><code>data$Class&lt;-as.factor(data$Class)
+prop.table(table(data$Class))</code></pre>
+<pre><code>## 
+##           0           1 
+## 0.998272514 0.001727486</code></pre>
+<p>As we see the minority class number “1” is only about 0.17% of the total cases.
+We also need to show the summary of the data to take an overall look at all the features to be aware of missing values or unusual outliers.</p>
+<pre class="r"><code>summary(data)</code></pre>
+<pre><code>##       Time              V1                  V2                  V3          
+##  Min.   :     0   Min.   :-56.40751   Min.   :-72.71573   Min.   :-48.3256  
+##  1st Qu.: 54202   1st Qu.: -0.92037   1st Qu.: -0.59855   1st Qu.: -0.8904  
+##  Median : 84692   Median :  0.01811   Median :  0.06549   Median :  0.1799  
+##  Mean   : 94814   Mean   :  0.00000   Mean   :  0.00000   Mean   :  0.0000  
+##  3rd Qu.:139321   3rd Qu.:  1.31564   3rd Qu.:  0.80372   3rd Qu.:  1.0272  
+##  Max.   :172792   Max.   :  2.45493   Max.   : 22.05773   Max.   :  9.3826  
+##        V4                 V5                   V6                 V7          
+##  Min.   :-5.68317   Min.   :-113.74331   Min.   :-26.1605   Min.   :-43.5572  
+##  1st Qu.:-0.84864   1st Qu.:  -0.69160   1st Qu.: -0.7683   1st Qu.: -0.5541  
+##  Median :-0.01985   Median :  -0.05434   Median : -0.2742   Median :  0.0401  
+##  Mean   : 0.00000   Mean   :   0.00000   Mean   :  0.0000   Mean   :  0.0000  
+##  3rd Qu.: 0.74334   3rd Qu.:   0.61193   3rd Qu.:  0.3986   3rd Qu.:  0.5704  
+##  Max.   :16.87534   Max.   :  34.80167   Max.   : 73.3016   Max.   :120.5895  
+##        V8                  V9                 V10                 V11          
+##  Min.   :-73.21672   Min.   :-13.43407   Min.   :-24.58826   Min.   :-4.79747  
+##  1st Qu.: -0.20863   1st Qu.: -0.64310   1st Qu.: -0.53543   1st Qu.:-0.76249  
+##  Median :  0.02236   Median : -0.05143   Median : -0.09292   Median :-0.03276  
+##  Mean   :  0.00000   Mean   :  0.00000   Mean   :  0.00000   Mean   : 0.00000  
+##  3rd Qu.:  0.32735   3rd Qu.:  0.59714   3rd Qu.:  0.45392   3rd Qu.: 0.73959  
+##  Max.   : 20.00721   Max.   : 15.59500   Max.   : 23.74514   Max.   :12.01891  
+##       V12                V13                V14                V15          
+##  Min.   :-18.6837   Min.   :-5.79188   Min.   :-19.2143   Min.   :-4.49894  
+##  1st Qu.: -0.4056   1st Qu.:-0.64854   1st Qu.: -0.4256   1st Qu.:-0.58288  
+##  Median :  0.1400   Median :-0.01357   Median :  0.0506   Median : 0.04807  
+##  Mean   :  0.0000   Mean   : 0.00000   Mean   :  0.0000   Mean   : 0.00000  
+##  3rd Qu.:  0.6182   3rd Qu.: 0.66251   3rd Qu.:  0.4931   3rd Qu.: 0.64882  
+##  Max.   :  7.8484   Max.   : 7.12688   Max.   : 10.5268   Max.   : 8.87774  
+##       V16                 V17                 V18           
+##  Min.   :-14.12985   Min.   :-25.16280   Min.   :-9.498746  
+##  1st Qu.: -0.46804   1st Qu.: -0.48375   1st Qu.:-0.498850  
+##  Median :  0.06641   Median : -0.06568   Median :-0.003636  
+##  Mean   :  0.00000   Mean   :  0.00000   Mean   : 0.000000  
+##  3rd Qu.:  0.52330   3rd Qu.:  0.39968   3rd Qu.: 0.500807  
+##  Max.   : 17.31511   Max.   :  9.25353   Max.   : 5.041069  
+##       V19                 V20                 V21           
+##  Min.   :-7.213527   Min.   :-54.49772   Min.   :-34.83038  
+##  1st Qu.:-0.456299   1st Qu.: -0.21172   1st Qu.: -0.22839  
+##  Median : 0.003735   Median : -0.06248   Median : -0.02945  
+##  Mean   : 0.000000   Mean   :  0.00000   Mean   :  0.00000  
+##  3rd Qu.: 0.458949   3rd Qu.:  0.13304   3rd Qu.:  0.18638  
+##  Max.   : 5.591971   Max.   : 39.42090   Max.   : 27.20284  
+##       V22                  V23                 V24          
+##  Min.   :-10.933144   Min.   :-44.80774   Min.   :-2.83663  
+##  1st Qu.: -0.542350   1st Qu.: -0.16185   1st Qu.:-0.35459  
+##  Median :  0.006782   Median : -0.01119   Median : 0.04098  
+##  Mean   :  0.000000   Mean   :  0.00000   Mean   : 0.00000  
+##  3rd Qu.:  0.528554   3rd Qu.:  0.14764   3rd Qu.: 0.43953  
+##  Max.   : 10.503090   Max.   : 22.52841   Max.   : 4.58455  
+##       V25                 V26                V27            
+##  Min.   :-10.29540   Min.   :-2.60455   Min.   :-22.565679  
+##  1st Qu.: -0.31715   1st Qu.:-0.32698   1st Qu.: -0.070840  
+##  Median :  0.01659   Median :-0.05214   Median :  0.001342  
+##  Mean   :  0.00000   Mean   : 0.00000   Mean   :  0.000000  
+##  3rd Qu.:  0.35072   3rd Qu.: 0.24095   3rd Qu.:  0.091045  
+##  Max.   :  7.51959   Max.   : 3.51735   Max.   : 31.612198  
+##       V28                Amount         Class     
+##  Min.   :-15.43008   Min.   :    0.00   0:284315  
+##  1st Qu.: -0.05296   1st Qu.:    5.60   1:   492  
+##  Median :  0.01124   Median :   22.00             
+##  Mean   :  0.00000   Mean   :   88.35             
+##  3rd Qu.:  0.07828   3rd Qu.:   77.17             
+##  Max.   : 33.84781   Max.   :25691.16</code></pre>
+<p>looking at this summary, we do not have any critical issues like missing values for instance.</p>
+</div>
+<div id="data-partition" class="section level2">
+<h2>Data partition</h2>
+<p>Before applying any subsampling method we split the data first between the training set and the testing set and we use only the former to be subsampled.</p>
+<pre class="r"><code>spsm(library(caret))
+set.seed(1234)
+index&lt;-createDataPartition(data$Class,p=0.8,list=FALSE)
+train&lt;-data[index,]
+test&lt;-data[-index,]</code></pre>
+</div>
+<div id="subsampling-the-training-data" class="section level2">
+<h2>Subsampling the training data</h2>
+<div id="upsampling" class="section level3">
+<h3><strong>Upsampling</strong> :</h3>
+<p>The <strong>caret</strong> package provides a function called <strong>upSample</strong> to perform upsampling technique.</p>
+<pre class="r"><code>set.seed(111)
+
+trainup&lt;-upSample(x=train[,-ncol(train)],
+                  y=train$Class)
+
+table(trainup$Class)</code></pre>
+<pre><code>## 
+##      0      1 
+## 227452 227452</code></pre>
+<p>As we see the two classes now have the same size <strong>227452</strong></p>
+</div>
+<div id="downsampling" class="section level3">
+<h3><strong>downsampling</strong>:</h3>
+<p>By the some way we make use of the caret function <strong>downSample</strong></p>
+<pre class="r"><code>set.seed(111)
+traindown&lt;-downSample(x=train[,-ncol(train)],
+                  y=train$Class)
+
+table(traindown$Class)</code></pre>
+<pre><code>## 
+##   0   1 
+## 394 394</code></pre>
+<p>now the size of each class is <strong>394</strong></p>
+</div>
+<div id="rose" class="section level3">
+<h3><strong>ROSE</strong>:</h3>
+<p>To use this technique we have to call the <strong>ROSE</strong> package</p>
+<pre class="r"><code>spsm(library(ROSE))
+set.seed(111)
+
+trainrose&lt;-ROSE(Class~.,data=train)$data
+
+table(trainrose$Class)</code></pre>
+<pre><code>## 
+##      0      1 
+## 113827 114019</code></pre>
+<p>since this technique add new synthetic data points to the minority class and daownsamples the majority class the size now is about <strong>114019</strong> for minority class and <strong>113827</strong> for the majority class.</p>
+</div>
+<div id="smote" class="section level3">
+<h3><strong>SMOTE</strong>:</h3>
+<p>this technique requires the <strong>DMwR</strong> package.</p>
+<pre class="r"><code>spsm(library(DMwR))
+set.seed(111)
+
+trainsmote &lt;- SMOTE(Class~.,data = train)
+
+table(trainsmote$Class)</code></pre>
+<pre><code>## 
+##    0    1 
+## 1576 1182</code></pre>
+<p>The size of the majority class is <strong>113827</strong> and for the minority class is <strong>114019</strong> .</p>
+</div>
+</div>
+<div id="training-logistic-regression-model." class="section level2">
+<h2>training logistic regression model.</h2>
+<p>we are now ready to fit logit model to the original training set without subsampling, and to each of the above subsampled training sets.</p>
+<div id="without-subsampling" class="section level3">
+<h3>without subsampling</h3>
+<pre class="r"><code>set.seed(123)
+model &lt;- glm(Class~., data=train, family = &quot;binomial&quot;)
+                
+summary(model)</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = Class ~ ., family = &quot;binomial&quot;, data = train)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -4.9290  -0.0291  -0.0190  -0.0124   4.6028  
+## 
+## Coefficients:
+##               Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept) -8.486e+00  2.852e-01 -29.753  &lt; 2e-16 ***
+## Time        -2.673e-06  2.528e-06  -1.057  0.29037    
+## V1           9.397e-02  4.794e-02   1.960  0.04996 *  
+## V2           1.097e-02  6.706e-02   0.164  0.87006    
+## V3           1.290e-03  5.949e-02   0.022  0.98270    
+## V4           6.851e-01  8.408e-02   8.148 3.69e-16 ***
+## V5           1.472e-01  7.301e-02   2.017  0.04372 *  
+## V6          -8.450e-02  7.902e-02  -1.069  0.28491    
+## V7          -1.098e-01  7.591e-02  -1.446  0.14816    
+## V8          -1.718e-01  3.402e-02  -5.050 4.41e-07 ***
+## V9          -1.926e-01  1.258e-01  -1.531  0.12579    
+## V10         -8.073e-01  1.118e-01  -7.224 5.07e-13 ***
+## V11         -3.920e-03  9.131e-02  -0.043  0.96575    
+## V12          2.855e-02  9.432e-02   0.303  0.76210    
+## V13         -3.064e-01  9.007e-02  -3.401  0.00067 ***
+## V14         -5.308e-01  6.816e-02  -7.787 6.86e-15 ***
+## V15         -1.285e-01  9.559e-02  -1.344  0.17903    
+## V16         -2.164e-01  1.423e-01  -1.520  0.12840    
+## V17          2.913e-02  7.729e-02   0.377  0.70624    
+## V18         -3.642e-02  1.445e-01  -0.252  0.80095    
+## V19          6.064e-02  1.094e-01   0.554  0.57938    
+## V20         -4.449e-01  9.737e-02  -4.570 4.89e-06 ***
+## V21          3.661e-01  6.709e-02   5.456 4.87e-08 ***
+## V22          5.965e-01  1.519e-01   3.927 8.59e-05 ***
+## V23         -1.157e-01  6.545e-02  -1.768  0.07706 .  
+## V24          8.146e-02  1.625e-01   0.501  0.61622    
+## V25          4.325e-02  1.482e-01   0.292  0.77043    
+## V26         -2.679e-01  2.226e-01  -1.203  0.22893    
+## V27         -7.280e-01  1.542e-01  -4.720 2.36e-06 ***
+## V28         -2.817e-01  9.864e-02  -2.856  0.00429 ** 
+## Amount       9.154e-04  4.379e-04   2.091  0.03656 *  
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 5799.1  on 227845  degrees of freedom
+## Residual deviance: 1768.0  on 227815  degrees of freedom
+## AIC: 1830
+## 
+## Number of Fisher Scoring iterations: 12</code></pre>
+<p>At this step and to make things more simpler, we remove the insignificant variables (without asterix) and we keep the remaining ones to use in all the following models.</p>
+<pre class="r"><code>set.seed(123)
+model1 &lt;- glm(Class~.-Time-V2-V3-V6-V7-V9-V11-V12-V15-V16-V17-V18-V19-V24-V25-V26, data=train, family = &quot;binomial&quot;)
+                
+summary(model1)</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = Class ~ . - Time - V2 - V3 - V6 - V7 - V9 - V11 - 
+##     V12 - V15 - V16 - V17 - V18 - V19 - V24 - V25 - V26, family = &quot;binomial&quot;, 
+##     data = train)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -4.6514  -0.0290  -0.0186  -0.0117   4.6192  
+## 
+## Coefficients:
+##               Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept) -8.763e+00  1.510e-01 -58.023  &lt; 2e-16 ***
+## V1           2.108e-02  2.918e-02   0.722 0.470129    
+## V4           7.241e-01  6.306e-02  11.483  &lt; 2e-16 ***
+## V5           9.934e-02  3.566e-02   2.785 0.005346 ** 
+## V8          -1.549e-01  2.178e-02  -7.115 1.12e-12 ***
+## V10         -9.290e-01  9.305e-02  -9.985  &lt; 2e-16 ***
+## V13         -3.307e-01  8.577e-02  -3.855 0.000116 ***
+## V14         -5.229e-01  5.566e-02  -9.396  &lt; 2e-16 ***
+## V20         -2.388e-01  6.005e-02  -3.976 7.01e-05 ***
+## V21          4.811e-01  5.259e-02   9.148  &lt; 2e-16 ***
+## V22          7.675e-01  1.277e-01   6.011 1.84e-09 ***
+## V23         -1.522e-01  5.925e-02  -2.569 0.010212 *  
+## V27         -6.381e-01  1.295e-01  -4.927 8.34e-07 ***
+## V28         -2.485e-01  9.881e-02  -2.515 0.011900 *  
+## Amount       2.713e-07  1.290e-04   0.002 0.998323    
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 5799.1  on 227845  degrees of freedom
+## Residual deviance: 1798.7  on 227831  degrees of freedom
+## AIC: 1828.7
+## 
+## Number of Fisher Scoring iterations: 11</code></pre>
+<p>We have now two predictors that are non significant <strong>V1</strong> and <strong>Amount</strong>, they should be also removed.</p>
+<pre class="r"><code>set.seed(123)
+finalmodel &lt;- glm(Class~.-Time-V1-V2-V3-V6-V7-V9-V11-V12-V15-V16-V17-V18-V19-V24-V25-V26-Amount, data=train, family = &quot;binomial&quot;)
+                
+summary(finalmodel)</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = Class ~ . - Time - V1 - V2 - V3 - V6 - V7 - V9 - 
+##     V11 - V12 - V15 - V16 - V17 - V18 - V19 - V24 - V25 - V26 - 
+##     Amount, family = &quot;binomial&quot;, data = train)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -4.6285  -0.0289  -0.0186  -0.0117   4.5835  
+## 
+## Coefficients:
+##             Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept) -8.75058    0.14706 -59.505  &lt; 2e-16 ***
+## V4           0.69955    0.05265  13.288  &lt; 2e-16 ***
+## V5           0.10650    0.02586   4.119 3.81e-05 ***
+## V8          -0.15525    0.01982  -7.833 4.76e-15 ***
+## V10         -0.89573    0.07630 -11.740  &lt; 2e-16 ***
+## V13         -0.33583    0.08448  -3.975 7.02e-05 ***
+## V14         -0.54238    0.04862 -11.155  &lt; 2e-16 ***
+## V20         -0.22318    0.04781  -4.668 3.04e-06 ***
+## V21          0.47912    0.05205   9.204  &lt; 2e-16 ***
+## V22          0.78631    0.12439   6.321 2.60e-10 ***
+## V23         -0.15046    0.05498  -2.736  0.00621 ** 
+## V27         -0.58832    0.10411  -5.651 1.60e-08 ***
+## V28         -0.23592    0.08901  -2.651  0.00804 ** 
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 5799.1  on 227845  degrees of freedom
+## Residual deviance: 1799.2  on 227833  degrees of freedom
+## AIC: 1825.2
+## 
+## Number of Fisher Scoring iterations: 11</code></pre>
+<p>For the other training sets we will use only these significant predictors from the above model.</p>
+<p>Now let’s get the final results from the confusion matrix.</p>
+<pre class="r"><code>pred &lt;- predict(finalmodel,test, type=&quot;response&quot;)
+pred &lt;- as.integer(pred&gt;0.5)
+confusionMatrix(as.factor(pred),test$Class)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction     0     1
+##          0 56856    41
+##          1     7    57
+##                                           
+##                Accuracy : 0.9992          
+##                  95% CI : (0.9989, 0.9994)
+##     No Information Rate : 0.9983          
+##     P-Value [Acc &gt; NIR] : 1.581e-08       
+##                                           
+##                   Kappa : 0.7033          
+##                                           
+##  Mcnemar&#39;s Test P-Value : 1.906e-06       
+##                                           
+##             Sensitivity : 0.9999          
+##             Specificity : 0.5816          
+##          Pos Pred Value : 0.9993          
+##          Neg Pred Value : 0.8906          
+##              Prevalence : 0.9983          
+##          Detection Rate : 0.9982          
+##    Detection Prevalence : 0.9989          
+##       Balanced Accuracy : 0.7908          
+##                                           
+##        &#39;Positive&#39; Class : 0               
+## </code></pre>
+<p>As we see we have a large accuracy rate about <strong>99.92%</strong>. However, this rate is almost the same as the no information rate <strong>99.83%</strong> (if we predict all the cases as class label 0). In other words this high rate is not due to the quality of the model but rather due to the imbalanced classes.
+if we look at the specificity rate. it is about <strong>58.16%</strong> indicating that the model poorly predict the fraudulent cards which is the most important class label that we want to predict correctly.
+Among the available metrics, the best one for imbalanced data is <a href="https://towardsdatascience.com/interpretation-of-kappa-values-2acd1ca7b18f">cohen’s kappa</a> statistic. and according to the scale of kappa value interpretation suggested by Landis &amp; Koch (1977), the kappa value obtained here <strong>0.7033</strong> is a good score.</p>
+<p>But here we stick with accuracy rate for pedagogic purposes to show the effectiveness of the above discussed methods.</p>
+</div>
+<div id="upsampling-the-train-set" class="section level3">
+<h3>Upsampling the train set</h3>
+<p>Now let’s use the training data resulted from the upsmpling method.</p>
+<pre class="r"><code>set.seed(123)
+modelup &lt;- glm(Class~V4+V5+V8+V10+V13+V14+V20+V21+V22+V23+V27+V28, data=trainup, family = &quot;binomial&quot;)</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre class="r"><code>summary(modelup)</code></pre>
+<pre><code>## 
+## Call:
+## glm(formula = Class ~ V4 + V5 + V8 + V10 + V13 + V14 + V20 + 
+##     V21 + V22 + V23 + V27 + V28, family = &quot;binomial&quot;, data = trainup)
+## 
+## Deviance Residuals: 
+##     Min       1Q   Median       3Q      Max  
+## -6.2906  -0.2785  -0.0001   0.0159   2.8055  
+## 
+## Coefficients:
+##              Estimate Std. Error  z value Pr(&gt;|z|)    
+## (Intercept) -3.271053   0.011741 -278.610  &lt; 2e-16 ***
+## V4           0.952941   0.005478  173.966  &lt; 2e-16 ***
+## V5           0.126627   0.003976   31.846  &lt; 2e-16 ***
+## V8          -0.289448   0.004368  -66.261  &lt; 2e-16 ***
+## V10         -0.710629   0.009150  -77.665  &lt; 2e-16 ***
+## V13         -0.479344   0.007352  -65.200  &lt; 2e-16 ***
+## V14         -0.802941   0.006825 -117.638  &lt; 2e-16 ***
+## V20         -0.090453   0.007955  -11.371  &lt; 2e-16 ***
+## V21          0.233604   0.007702   30.332  &lt; 2e-16 ***
+## V22          0.209203   0.010125   20.662  &lt; 2e-16 ***
+## V23         -0.320073   0.005299  -60.399  &lt; 2e-16 ***
+## V27         -0.238132   0.017019  -13.992  &lt; 2e-16 ***
+## V28         -0.152294   0.019922   -7.644  2.1e-14 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 630631  on 454903  degrees of freedom
+## Residual deviance: 136321  on 454891  degrees of freedom
+## AIC: 136347
+## 
+## Number of Fisher Scoring iterations: 9</code></pre>
+<pre class="r"><code>pred &lt;- predict(modelup,test, type=&quot;response&quot;)
+pred &lt;- as.integer(pred&gt;0.5)
+confusionMatrix(as.factor(pred),test$Class)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction     0     1
+##          0 55334    12
+##          1  1529    86
+##                                           
+##                Accuracy : 0.9729          
+##                  95% CI : (0.9716, 0.9743)
+##     No Information Rate : 0.9983          
+##     P-Value [Acc &gt; NIR] : 1               
+##                                           
+##                   Kappa : 0.0975          
+##                                           
+##  Mcnemar&#39;s Test P-Value : &lt;2e-16          
+##                                           
+##             Sensitivity : 0.97311         
+##             Specificity : 0.87755         
+##          Pos Pred Value : 0.99978         
+##          Neg Pred Value : 0.05325         
+##              Prevalence : 0.99828         
+##          Detection Rate : 0.97144         
+##    Detection Prevalence : 0.97165         
+##       Balanced Accuracy : 0.92533         
+##                                           
+##        &#39;Positive&#39; Class : 0               
+## </code></pre>
+<p>Now we have a smaller accuracy rate <strong>97.29%</strong>, but we have a larger specificity rate <strong>87.75%</strong> which increases the power of the model to predict the fraudulent cards.</p>
+</div>
+<div id="down-sampling-the-training-set." class="section level3">
+<h3>Down sampling the training set.</h3>
+<pre class="r"><code>set.seed(123)
+modeldown &lt;- glm(Class~V4+V5+V8+V10+V13+V14+V20+V21+V22+V23+V27+V28, data=traindown, family = &quot;binomial&quot;)</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre class="r"><code>pred &lt;- predict(modeldown,test, type=&quot;response&quot;)
+pred &lt;- as.integer(pred&gt;0.5)
+confusionMatrix(as.factor(pred),test$Class)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction     0     1
+##          0 54837    12
+##          1  2026    86
+##                                           
+##                Accuracy : 0.9642          
+##                  95% CI : (0.9627, 0.9657)
+##     No Information Rate : 0.9983          
+##     P-Value [Acc &gt; NIR] : 1               
+##                                           
+##                   Kappa : 0.0748          
+##                                           
+##  Mcnemar&#39;s Test P-Value : &lt;2e-16          
+##                                           
+##             Sensitivity : 0.96437         
+##             Specificity : 0.87755         
+##          Pos Pred Value : 0.99978         
+##          Neg Pred Value : 0.04072         
+##              Prevalence : 0.99828         
+##          Detection Rate : 0.96271         
+##    Detection Prevalence : 0.96292         
+##       Balanced Accuracy : 0.92096         
+##                                           
+##        &#39;Positive&#39; Class : 0               
+## </code></pre>
+<p>With downsampling method, we get approximately the same specificity rate <strong>87.75%</strong> with a slight decrease of the over all accuracy rate <strong>96.42%</strong>, and the sensitivity rate has decreased to <strong>96.43%</strong> since we have decreased the majority class size by downsampling.</p>
+</div>
+<div id="subsampline-the-train-set-by-rose-technique" class="section level3">
+<h3>subsampline the train set by ROSE technique</h3>
+<pre class="r"><code>set.seed(123)
+modelrose &lt;- glm(Class~V4+V5+V8+V10+V13+V14+V20+V21+V22+V23+V27+V28, data=trainrose, family = &quot;binomial&quot;)
+pred &lt;- predict(modelrose,test, type=&quot;response&quot;)
+pred &lt;- as.integer(pred&gt;0.5)
+confusionMatrix(as.factor(pred),test$Class)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction     0     1
+##          0 56080    14
+##          1   783    84
+##                                         
+##                Accuracy : 0.986         
+##                  95% CI : (0.985, 0.987)
+##     No Information Rate : 0.9983        
+##     P-Value [Acc &gt; NIR] : 1             
+##                                         
+##                   Kappa : 0.1715        
+##                                         
+##  Mcnemar&#39;s Test P-Value : &lt;2e-16        
+##                                         
+##             Sensitivity : 0.98623       
+##             Specificity : 0.85714       
+##          Pos Pred Value : 0.99975       
+##          Neg Pred Value : 0.09689       
+##              Prevalence : 0.99828       
+##          Detection Rate : 0.98453       
+##    Detection Prevalence : 0.98478       
+##       Balanced Accuracy : 0.92169       
+##                                         
+##        &#39;Positive&#39; Class : 0             
+## </code></pre>
+<p>Using this method the sensitivity rate is slightly smaller than the previous ones <strong>85.71%</strong> but still a large improvement in predicting fraudulent cards compared to the model trained with the original imbalanced data.</p>
+</div>
+<div id="subsampling-the-train-set-by-smote-technique" class="section level3">
+<h3>Subsampling the train set by SMOTE technique</h3>
+<pre class="r"><code>set.seed(123)
+modelsmote &lt;- glm(Class~V4+V5+V8+V10+V13+V14+V20+V21+V22+V23+V27+V28, data=trainsmote, family = &quot;binomial&quot;)</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre class="r"><code>pred &lt;- predict(modelsmote,test, type=&quot;response&quot;)
+pred &lt;- as.integer(pred&gt;0.5)
+confusionMatrix(as.factor(pred),test$Class)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction     0     1
+##          0 55457    14
+##          1  1406    84
+##                                           
+##                Accuracy : 0.9751          
+##                  95% CI : (0.9738, 0.9763)
+##     No Information Rate : 0.9983          
+##     P-Value [Acc &gt; NIR] : 1               
+##                                           
+##                   Kappa : 0.1029          
+##                                           
+##  Mcnemar&#39;s Test P-Value : &lt;2e-16          
+##                                           
+##             Sensitivity : 0.97527         
+##             Specificity : 0.85714         
+##          Pos Pred Value : 0.99975         
+##          Neg Pred Value : 0.05638         
+##              Prevalence : 0.99828         
+##          Detection Rate : 0.97360         
+##    Detection Prevalence : 0.97384         
+##       Balanced Accuracy : 0.91621         
+##                                           
+##        &#39;Positive&#39; Class : 0               
+## </code></pre>
+<p>With this method we get the same specificity rate <strong>85.71%</strong> such as ROSE method.</p>
+</div>
+</div>
+<div id="deep-learning-model-without-class-weight." class="section level2">
+<h2>deep learning model (without class weight).</h2>
+<p>When we use deep learning models via some software we can assign a weight to the labels of the target variables. For us we will make use of <a href="https://keras.rstudio.com">keras</a> package. We will first train the model without weighting the data , Then we retrain the same model after assigning weight to the minority class.<br />
+To train this model we should first convert the data (train and test sets) into numeric matrix and remove the column names (we convert also the <strong>Class</strong> to numeric type). However, in order to be inline with the above models we keep only their features, but this time it would be better to be normalized since this helps the gradient running more faster.</p>
+<pre class="r"><code>spsm(library(keras))
+train1 &lt;-train[,c(&#39;V4&#39;,&#39;V5&#39;,&#39;V8&#39;,&#39;V10&#39;,&#39;V13&#39;,&#39;V14&#39;,&#39;V20&#39;,&#39;V21&#39;,&#39;V22&#39;,&#39;V23&#39;,&#39;V27&#39;,&#39;V28&#39;,&#39;Class&#39;)]
+test1 &lt;-test[,c(&#39;V4&#39;,&#39;V5&#39;,&#39;V8&#39;,&#39;V10&#39;,&#39;V13&#39;,&#39;V14&#39;,&#39;V20&#39;,&#39;V21&#39;,&#39;V22&#39;,&#39;V23&#39;,&#39;V27&#39;,&#39;V28&#39;,&#39;Class&#39;)]
+train1$Class&lt;-as.numeric(train1$Class)
+test1$Class&lt;-as.numeric(test1$Class)
+train1[,&#39;Class&#39;]&lt;-train1[,&#39;Class&#39;]-1
+test1[,&#39;Class&#39;]&lt;-test1[,&#39;Class&#39;]-1
+trainx &lt;- train1[,-ncol(train1)]
+testx &lt;- test1[,-ncol(test1)]
+trained&lt;-as.matrix(trainx)
+tested &lt;- as.matrix(testx)
+trainy &lt;- train1$Class
+testy &lt;- test1$Class
+dimnames(trained)&lt;-NULL
+dimnames(tested)&lt;-NULL</code></pre>
+<p>then we apply one hot encoding on the target variable.</p>
+<pre class="r"><code>trainlabel&lt;-to_categorical(trainy)
+testlabel&lt;-to_categorical(testy)</code></pre>
+<p>The final step now is normalizing the matrices (trained and tested)</p>
+<pre class="r"><code>trained1&lt;-normalize(trained)
+tested1&lt;-normalize(tested)</code></pre>
+<p>Now we are ready to create the model with two hidden layers followed by <a href="https://keras.rstudio.com/reference/index.html#section-dropout-layers">dropout layers</a>.</p>
+<pre class="r"><code>modeldeep &lt;- keras_model_sequential()
+
+modeldeep %&gt;%
+    layer_dense(units=32, activation = &quot;relu&quot;,
+              kernel_initializer = &quot;he_normal&quot;,input_shape =c(12))%&gt;%
+    layer_dropout(rate=0.2)%&gt;%
+    layer_dense(units=64, activation = &quot;relu&quot;,
+              kernel_initializer = &quot;he_normal&quot;)%&gt;%
+    layer_dropout(rate=0.4)%&gt;%
+        layer_dense(units=2, activation = &quot;sigmoid&quot;)
+
+summary(modeldeep)</code></pre>
+<pre><code>## Model: &quot;sequential&quot;
+## ________________________________________________________________________________
+## Layer (type)                        Output Shape                    Param #     
+## ================================================================================
+## dense (Dense)                       (None, 32)                      416         
+## ________________________________________________________________________________
+## dropout (Dropout)                   (None, 32)                      0           
+## ________________________________________________________________________________
+## dense_1 (Dense)                     (None, 64)                      2112        
+## ________________________________________________________________________________
+## dropout_1 (Dropout)                 (None, 64)                      0           
+## ________________________________________________________________________________
+## dense_2 (Dense)                     (None, 2)                       130         
+## ================================================================================
+## Total params: 2,658
+## Trainable params: 2,658
+## Non-trainable params: 0
+## ________________________________________________________________________________</code></pre>
+<p>we will use the <strong>accuracy</strong> rate as the metric. The loss function will be <strong>binary crossentropy</strong> since we deal with binary classification problem. and for the optimizer we will use <a href="https://arxiv.org/pdf/1412.6980v8.pdf">adam</a> optimizer.</p>
+<pre class="r"><code>modeldeep %&gt;%
+  compile(loss=&quot;binary_crossentropy&quot;,
+          optimizer=&quot;adam&quot;,
+          metric=&quot;accuracy&quot;)</code></pre>
+<p>During training, the model will use 10 epochs (the default), 5 sample as batch size to update the weights, and keep 20% of the inputs (training samples) out to assess the model</p>
+<pre class="r"><code>#history&lt;- modeldeep %&gt;%
+  #fit(trained1,trainlabel,batch_size=5, validation_split=0.2)</code></pre>
+<p>You can run this model many times untill you get satisfied with the results, then it will be better to save it and load it again each time you need it as follows.</p>
+<pre class="r"><code>#save_model_hdf5(modeldeep,&quot;modeldeep.h5&quot;)
+modeldeep&lt;-load_model_hdf5(&quot;modeldeep.h5&quot;)</code></pre>
+<p>All the above metric values are used in the training process, so they are not much reliable. The more reliable ones are those computed from unseen data.</p>
+<pre class="r"><code>pred&lt;-  modeldeep %&gt;%
+  predict_classes(tested1)
+confusionMatrix(as.factor(pred),as.factor(testy))</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction     0     1
+##          0 56858    64
+##          1     5    34
+##                                           
+##                Accuracy : 0.9988          
+##                  95% CI : (0.9985, 0.9991)
+##     No Information Rate : 0.9983          
+##     P-Value [Acc &gt; NIR] : 0.00125         
+##                                           
+##                   Kappa : 0.4959          
+##                                           
+##  Mcnemar&#39;s Test P-Value : 2.902e-12       
+##                                           
+##             Sensitivity : 0.9999          
+##             Specificity : 0.3469          
+##          Pos Pred Value : 0.9989          
+##          Neg Pred Value : 0.8718          
+##              Prevalence : 0.9983          
+##          Detection Rate : 0.9982          
+##    Detection Prevalence : 0.9993          
+##       Balanced Accuracy : 0.6734          
+##                                           
+##        &#39;Positive&#39; Class : 0               
+## </code></pre>
+<p>The same as the above models, the specificity rate is even worst than the other models <strong>0.3469</strong> which is also caused by the imbalanced data.</p>
+<div id="deep-learning-model-with-class-weights" class="section level3">
+<h3>deep learning model with class weights</h3>
+<p>Now let’s try the previous model by taking into account the class imbalance</p>
+<pre class="r"><code>modeldeep1 &lt;- keras_model_sequential()
+
+modeldeep1 %&gt;%
+    layer_dense(units=32, activation = &quot;relu&quot;,
+              kernel_initializer = &quot;he_normal&quot;,input_shape =c(12))%&gt;%
+    layer_dropout(rate=0.2)%&gt;%
+    layer_dense(units=64, activation = &quot;relu&quot;,
+              kernel_initializer = &quot;he_normal&quot;)%&gt;%
+    layer_dropout(rate=0.4)%&gt;%
+        layer_dense(units=2, activation = &quot;sigmoid&quot;)
+
+modeldeep1 %&gt;%
+  compile(loss=&quot;binary_crossentropy&quot;,
+          optimizer=&quot;adam&quot;,
+          metric=&quot;accuracy&quot;)</code></pre>
+<p>To define the appropriate weight, we divide the fraction of the majority class by the fraction of the minority class to get how many times the former is larger than the latter.</p>
+<pre class="r"><code>prop.table(table(data$Class))[1]/prop.table(table(data$Class))[2]</code></pre>
+<pre><code>##       0 
+## 577.876</code></pre>
+<p>Now we include this value as weight in the <strong>class_weight</strong> argument.</p>
+<pre class="r"><code>#history1&lt;- modeldeep1 %&gt;%
+  #fit(trained1,trainlabel,batch_size=5,  #validation_split=0.2,class_weight=list(&quot;0&quot;=1,&quot;1&quot;=577))</code></pre>
+<p>Again i should save this model before kniting the document. For you if you want to run the above code just uncomment it.</p>
+<pre class="r"><code>#save_model_hdf5(modeldeep1,&quot;modeldeep1.h5&quot;)
+modeldeep1&lt;-load_model_hdf5(&quot;modeldeep1.h5&quot;)</code></pre>
+<p>Now let’s get the confusion matrix.</p>
+<pre class="r"><code>pred&lt;-  modeldeep1 %&gt;%
+  predict_classes(tested1)
+confusionMatrix(as.factor(pred),as.factor(testy))</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction     0     1
+##          0 55303    14
+##          1  1560    84
+##                                          
+##                Accuracy : 0.9724         
+##                  95% CI : (0.971, 0.9737)
+##     No Information Rate : 0.9983         
+##     P-Value [Acc &gt; NIR] : 1              
+##                                          
+##                   Kappa : 0.0935         
+##                                          
+##  Mcnemar&#39;s Test P-Value : &lt;2e-16         
+##                                          
+##             Sensitivity : 0.97257        
+##             Specificity : 0.85714        
+##          Pos Pred Value : 0.99975        
+##          Neg Pred Value : 0.05109        
+##              Prevalence : 0.99828        
+##          Detection Rate : 0.97089        
+##    Detection Prevalence : 0.97114        
+##       Balanced Accuracy : 0.91485        
+##                                          
+##        &#39;Positive&#39; Class : 0              
+## </code></pre>
+<p>Using this model we get less accuracy rate <strong>0.9724</strong>, but the specificity rate is higher compared to the previous model so that this model can well predict the negative class label as well as the postive class label.</p>
+</div>
+</div>
+<div id="conclusion" class="section level2">
+<h2>Conclusion</h2>
+<p>With the imbalanced data most machine learning model tend to more efficiently predict the majority class than the minority class. To correct thus this behavior we can use one of the above discussed methods to get more closer accuracy rates between classes. However, deep learning model can easily handle this problem by specifying the class weights.</p>
+</div>
