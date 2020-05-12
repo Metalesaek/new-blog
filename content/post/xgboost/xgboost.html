@@ -31,8 +31,8 @@ categories: R
 
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
-<p>Decision tree<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> is a model that recursively splits the input space into regions and defines local model for each resulted region. However, fitting decision tree model to complex data would not yield to accurate prediction in most cases, which can be termed as <a href="http://rob.schapire.net/papers/strengthofweak.pdf">weak learner</a>. But combining multiple decision trees togather (called also <strong>ensemble models</strong>) using techniques such as aggregating and boosting can largely improve the model accuracy. <a href="https://xgboost.readthedocs.io/en/latest/R-package/index.html">Xgboost</a> (short for Extrem gradient boosting) model is a tree-based algorithm that uses these types of techiques. It can be used for both <strong>classification</strong> and <strong>regresesion</strong>.
-In this paper we learn how to implement this model to predict the well known titanic data as we did in th previous papers using different kind of models.</p>
+<p>Decision tree<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> is a model that recursively splits the input space into regions and defines local model for each resulted region. However, fitting decision tree model to complex data would not yield to accurate prediction in most cases, which can be termed as <a href="http://rob.schapire.net/papers/strengthofweak.pdf">weak learner</a>. But combining multiple decision trees together (called also <strong>ensemble models</strong>) using techniques such as aggregating and boosting can largely improve the model accuracy. <a href="https://xgboost.readthedocs.io/en/latest/R-package/index.html">Xgboost</a> (short for Extreme gradient boosting) model is a tree-based algorithm that uses these types of techniques. It can be used for both <strong>classification</strong> and <strong>regression</strong>.
+In this paper we learn how to implement this model to predict the well known titanic data as we did in the previous papers using different kind of models.</p>
 </div>
 <div id="data-preparation" class="section level2">
 <h2>Data preparation</h2>
@@ -55,7 +55,7 @@ data &lt;- read_csv(&quot;../train.csv&quot;)</code></pre>
 ##   Cabin = col_character(),
 ##   Embarked = col_character()
 ## )</code></pre>
-<p>Let’s take a look at this data using the function glimpse</p>
+<p>Let’s take a look at this data using the <strong>dplyr</strong> function <strong>glimpse</strong>.</p>
 <pre class="r"><code>glimpse(data)</code></pre>
 <pre><code>## Observations: 891
 ## Variables: 12
@@ -71,7 +71,6 @@ data &lt;- read_csv(&quot;../train.csv&quot;)</code></pre>
 ## $ Fare        &lt;dbl&gt; 7.2500, 71.2833, 7.9250, 53.1000, 8.0500, 8.4583, 51.86...
 ## $ Cabin       &lt;chr&gt; NA, &quot;C85&quot;, NA, &quot;C123&quot;, NA, NA, &quot;E46&quot;, NA, NA, NA, &quot;G6&quot;,...
 ## $ Embarked    &lt;chr&gt; &quot;S&quot;, &quot;C&quot;, &quot;S&quot;, &quot;S&quot;, &quot;S&quot;, &quot;Q&quot;, &quot;S&quot;, &quot;S&quot;, &quot;S&quot;, &quot;C&quot;, &quot;S&quot;, ...</code></pre>
-<p>The featues are defined as follows:</p>
 <p>For prediction purposes some variables should be removed such as PassengerId, Name, Ticket, and Cabin. While some others should be converted to another suitable type. the following script performs these transformations but for more detail you can refer to my previous paper of logistic regression.</p>
 <pre class="r"><code>mydata&lt;-data[,-c(1,4,9,11)]
 mydata$Survived&lt;-as.integer(mydata$Survived)
@@ -94,8 +93,8 @@ mydata&lt;-modify_at(mydata,c(&quot;Pclass&quot;,&quot;Sex&quot;,&quot;Embarked&
 ##  3rd Qu.: 31.00             
 ##  Max.   :512.33             
 ## </code></pre>
-<p>As We see, twe have 177 missing values from age variable and 2 values from Embarked. For missing values we have two strageties, removing completely the missing values from the analysis, but doing so we will lose many data, or imputing them by one of the available imputation method to fix these values. Since we have large number of missing values compared to the total examples in the data it would be better to follow the latter strategi. Thankfully to <a href="https://cran.r-project.org/web/packages/mice/mice.pdf">mice</a> package that is a very powrfull for this purpose and it provides many imputation methods for all variable types.
-We will opt for random forest method since in most cases can be the best choice. However, in order ot respect the most importante rule in machine learning, never touch the test data during the training process , we will apply this imputation after spliting the data.</p>
+<p>As we see, we have 177 missing values from age variable and 2 values from Embarked. For missing values we have two strategies, removing completely the missing values from the analysis, but doing so we will lose many data, or imputing them by one of the available imputation method to fix these values. Since we have large number of missing values compared to the total examples in the data it would be better to follow the latter strategy. Thankfully to <a href="https://cran.r-project.org/web/packages/mice/mice.pdf">mice</a> package that is a very powerfull for this purpose and it provides many imputation methods for all variable types.
+We will opt for random forest method since in most cases can be the best choice. However, in order to respect the most important rule in machine learning, never touch the test data during the training process , we will apply this imputation after splitting the data.</p>
 </div>
 <div id="data-visualization" class="section level2">
 <h2>Data visualization</h2>
@@ -105,37 +104,37 @@ ggplot(mydata,aes(Sex,Survived,color=Sex))+
   geom_point()+
   geom_jitter()</code></pre>
 <p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-5-1.svg" width="576" /></p>
-<p>The left side of the plot shows that higher fraction of females survived, whreas the right side shows the reverse situation for males where most of them died. We can induce from this plot that, ceteris paribus, this predictor is likely to be relevant for prediction.</p>
+<p>The left side of the plot shows that higher fraction of females survived, whereas the right side shows the reverse situation for males where most of them died. We can induce from this plot that, ceteris paribus, this predictor is likely to be relevant for prediction.</p>
 <pre class="r"><code>ggplot(mydata,aes(Pclass,Survived,color=Pclass))+
   geom_point()+
   geom_jitter()</code></pre>
 <p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-6-1.svg" width="576" /></p>
-<p>in this plot most of the first class passengers survived in contrast with the third class passegers where most of them died. However, for the second class, it seems equally ballanced. Again this predictor also can be relevant.</p>
+<p>in this plot most of the first class passengers survived in contrast with the third class passengers where most of them died. However, for the second class, it seems equally balanced. Again this predictor also can be relevant.</p>
 <pre class="r"><code>ggplot(mydata,aes(SibSp,Survived,color=SibSp))+
   geom_point()+
   geom_jitter()</code></pre>
 <p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-7-1.svg" width="576" /></p>
-<p>This predictor refers to the number of siblings a passenger has. It seems to be equally distibuted given the taregt variable, and hence can be highlly irrelvant. In other words, knowing the number of siblings of a particular passenger does not help to predict if this passenger survived or died.</p>
+<p>This predictor refers to the number of siblings a passenger has. It seems to be equally distributed given the target variable, and hence can be highly irrelevant. In other words, knowing the number of siblings of a particular passenger does not help to predict if this passenger survived or died.</p>
 <pre class="r"><code>ggplot(mydata,aes(Parch,Survived,color=Parch))+
   geom_point()+
   geom_jitter()</code></pre>
 <p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-8-1.svg" width="576" /></p>
-<p>This predictor refers to the number of parents and children a passenger has. It seems that this predictor is slightly dsicriminative if we look closely at the level 0, passengeers with no parents or children.</p>
+<p>This predictor refers to the number of parents and children a passenger has. It seems that this predictor is slightly discriminative if we look closely at the level 0, passengers with no parents or children.</p>
 <pre class="r"><code>ggplot(mydata,aes(Embarked,Survived,color=Embarked))+
   geom_point()+
   geom_jitter()</code></pre>
 <p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-9-1.svg" width="576" /></p>
-<p>We see that a passsenger who is embarked from the port <strong>S</strong> is slightly highly to died, while the other ports seem to be eequally distributed.</p>
+<p>We see that a passenger who is embarked from the port <strong>S</strong> is slightly highly to be died, while the other ports seem to be equally distributed.</p>
 <p>For numeric variables we use the empirical densitiy givan the target variable as follows.</p>
 <pre class="r"><code>ggplot(mydata[complete.cases(mydata),], aes(Age,fill=as.factor(Survived)))+
   geom_density(alpha=.5)</code></pre>
 <p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-10-1.svg" width="576" /></p>
-<p>We see that some signicant overlaping between the two conditional distribution may indicating less relevance related to this variable.</p>
+<p>We see that some significant overlapping between the two conditional distribution may indicating less relevance related to this variable.</p>
 <pre class="r"><code>ggplot(mydata, aes(Fare,fill=as.factor(Survived)))+
   geom_density(alpha=.5)</code></pre>
 <p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-11-1.svg" width="576" /></p>
 <p>For this variables the conditional distribution are different, we see a spike close to zero reflecting the more death among third class.</p>
-<p>we can also plot two predictors against eeach other. For instance let’s try with the two predictors, Sex and Pclass:</p>
+<p>we can also plot two predictors against each other. For instance let’s try with the two predictors, Sex and Pclass:</p>
 <pre class="r"><code>ggplot(mydata,aes(Sex,Pclass,color=as.factor(Survived)))+
   geom_point(col=&quot;green&quot;,pch=16,cex=7)+
   geom_jitter()</code></pre>
@@ -162,7 +161,7 @@ summary(train2)</code></pre>
 <p>The xgboost model expects the predictors to be of numeric type, so we convert the factors to dummy variables by the help of the <strong>Matrix</strong> package</p>
 <pre class="r"><code>suppressPackageStartupMessages(library(Matrix))
 train_data&lt;-sparse.model.matrix(Survived ~. -1, data=train2)</code></pre>
-<p>Note that the -1 value added to the formula is to avoid adding a column as intercept with ones to our data. we can take a look at the structure of the data by the follwoing</p>
+<p>Note that the -1 value added to the formula is to avoid adding a column as intercept with ones to our data. we can take a look at the structure of the data by the following</p>
 <pre class="r"><code>str(train_data)</code></pre>
 <pre><code>## Formal class &#39;dgCMatrix&#39; [package &quot;Matrix&quot;] with 6 slots
 ##   ..@ i       : int [1:3570] 1 3 5 8 17 20 23 24 27 28 ...
@@ -173,7 +172,7 @@ train_data&lt;-sparse.model.matrix(Survived ~. -1, data=train2)</code></pre>
 ##   .. ..$ : chr [1:20] &quot;Pclass1&quot; &quot;Pclass2&quot; &quot;Pclass3&quot; &quot;Sexmale&quot; ...
 ##   ..@ x       : num [1:3570] 1 1 1 1 1 1 1 1 1 1 ...
 ##   ..@ factors : list()</code></pre>
-<p>We know that many machine learning algorithms require the inputs to be in a specific type. The input types supported by xgboost algorithm are: matrix, <strong>dgCMatrix</strong> object rendred from the above package <strong>Matrix</strong>, or the xgboost class <strong>xgb.DMatrix</strong>.</p>
+<p>We know that many machine learning algorithms require the inputs to be in a specific type. The input types supported by xgboost algorithm are: matrix, <strong>dgCMatrix</strong> object rendered from the above package <strong>Matrix</strong>, or the xgboost class <strong>xgb.DMatrix</strong>.</p>
 <pre class="r"><code>suppressPackageStartupMessages(library(xgboost))</code></pre>
 <p>We should first store the dependent variable in a separate vector, let’s call it <strong>train_label</strong></p>
 <pre class="r"><code>train_label&lt;-train$Survived
@@ -187,7 +186,7 @@ dim(train_data)</code></pre>
 <ul>
 <li>objective: for binary classification we use <strong>binary:logistic</strong></li>
 <li>eta (default=0.3): The learning rate.</li>
-<li>gamma (default=0): also called min_split_loss, the minimum loss required for spliting further a particular node.</li>
+<li>gamma (default=0): also called min_split_loss, the minimum loss required for splitting further a particular node.</li>
 <li>max_depth(default=6): the maximum depth of the tree.</li>
 <li>min_child_weight(default=1): the minimum number of instances required in a node under which the node will be leaf.</li>
 <li>subsample (default=1): with the default the model uses all the data at each tree, if 0.7 for instance, then the model randomly sample 70% of the data at each iteration, doing so we fight the overfiting problem.</li>
@@ -246,12 +245,12 @@ It the data is of class <strong>xgb.DMatrix</strong> that contain both the predi
   ggplot(aes(iter, train_error))+
   geom_point()</code></pre>
 <p><img src="/post/xgboost/xgboost_files/figure-html/unnamed-chunk-21-1.svg" width="576" /></p>
-<p>To evaluate the model we will use the test data that should follow all the above steps as the training data exept for the missing values. since the test set is only used to evaluate the model so we will remove all the missing values.</p>
+<p>To evaluate the model we will use the test data that should follow all the above steps as the training data except for the missing values. since the test set is only used to evaluate the model so we will remove all the missing values.</p>
 <pre class="r"><code>test1 &lt;- test[complete.cases(test),]
 test2&lt;-sparse.model.matrix(Survived ~. -1,data=test1)
 test_label&lt;-test1$Survived
 test_final&lt;-xgb.DMatrix(data = test2, label=test_label)</code></pre>
-<p>Then we use the predit function and and confusionMatrix function from caret package, and since the predicted values are prbabilities we convert them to predicted classes using the threshold of 0.5 as follows:</p>
+<p>Then we use the predict function and confusionMatrix function from caret package, and since the predicted values are probabbilities we convert them to predicted classes using the threshold of 0.5 as follows:</p>
 <pre class="r"><code>pred &lt;- predict(mymodel, test_final)
 pred&lt;-ifelse(pred&gt;.5,1,0)
 confusionMatrix(as.factor(pred),as.factor(test_label))</code></pre>
@@ -282,7 +281,7 @@ confusionMatrix(as.factor(pred),as.factor(test_label))</code></pre>
 ##                                           
 ##        &#39;Positive&#39; Class : 0               
 ## </code></pre>
-<p>with the default values we obtain a pretty good acuraccy rate. The next step we fine tune the hypeparameters sing <strong>cross validation</strong> with the help of caret package.</p>
+<p>with the default values we obtain a pretty good accuracy rate. The next step we fine tune the hyperparameters sing <strong>cross validation</strong> with the help of caret package.</p>
 </div>
 <div id="fine-tune-the-hyperparameters" class="section level2">
 <h2>Fine tune the hyperparameters</h2>
@@ -310,7 +309,7 @@ confusionMatrix(as.factor(pred),as.factor(test_label))</code></pre>
   number = 5,
   allowParallel = TRUE
 )</code></pre>
-<p>Now instead we use the <strong>train</strong> function from caret to train the model and we specif the mothod as <strong>xgbtree</strong>.</p>
+<p>Now instead we use the <strong>train</strong> function from caret to train the model and we specify the method as <strong>xgbtree</strong>.</p>
 <pre class="r"><code>train_data1 &lt;- as.matrix(train_data)
 train_label1 &lt;- as.factor(train_label)
 #mymodel2 &lt;- train(
@@ -319,7 +318,7 @@ train_label1 &lt;- as.factor(train_label)
 #  trControl = control,
 #  tuneGrid = grid_tune,
 #  method = &quot;xgbTree&quot;)</code></pre>
-<p><strong>Note</strong>: This model took several minutes so we do not the model to be rerun again when rendring this document that is why i have commented the above script and have saved the results in csv file, then i reload it again to continue our analysis. If you would like to run this model you can just uncomment the script.</p>
+<p><strong>Note</strong>: This model took several minutes so we do not the model to be rerun again when rendering this document that is why i have commented the above script and have saved the results in csv file, then i have reloaded it again to continue our analysis. If you would like to run this model you can just uncomment the script.</p>
 <pre class="r"><code># results &lt;- mymodel2$results
 # write_csv(results, &quot;xgb_results.csv&quot;)
 results &lt;- read_csv(&quot;xgb_results.csv&quot;)</code></pre>
@@ -361,7 +360,7 @@ results &lt;- read_csv(&quot;xgb_results.csv&quot;)</code></pre>
 ## 1   0.2         4     0              0.6                1         1      50
 ## # ... with 4 more variables: Accuracy &lt;dbl&gt;, Kappa &lt;dbl&gt;, AccuracySD &lt;dbl&gt;,
 ## #   KappaSD &lt;dbl&gt;</code></pre>
-<p>Now we apply these values for the final model using the whole data uploadded at the begining from the train.csv file, and then we call the file test.csv file for titanic data to submmit our prediction to the kaggle competition.</p>
+<p>Now we apply these values for the final model using the whole data uploadded at the beginning from the train.csv file, and then we call the file test.csv file for titanic data to submit our prediction to the kaggle competition.</p>
 <pre class="r"><code>imput_mydata&lt;-mice(mydata,m=3,seed=111, method = &#39;rf&#39;)</code></pre>
 <pre><code>## Warning: Number of logged events: 15</code></pre>
 <pre class="r"><code>mydata_imp&lt;-complete(imput_mydata,1)
@@ -404,11 +403,6 @@ confusionMatrix(as.factor(pred),as.factor(mydata_label))</code></pre>
 ## </code></pre>
 <p>The accuracy rate with these values is about 90% .
 Now lets fit this model to the test.csv file.</p>
-<pre class="r"><code>final_model$feature_names</code></pre>
-<pre><code>##  [1] &quot;Pclass1&quot;   &quot;Pclass2&quot;   &quot;Pclass3&quot;   &quot;Sexmale&quot;   &quot;Age&quot;       &quot;SibSp1&quot;   
-##  [7] &quot;SibSp2&quot;    &quot;SibSp3&quot;    &quot;SibSp4&quot;    &quot;SibSp5&quot;    &quot;SibSp8&quot;    &quot;Parch1&quot;   
-## [13] &quot;Parch2&quot;    &quot;Parch3&quot;    &quot;Parch4&quot;    &quot;Parch5&quot;    &quot;Parch6&quot;    &quot;Fare&quot;     
-## [19] &quot;EmbarkedQ&quot; &quot;EmbarkedS&quot;</code></pre>
 <pre class="r"><code>kag&lt;-read_csv(&quot;../test.csv&quot;)</code></pre>
 <pre><code>## Parsed with column specification:
 ## cols(
@@ -444,7 +438,7 @@ summary(kag1)</code></pre>
 ##  Max.   :512.329           
 ##  NA&#39;s   :1</code></pre>
 <p>we have 86 missing values for Age and one for Far, using a good idea from a kaggler named <strong>Harrison Tietze</strong> who suggested to treat the persons with missing values as likely to be died. For instance he replaced the missing ages by the mean age of died persons from the train data. But for us we go even further and we consider all rows with missing values as died persons.<br />
-Additionally, when inspecting the sammary above we notice that we have an extra level (9) in the factor <strong>Parch</strong> that is not existed in the traind data, and hence the model does not allow such extra information.However, since this level has only two cases we can approximate this level by the closest one which is 6, the we drorp the level 9 from this fator.</p>
+Additionally, when inspecting the summary above we notice that we have an extra level (9) in the factor <strong>Parch</strong> that is not existed in the traind data, and hence the model does not allow such extra information. However, since this level has only two cases we can approximate this level by the closest one which is 6, then we drop the level 9 from this factor.</p>
 <pre class="r"><code>kag1$Parch[kag1$Parch==9]&lt;-6
 kag1$Parch &lt;- kag1$Parch %&gt;% forcats::fct_drop()
 kag_died &lt;- kag1[!complete.cases(kag1),]
@@ -464,18 +458,18 @@ head(DP)</code></pre>
 <pre class="r"><code>predkag&lt;-predict(final_model,DP)
 head(predkag)</code></pre>
 <pre><code>## [1] 0.08700940 0.21760842 0.09857274 0.17517737 0.56304359 0.09141546</code></pre>
-<p>As we see the uotput is a probability of each instance, so we should convert this probabilitis to classe labels:</p>
+<p>As we see the output is the probability of each instance, so we should convert this probabbilitis to classe labels:</p>
 <pre class="r"><code>predkag&lt;-ifelse(predkag&gt;.5,1,0)</code></pre>
 <p>Now first we cbined passengerId with the fitted values named as Survived, next we rbind with the first set kag1 :</p>
 <pre class="r"><code>predkag2K&lt;-cbind(kag2[,1],Survived=predkag)
 kag_died$Survived &lt;- 0
 predtestk &lt;- rbind(predkag2K,kag_died[, c(1,9)])</code></pre>
-<p>Finally, we save the file as csv file in submmit it to kaggle then check our rank :</p>
+<p>Finally, we save the file as csv file to submit it to kaggle then check our rank :</p>
 <pre class="r"><code>write_csv(predtestk,&quot;predxgbkag.csv&quot;)</code></pre>
 </div>
 <div id="conclusion" class="section level2">
 <h2>Conclusion:</h2>
-<p>Xgboost is the most machine learning algorithm in nowdays due to its powerfull capability to predict wide range of data from various domaine. Several win competitions in kaggle and elswhere are achieved by this model. Using its capability to train in parallel fashion, it can handle large and complex data with ease. the large number of Hyperparameters that has give the modeler a large possibilities to tune the model with respect to the data at their hand as well as to fight other problems such as overfitting, feature selection…ect.</p>
+<p>Xgboost is the best machine learning algorithm nowadays due to its powerful capability to predict wide range of data from various domaines. Several win competitions in kaggle and elsewhere are achieved by this model. It can handle large and complex data with ease. The large number of Hyperparameters that has give the modeler a large possibilities to tune the model with respect to the data at their hand as well as to fight other problems such as overfitting, feature selection…ect.</p>
 </div>
 <div class="footnotes">
 <hr />
