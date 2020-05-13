@@ -6,8 +6,7 @@ slug: deep-learning-model-for-titanic-data
 categories: []
 tags: []
 subtitle: ''
-summary: '
-Deep learning model belongs to the area of machine learning models which can be used either for supervised or unsupervised learning...'
+summary: 'Deep learning model belongs to the area of machine learning models which can be used either for supervised or unsupervised learning...'
 output:
   blogdown::html_page:
     toc: true
