@@ -5,15 +5,15 @@ date: '2020-04-25'
 output:
   blogdown::html_page:
     toc: true
-    toc_depth: 1
     fig_width: 6
+    dev: "svg"
 slug: cnn_imag
 categories:
   - R
 tags:
   - CNN
 subtitle: ''
-summary: 'In this paper we will make use of the convolutional neural network, the most widely deep learning method used for image classification...'
+summary: 'In this article we will make use of the convolutional neural network, the most widely deep learning method used for image classification...'
 authors: []
 lastmod: '2020-05-04T22:57:28+02:00'
 featured: no
@@ -34,7 +34,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-In this paper we will make use of the convolutional neural network, the most widely deep learning method used for image classification, object detection,..etc^[Francois chollet, Deep learning with R, Meap edition, 2017, P112 ]. 
+In this article we will make use of the convolutional neural network, the most widely deep learning method used for image classification, object detection,..etc^[Francois chollet, Deep learning with R, Meap edition, 2017, P112 ]. 
 
 In this paper we are going be learning how to build and train **convolutional neural network** model using small sample of images collected from google search. The data includes 30 images, each of which is either one of three types of animals: **cat**, **dog**, or **lion**, and each one has equally number of images, that is 10.   
 
@@ -64,7 +64,7 @@ Now let us first figure out what information each image contains .
 train[[1]]
 ```
 
-As we see this image is color image with 275 pxl hight, 183 pxl width and 3 chanels (RGB) since it is a color image.
+As we see this image is color image with 275 pxl hight, 183 pxl width and 3 channels (RGB) since it is a color image.
 
 we can visualize  an image as follows: 
 
@@ -81,7 +81,7 @@ par(mfrow=c(1,1))
 ```
 
 
-After taking a brief glance at our data, we found that the image sizes are different from eaech other which is not what our image classification model expects. That is why, the following script will resize all the images to have the same size **150x150x3**.
+After having taken a brief glance at our data, we found that the image sizes are different from each other which is not what our image classification model expects. That is why, the following script will resize all the images to have the same size **150x150x3**.
 
 ```{r comment="", results="hide"}
 foreach(i=1:21) %do% {train[[i]] <- resize(train[[i]],150,150)}
@@ -94,7 +94,7 @@ To check the result we use the following:
 str(test)
 ```
  
- As we see all the images now have the same size as an array of 3 dimension. The next step  now is to combine all the images in one block.
+ As we see all the images now have the same size as an array of 3 dimensions. The next step  now is to combine all the images as one block.
  
 ```{r}
 trainall <- combine(train)
@@ -108,7 +108,7 @@ display(tile(trainall,7))
 ```
 
 
-Now the images are nicely combined in one block with four dimension: number of instances (images), height, width, and number of channels, and this is the input that will be used in our model. However, to correctly read the input our model expects that the first dimension is the number of instances, the second is height , the third is width, and the fourth is the number of channels. 
+Now the images are nicely combined in one block with four dimensions: number of instances (images), height, width, and number of channels, and this is the input that will be used in our model. However, to correctly read the input our model expects that the first dimension is the number of instances, the second is height , the third is width, and the fourth is the number of channels. 
 Let us check whether the input has the correct order or not.
 
 ```{r}
@@ -198,7 +198,7 @@ model %>% compile(loss= "categorical_crossentropy",
 
 ```
 
-At this stage everything is ready to train our model by calling the function **fit**. the epoch value is the number of iterations or the gradient descent steps,and the validation_split is the holdout samples used for assessment , here four images. I have run this model before and in oreder to avoide running it again i have commented the script by #, if you want to run it juste uncomment the script.
+At this stage everything is ready to train our model by calling the function **fit**. the epoch value is the number of iterations or the gradient descent steps, and the **validation_split** is the holdout samples used for assessment, here four images. I have run this model before and in oreder to avoide running it again i have commented the script by #, if you want to run it just uncomment the script.
 
 ```{r}
 #history <- model %>%
@@ -206,7 +206,7 @@ At this stage everything is ready to train our model by calling the function **f
 
 ```
 
-unlike machine learning model in which we can set a seed to get the result reproducible, each time we rerun the model we get different result. In practice, we intentionally rerun the model many times to improve the model performance, and ones we get the best one we save it as follows:
+unlike machine learning model in which we can set a seed to get the result reproducible, here each time we rerun the model we get different result. In practice, we intentionally rerun the model many times to improve the model performance, and ones we get the best one we save it as follows:
 
 
 ```{r}
@@ -256,7 +256,7 @@ plot(as.raster(readImage("plot_loss.jpg")))
 
 
 This plot shows the loss values for both the training set (in blue) and the validation set (in red), we see that the training loss consistently increases whereas the validation loss largely oscillating reflecting the less capability of the model to well predict the new unseen examples.
-The same conclusion can be induced from the following plot for the acccuracy metric.
+The same conclusion can be induced from the following plot for the accuracy metric.
 
 
 ```{r}
@@ -286,7 +286,7 @@ train_evaluate<- evaluate(model, trainall, trainy)
 
 ```
 
-With this first architecture we get a high accuracy rate **95.24%** and the loss is **0.0832**. However, becarefull with this rate since it is computed from the training  data which in many cases reflects the **overfitting** problem^[An introduction to statistical learning, Garth et al, spring, New York, page 33, ISBN:978-1-4614-7173-0]. the best evaluation, thus, is that based on the testing set.
+With this first architecture we get a high accuracy rate **95.24%** and the loss is **0.0832**. However, you should be cautious when this rate is very high since it is computed from the training  data which in many cases reflects the **overfitting** problem^[An introduction to statistical learning, Garth et al, spring, New York, page 33, ISBN:978-1-4614-7173-0]. The best evaluation thus is that based on the testing set.
 
 
 ```{r}
@@ -295,7 +295,7 @@ test_evaluate<- evaluate(model, testall, testy)
 ```
 
 Using the testing set that is not seen by the model,  the accuracy rate is about  55.56%.
-In fact this is exactly what we warned about it, indeed we have an overfiting problem where the model try to memorize every noisy pattern which will constrain the model to poorly generalize to unseen data.   
+In fact this is exactly what we warned about it, indeed we have an overfitting problem where the model try to memorize every noisy pattern which will constrain the model to poorly generalize to unseen data.   
 
 ## Prediction
 
@@ -306,7 +306,7 @@ pred <- predict_classes(model,testall)
 pred
 ```
 
-the following picture shows which images from the testing set are correctly classified and which are not:
+the following plot shows which images from the testing set are correctly classified and which are not:
 
 ```{r results="hide"}
 
@@ -325,7 +325,7 @@ foreach(i=1:9) %do% {display(test[[i]], method="raster");
 par(mfrow=c(1,1))
 ```
 
-Using this model to predict the test examples, all the dogs are misclassified wherease the lions are perfectly classified. 
+Using this model to predict the test examples, all the dogs are misclassified whereas the lions are perfectly classified. 
 
 We can also display the training examples as follows:  
 
@@ -350,8 +350,8 @@ par(mfrow=c(1,1))
 
 ## Conclusion
 
-As we see this model perfectly identified lions but failed to identify any of the dogs in the testing set which is not the case for the training data where the model has high accuracy,  and as I mentioned earlier this the consequences of the overfitting problem. However, There are bunch of techniques that can be used in such situation such as regularization methods (L2,L1), pooling, dropuot layers..ect.  All these techniques will be adressed soon in further papers.
-Besides overfiting, we can also improve the model by playing around with hyperparameters such as changing , the number of the layers, number of the nodes in each layer, number of epochs...ect.    
+As we see this model perfectly identified lions but failed to identify any of the dogs in the testing set which is not the case for the training data where the model has high accuracy,  and as I mentioned earlier this is the consequences of the overfitting problem. However, There are bunch of techniques that can be used in such situation such as regularization methods (L2,L1), pooling, dropout layers..ect.  All these techniques will be addressed soon in further articles.
+Besides overfitting, we can also improve the model by playing around with hyperparameters such as changing , the number of the layers, number of the nodes in each layer, number of epochs...ect.    
 
-**Note**: Be aware that this model can not be reliable since it has used very small data. However, we may get a higher performance for this model if we implement very large dataset. In other words.
+**Note**: Be aware that this model can not be reliable since it has used very small data. However, we may get a higher performance for this model if we implement very large dataset.
 
