@@ -5,15 +5,15 @@ date: '2020-04-25'
 output:
   blogdown::html_page:
     toc: true
-    toc_depth: 1
     fig_width: 6
+    dev: "svg"
 slug: cnn_imag
 categories:
   - R
 tags:
   - CNN
 subtitle: ''
-summary: 'In this paper we will make use of the convolutional neural network, the most widely deep learning method used for image classification...'
+summary: 'In this article we will make use of the convolutional neural network, the most widely deep learning method used for image classification...'
 authors: []
 lastmod: '2020-05-04T22:57:28+02:00'
 featured: no
@@ -26,10 +26,20 @@ projects: []
 
 <script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
 
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#data-preparation">Data preparation</a></li>
+<li><a href="#training-the-model">Training the model:</a></li>
+<li><a href="#model-evaluation">Model Evaluation</a></li>
+<li><a href="#prediction">Prediction</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul>
+</div>
 
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
-<p>In this paper we will make use of the convolutional neural network, the most widely deep learning method used for image classification, object detection,..etc<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>.</p>
+<p>In this article we will make use of the convolutional neural network, the most widely deep learning method used for image classification, object detection,..etc<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>.</p>
 <p>In this paper we are going be learning how to build and train <strong>convolutional neural network</strong> model using small sample of images collected from google search. The data includes 30 images, each of which is either one of three types of animals: <strong>cat</strong>, <strong>dog</strong>, or <strong>lion</strong>, and each one has equally number of images, that is 10.</p>
 </div>
 <div id="data-preparation" class="section level2">
@@ -63,16 +73,16 @@ test &lt;- lapply(mytest, readImage)</code></pre>
 ## [3,] 0.2078431 0.2078431 0.2078431 0.2117647 0.2117647 0.2078431
 ## [4,] 0.2117647 0.2117647 0.2156863 0.2156863 0.2196078 0.2117647
 ## [5,] 0.2156863 0.2156863 0.2196078 0.2196078 0.2235294 0.2156863</code></pre>
-<p>As we see this image is color image with 275 pxl hight, 183 pxl width and 3 chanels (RGB) since it is a color image.</p>
+<p>As we see this image is color image with 275 pxl hight, 183 pxl width and 3 channels (RGB) since it is a color image.</p>
 <p>we can visualize an image as follows:</p>
 <pre class="r"><code>plot(test[[4]])</code></pre>
-<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-3-1.png" width="576" /></p>
+<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-3-1.svg" width="576" /></p>
 <p>If instead we want to visualize all the image as one block we can make use of <strong>foreach</strong> package to apply a for loop as follows.</p>
 <pre class="r"><code>par(mfrow=c(7,3))
 foreach(i=1:21) %do% {plot(train[[i]])}</code></pre>
-<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-4-1.png" width="576" /></p>
+<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-4-1.svg" width="576" /></p>
 <pre class="r"><code>par(mfrow=c(1,1))</code></pre>
-<p>After taking a brief glance at our data, we found that the image sizes are different from eaech other which is not what our image classification model expects. That is why, the following script will resize all the images to have the same size <strong>150x150x3</strong>.</p>
+<p>After having taken a brief glance at our data, we found that the image sizes are different from each other which is not what our image classification model expects. That is why, the following script will resize all the images to have the same size <strong>150x150x3</strong>.</p>
 <pre class="r"><code>foreach(i=1:21) %do% {train[[i]] &lt;- resize(train[[i]],150,150)}
 foreach(i=1:9) %do% {test[[i]] &lt;- resize(test[[i]],150,150)}</code></pre>
 <p>To check the result we use the following:</p>
@@ -105,13 +115,13 @@ foreach(i=1:9) %do% {test[[i]] &lt;- resize(test[[i]],150,150)}</code></pre>
 ##  $ :Formal class &#39;Image&#39; [package &quot;EBImage&quot;] with 2 slots
 ##   .. ..@ .Data    : num [1:150, 1:150, 1:3] 0 0 0 0 0 ...
 ##   .. ..@ colormode: int 2</code></pre>
-<p>As we see all the images now have the same size as an array of 3 dimension. The next step now is to combine all the images in one block.</p>
+<p>As we see all the images now have the same size as an array of 3 dimensions. The next step now is to combine all the images as one block.</p>
 <pre class="r"><code>trainall &lt;- combine(train)
 testall &lt;- combine(test) </code></pre>
 <p>We can display the output block usine the following:</p>
 <pre class="r"><code>display(tile(trainall,7))</code></pre>
-<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-8-1.png" width="576" /></p>
-<p>Now the images are nicely combined in one block with four dimension: number of instances (images), height, width, and number of channels, and this is the input that will be used in our model. However, to correctly read the input our model expects that the first dimension is the number of instances, the second is height , the third is width, and the fourth is the number of channels.
+<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-8-1.svg" width="576" /></p>
+<p>Now the images are nicely combined in one block with four dimensions: number of instances (images), height, width, and number of channels, and this is the input that will be used in our model. However, to correctly read the input our model expects that the first dimension is the number of instances, the second is height , the third is width, and the fourth is the number of channels.
 Let us check whether the input has the correct order or not.</p>
 <pre class="r"><code>str(trainall)</code></pre>
 <pre><code>## Formal class &#39;Image&#39; [package &quot;EBImage&quot;] with 2 slots
@@ -204,10 +214,10 @@ model %&gt;%
 <pre class="r"><code>model %&gt;% compile(loss= &quot;categorical_crossentropy&quot;,
                   optimizer=&quot;adam&quot;,
                   metrics=&quot;accuracy&quot;)</code></pre>
-<p>At this stage everything is ready to train our model by calling the function <strong>fit</strong>. the epoch value is the number of iterations or the gradient descent steps,and the validation_split is the holdout samples used for assessment , here four images. I have run this model before and in oreder to avoide running it again i have commented the script by #, if you want to run it juste uncomment the script.</p>
+<p>At this stage everything is ready to train our model by calling the function <strong>fit</strong>. the epoch value is the number of iterations or the gradient descent steps, and the <strong>validation_split</strong> is the holdout samples used for assessment, here four images. I have run this model before and in oreder to avoide running it again i have commented the script by #, if you want to run it just uncomment the script.</p>
 <pre class="r"><code>#history &lt;- model %&gt;%
   #fit(trainall, trainy, epoch=50, validation_split=0.2)</code></pre>
-<p>unlike machine learning model in which we can set a seed to get the result reproducible, each time we rerun the model we get different result. In practice, we intentionally rerun the model many times to improve the model performance, and ones we get the best one we save it as follows:</p>
+<p>unlike machine learning model in which we can set a seed to get the result reproducible, here each time we rerun the model we get different result. In practice, we intentionally rerun the model many times to improve the model performance, and ones we get the best one we save it as follows:</p>
 <pre class="r"><code>#save_model_hdf5(model, &quot;modelcnn.h5&quot;)</code></pre>
 <p>And we can load it again as follows:</p>
 <pre class="r"><code>model &lt;- load_model_hdf5(&quot;modelcnn.h5&quot;)</code></pre>
@@ -227,9 +237,9 @@ model %&gt;%
 <p>As you notice all the above codes have not been executed to avoide the issue discussed above and to make things simple. here we load the saved plot.</p>
 <pre class="r"><code>par(mar=c(0,0,0,0))
 plot(as.raster(readImage(&quot;plot_loss.jpg&quot;)))</code></pre>
-<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-21-1.png" width="576" /></p>
+<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-21-1.svg" width="576" /></p>
 <p>This plot shows the loss values for both the training set (in blue) and the validation set (in red), we see that the training loss consistently increases whereas the validation loss largely oscillating reflecting the less capability of the model to well predict the new unseen examples.
-The same conclusion can be induced from the following plot for the acccuracy metric.</p>
+The same conclusion can be induced from the following plot for the accuracy metric.</p>
 <pre class="r"><code>#p2 &lt;- ggplot(df,aes(x=epoch, train_acc))+
   #geom_point(size=1, color=&quot;blue&quot;)+
   #geom_point(aes(x=epoch, valid_acc), size=1, color=&quot;red&quot;)+
@@ -238,17 +248,17 @@ The same conclusion can be induced from the following plot for the acccuracy met
 <p>Here also we do the same thing</p>
 <pre class="r"><code>par(mar=c(0,0,0,0))
 plot(as.raster(readImage(&quot;plot_acc.jpg&quot;)))</code></pre>
-<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-23-1.png" width="576" /></p>
+<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-23-1.svg" width="576" /></p>
 <p><strong>Note</strong>: we coud have used directly the plot function , plot(history), but doing so we will get different plot each time we knit the document.</p>
 </div>
 <div id="model-evaluation" class="section level2">
 <h2>Model Evaluation</h2>
 <p>We can evaluate the model performance using the training set as follows:</p>
 <pre class="r"><code>train_evaluate&lt;- evaluate(model, trainall, trainy)</code></pre>
-<p>With this first architecture we get a high accuracy rate <strong>95.24%</strong> and the loss is <strong>0.0832</strong>. However, becarefull with this rate since it is computed from the training data which in many cases reflects the <strong>overfitting</strong> problem<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a>. the best evaluation, thus, is that based on the testing set.</p>
+<p>With this first architecture we get a high accuracy rate <strong>95.24%</strong> and the loss is <strong>0.0832</strong>. However, you should be cautious when this rate is very high since it is computed from the training data which in many cases reflects the <strong>overfitting</strong> problem<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a>. The best evaluation thus is that based on the testing set.</p>
 <pre class="r"><code>test_evaluate&lt;- evaluate(model, testall, testy)</code></pre>
 <p>Using the testing set that is not seen by the model, the accuracy rate is about 55.56%.
-In fact this is exactly what we warned about it, indeed we have an overfiting problem where the model try to memorize every noisy pattern which will constrain the model to poorly generalize to unseen data.</p>
+In fact this is exactly what we warned about it, indeed we have an overfitting problem where the model try to memorize every noisy pattern which will constrain the model to poorly generalize to unseen data.</p>
 </div>
 <div id="prediction" class="section level2">
 <h2>Prediction</h2>
@@ -256,7 +266,7 @@ In fact this is exactly what we warned about it, indeed we have an overfiting pr
 <pre class="r"><code>pred &lt;- predict_classes(model,testall)
 pred</code></pre>
 <pre><code>## [1] 0 0 2 0 2 0 2 2 2</code></pre>
-<p>the following picture shows which images from the testing set are correctly classified and which are not:</p>
+<p>the following plot shows which images from the testing set are correctly classified and which are not:</p>
 <pre class="r"><code>pred[pred==0] &lt;- &quot;cat&quot;
 pred[pred==1] &lt;- &quot;dog&quot;
 pred[pred==2] &lt;- &quot;lion&quot;
@@ -269,9 +279,9 @@ foreach(i=1:9) %do% {display(test[[i]], method=&quot;raster&quot;);
   text(x = 20, y = 20, label = pred[i], 
        adj = c(0,1), col = &quot;black&quot;, cex = 4)
 }</code></pre>
-<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-27-1.png" width="576" /></p>
+<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-27-1.svg" width="576" /></p>
 <pre class="r"><code>par(mfrow=c(1,1))</code></pre>
-<p>Using this model to predict the test examples, all the dogs are misclassified wherease the lions are perfectly classified.</p>
+<p>Using this model to predict the test examples, all the dogs are misclassified whereas the lions are perfectly classified.</p>
 <p>We can also display the training examples as follows:</p>
 <pre class="r"><code>pred1 &lt;- predict_classes(model,trainall)
 
@@ -287,14 +297,14 @@ foreach(i=1:21) %do% {display(train[[i]], method=&quot;raster&quot;);
   text(x = 20, y = 20, label = pred1[i], 
        adj = c(0,1), col = &quot;black&quot;, cex = 2)
 }</code></pre>
-<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-28-1.png" width="576" /></p>
+<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-28-1.svg" width="576" /></p>
 <pre class="r"><code>par(mfrow=c(1,1))</code></pre>
 </div>
 <div id="conclusion" class="section level2">
 <h2>Conclusion</h2>
-<p>As we see this model perfectly identified lions but failed to identify any of the dogs in the testing set which is not the case for the training data where the model has high accuracy, and as I mentioned earlier this the consequences of the overfitting problem. However, There are bunch of techniques that can be used in such situation such as regularization methods (L2,L1), pooling, dropuot layers..ect. All these techniques will be adressed soon in further papers.
-Besides overfiting, we can also improve the model by playing around with hyperparameters such as changing , the number of the layers, number of the nodes in each layer, number of epochs…ect.</p>
-<p><strong>Note</strong>: Be aware that this model can not be reliable since it has used very small data. However, we may get a higher performance for this model if we implement very large dataset. In other words.</p>
+<p>As we see this model perfectly identified lions but failed to identify any of the dogs in the testing set which is not the case for the training data where the model has high accuracy, and as I mentioned earlier this is the consequences of the overfitting problem. However, There are bunch of techniques that can be used in such situation such as regularization methods (L2,L1), pooling, dropout layers..ect. All these techniques will be addressed soon in further articles.
+Besides overfitting, we can also improve the model by playing around with hyperparameters such as changing , the number of the layers, number of the nodes in each layer, number of epochs…ect.</p>
+<p><strong>Note</strong>: Be aware that this model can not be reliable since it has used very small data. However, we may get a higher performance for this model if we implement very large dataset.</p>
 </div>
 <div class="footnotes">
 <hr />
