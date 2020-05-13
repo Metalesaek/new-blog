@@ -118,7 +118,7 @@ test<-complete(impute_test,1)
 ```
 
 
-### Convert data into a normalized matrix.
+### Convert the data into a numeric matrix.
 
 in deep learning all the variables should of numeric type, so first we convert the factors to integer type and recode the levels in order to start from 0, then we convert the data into matrix, and finally we pull out the target variable into a separate vector.
 We do this transformation for both sets (train and test).
