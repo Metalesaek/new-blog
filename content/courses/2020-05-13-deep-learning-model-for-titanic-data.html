@@ -6,7 +6,12 @@ slug: deep-learning-model-for-titanic-data
 categories: []
 tags: []
 subtitle: ''
-summary: ''
+summary: 'Deep learning model belongs to the area of machine learning models which can be used either for supervised or unsupervised learning...'
+output:
+  blogdown::html_page:
+    toc: true
+    fig_width: 6
+    dev: "svg"
 authors: []
 lastmod: '2020-05-13T15:42:02+02:00'
 featured: no
@@ -19,4 +24,272 @@ projects: []
 
 <script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
 
+<div id="TOC">
+<ul>
+<li><a href="#introducction">Introducction</a></li>
+<li><a href="#data-preparation">Data preparation</a></li>
+<li><a href="#partition-the-data-impute-the-missing-values.">Partition the data &amp; impute the missing values.</a>
+<ul>
+<li><a href="#convert-data-into-a-normalized-matrix.">Convert data into a normalized matrix.</a></li>
+</ul></li>
+<li><a href="#train-the-model.">Train the model.</a>
+<ul>
+<li><a href="#create-the-model">Create the model</a></li>
+<li><a href="#compile-the-model">Compile the model</a></li>
+<li><a href="#fit-the-model">Fit the model</a></li>
+</ul></li>
+<li><a href="#the-model-evaluation">The model evaluation</a></li>
+<li><a href="#model-tuning">model tuning</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+</ul>
+</div>
 
+<div id="introducction" class="section level2">
+<h2>Introducction</h2>
+<p>Deep learning model belongs to the area of machine learning models which can be used either for supervised or unsupervised learning. Based on <a href="https://www.digitaltrends.com/cool-tech/what-is-an-artificial-neural-network/">artificial neural network</a>, it can handle a wide variety of data types by using different neural network architectures such as <a href="https://stanford.edu/~shervine/teaching/cs-230/cheatsheet-recurrent-neural-networks">recurrent neural network RNN</a> for sequence data (time series, text data etc.), <a href="https://towardsdatascience.com/a-comprehensive-guide-to-convolutional-neural-networks-the-eli5-way-3bd2b1164a53">convolutional neural network CNN</a> for computer vision, <a href="https://machinelearningmastery.com/what-are-generative-adversarial-networks-gans/">generative adversarial network GAN</a> for image generation and many other types of architecture.
+The basic architecture of deep learning is the same as the classical artificial neural network (that has one hidden layer) with the difference that deep learning allows more than one hidden layer (this is where does the name deep come from ). Theses layers are called dense layers since that each node of a particular layer is connected with all the nodes of the previous layer, and in addition each node has an <a href="https://missinglink.ai/guides/neural-network-concepts/7-types-neural-network-activation-functions-right/">activation function</a> to capture any nonlinearity in the data.</p>
+<p>In this article, we will use the basic deep learning model to predict the famous titanic data set (kaggle competition).</p>
+</div>
+<div id="data-preparation" class="section level2">
+<h2>Data preparation</h2>
+<p>We use the titanic data because of its familiarity with every one and hence focusing more on understanding and implementing our model. So Let’s call this data.</p>
+<pre class="r"><code>ssh &lt;- suppressPackageStartupMessages
+ssh(library(tidyverse))
+data &lt;- read_csv(&quot;C://Users/dell/Documents/new-blog/content/post/train.csv&quot;)</code></pre>
+<pre><code>## Parsed with column specification:
+## cols(
+##   PassengerId = col_double(),
+##   Survived = col_double(),
+##   Pclass = col_double(),
+##   Name = col_character(),
+##   Sex = col_character(),
+##   Age = col_double(),
+##   SibSp = col_double(),
+##   Parch = col_double(),
+##   Ticket = col_character(),
+##   Fare = col_double(),
+##   Cabin = col_character(),
+##   Embarked = col_character()
+## )</code></pre>
+<p>Then we will call <strong>keras</strong> package for deep learning models, and <strong>caret</strong> for randomly spliting the data and creating the confusion matrix.</p>
+<pre class="r"><code>ssh(library(keras))
+ssh(library(caret))</code></pre>
+<p>The first step in modeling is to clean and prepare the data. the following code shows the structure of this data.</p>
+<pre class="r"><code>glimpse(data)</code></pre>
+<pre><code>## Observations: 891
+## Variables: 12
+## $ PassengerId &lt;dbl&gt; 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, ...
+## $ Survived    &lt;dbl&gt; 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0...
+## $ Pclass      &lt;dbl&gt; 3, 1, 3, 1, 3, 3, 1, 3, 3, 2, 3, 1, 3, 3, 3, 2, 3, 2, 3...
+## $ Name        &lt;chr&gt; &quot;Braund, Mr. Owen Harris&quot;, &quot;Cumings, Mrs. John Bradley ...
+## $ Sex         &lt;chr&gt; &quot;male&quot;, &quot;female&quot;, &quot;female&quot;, &quot;female&quot;, &quot;male&quot;, &quot;male&quot;, &quot;...
+## $ Age         &lt;dbl&gt; 22, 38, 26, 35, 35, NA, 54, 2, 27, 14, 4, 58, 20, 39, 1...
+## $ SibSp       &lt;dbl&gt; 1, 1, 0, 1, 0, 0, 0, 3, 0, 1, 1, 0, 0, 1, 0, 0, 4, 0, 1...
+## $ Parch       &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 1, 2, 0, 1, 0, 0, 5, 0, 0, 1, 0, 0...
+## $ Ticket      &lt;chr&gt; &quot;A/5 21171&quot;, &quot;PC 17599&quot;, &quot;STON/O2. 3101282&quot;, &quot;113803&quot;, ...
+## $ Fare        &lt;dbl&gt; 7.2500, 71.2833, 7.9250, 53.1000, 8.0500, 8.4583, 51.86...
+## $ Cabin       &lt;chr&gt; NA, &quot;C85&quot;, NA, &quot;C123&quot;, NA, NA, &quot;E46&quot;, NA, NA, NA, &quot;G6&quot;,...
+## $ Embarked    &lt;chr&gt; &quot;S&quot;, &quot;C&quot;, &quot;S&quot;, &quot;S&quot;, &quot;S&quot;, &quot;Q&quot;, &quot;S&quot;, &quot;S&quot;, &quot;S&quot;, &quot;C&quot;, &quot;S&quot;, ...</code></pre>
+<p>Using this data we want to predict the variable <strong>Survived</strong> using the remaining variables as predictors. We see that some variables have unique values such as <strong>PassengerId</strong>,<strong>Name</strong>, and <strong>ticket</strong>. Thus, they cannot be used as predictors. the same note applies to the variable <strong>Cabin</strong> with the additional problem of missing values. these variables will be removed as follows:</p>
+<pre class="r"><code>mydata&lt;-data[,-c(1,4,9,11)]</code></pre>
+<p>As we see some variables should be of factor type such as <strong>Pclass</strong> (which is now double), <strong>Sex</strong> (character), and "Embarked** (character). thus, we convert them to factor type:</p>
+<pre class="r"><code>mydata &lt;- mydata %&gt;%  modify_at(c(&#39;Pclass&#39;, &#39;Embarked&#39;, &#39;Sex&#39; ), as.factor)
+glimpse(mydata)</code></pre>
+<pre><code>## Observations: 891
+## Variables: 8
+## $ Survived &lt;dbl&gt; 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1...
+## $ Pclass   &lt;fct&gt; 3, 1, 3, 1, 3, 3, 1, 3, 3, 2, 3, 1, 3, 3, 3, 2, 3, 2, 3, 3...
+## $ Sex      &lt;fct&gt; male, female, female, female, male, male, male, male, fema...
+## $ Age      &lt;dbl&gt; 22, 38, 26, 35, 35, NA, 54, 2, 27, 14, 4, 58, 20, 39, 14, ...
+## $ SibSp    &lt;dbl&gt; 1, 1, 0, 1, 0, 0, 0, 3, 0, 1, 1, 0, 0, 1, 0, 0, 4, 0, 1, 0...
+## $ Parch    &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 1, 2, 0, 1, 0, 0, 5, 0, 0, 1, 0, 0, 0...
+## $ Fare     &lt;dbl&gt; 7.2500, 71.2833, 7.9250, 53.1000, 8.0500, 8.4583, 51.8625,...
+## $ Embarked &lt;fct&gt; S, C, S, S, S, Q, S, S, S, C, S, S, S, S, S, S, Q, S, S, C...</code></pre>
+<p>Now let’s get some summary about this data</p>
+<pre class="r"><code>summary(mydata)</code></pre>
+<pre><code>##     Survived      Pclass      Sex           Age            SibSp      
+##  Min.   :0.0000   1:216   female:314   Min.   : 0.42   Min.   :0.000  
+##  1st Qu.:0.0000   2:184   male  :577   1st Qu.:20.12   1st Qu.:0.000  
+##  Median :0.0000   3:491                Median :28.00   Median :0.000  
+##  Mean   :0.3838                        Mean   :29.70   Mean   :0.523  
+##  3rd Qu.:1.0000                        3rd Qu.:38.00   3rd Qu.:1.000  
+##  Max.   :1.0000                        Max.   :80.00   Max.   :8.000  
+##                                        NA&#39;s   :177                    
+##      Parch             Fare        Embarked  
+##  Min.   :0.0000   Min.   :  0.00   C   :168  
+##  1st Qu.:0.0000   1st Qu.:  7.91   Q   : 77  
+##  Median :0.0000   Median : 14.45   S   :644  
+##  Mean   :0.3816   Mean   : 32.20   NA&#39;s:  2  
+##  3rd Qu.:0.0000   3rd Qu.: 31.00             
+##  Max.   :6.0000   Max.   :512.33             
+## </code></pre>
+<p>We have two variables that have missing values, <strong>Age</strong> with large number 177 , followed by <strong>Embarked</strong> with 2 missing values.
+To deal with this issue we have two options:</p>
+<ul>
+<li><p>the first and easy one is to remove the entire rows that have any missing value but with the cost of may losing valuable information specially when we have large number of missing values compared to the total number of obervations as our case.</p></li>
+<li><p>the second option is to impute this missing values using the other complete cases, for instance we can replace a missing value of a particular column by the mean of this column (for numeric variable) or we use multinomial method to predict the categorical variables.</p></li>
+</ul>
+<p>Fortunately , there is a useful package called <strong>mice</strong> which will do this imputation for us. However, applying this imputation on the entire data would lead us to fall on a problem called <strong>train-test contamination</strong> ,which means that when we split the data , the missing values of the training set are imputed using cases in the test set, and this violates a crucial concept in machine learning for model evaluation, the test set should never be seen by the model during the training process.</p>
+<p>To avoid this problem we apply the imputation separately on the training set and on the testing set.
+So let’s partition the data using <strong>caret</strong> package function.</p>
+</div>
+<div id="partition-the-data-impute-the-missing-values." class="section level2">
+<h2>Partition the data &amp; impute the missing values.</h2>
+<p>we randomly split the data into two sets , 80% of samples will be used in the training process and the remaining 20% will be kept as test set.</p>
+<pre class="r"><code>set.seed(1234)
+index&lt;-createDataPartition(mydata$Survived,p=0.8,list=FALSE)
+train&lt;-mydata[index,]
+test&lt;-mydata[-index,]</code></pre>
+<p>Now we are ready to impute the missing values for both train and test set.</p>
+<pre class="r"><code>ssh(library(mice))
+impute_train&lt;-mice(train,m=1,seed = 1111)
+train&lt;-complete(impute_train,1)
+
+impute_test&lt;-mice(test,m=1,seed = 1111)
+test&lt;-complete(impute_test,1)</code></pre>
+<div id="convert-data-into-a-normalized-matrix." class="section level3">
+<h3>Convert data into a normalized matrix.</h3>
+<p>in deep learning all the variables should of numeric type, so first we convert the factors to integer type and recode the levels in order to start from 0, then we convert the data into matrix, and finally we pull out the target variable into a separate vector.
+We do this transformation for both sets (train and test).</p>
+<pre class="r"><code>train$Embarked&lt;-as.integer(train$Embarked)-1
+train$Sex&lt;-as.integer(train$Sex)-1
+train$Pclass&lt;-as.integer(train$Pclass)-1
+
+test$Embarked&lt;-as.integer(test$Embarked)-1
+test$Sex&lt;-as.integer(test$Sex)-1
+test$Pclass&lt;-as.integer(test$Pclass)-1
+glimpse(test)</code></pre>
+<pre><code>## Observations: 178
+## Variables: 8
+## $ Survived &lt;dbl&gt; 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0...
+## $ Pclass   &lt;dbl&gt; 2, 2, 2, 1, 1, 2, 2, 1, 2, 2, 2, 0, 0, 2, 2, 2, 1, 2, 2, 2...
+## $ Sex      &lt;dbl&gt; 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1...
+## $ Age      &lt;dbl&gt; 35.0, 2.0, 27.0, 55.0, 38.0, 23.0, 38.0, 3.0, 28.0, 34.5, ...
+## $ SibSp    &lt;dbl&gt; 0, 3, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 4, 5, 0, 0, 0, 0...
+## $ Parch    &lt;dbl&gt; 0, 1, 2, 0, 0, 0, 5, 2, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0...
+## $ Fare     &lt;dbl&gt; 8.0500, 21.0750, 11.1333, 16.0000, 13.0000, 7.2250, 31.387...
+## $ Embarked &lt;dbl&gt; 2, 2, 2, 2, 2, 0, 2, 0, 2, 1, 2, 2, 0, 2, 2, 2, 2, 2, 2, 2...</code></pre>
+<p><strong>Note</strong>: If you noticed the varaibles <strong>Pclass</strong>, <strong>Embarked</strong>, and <strong>Sex</strong>, originally were numeric but we have converted them to factors for an appropriate imputation in the imputation step, if not doing so the imputation of Embarked missing values, for instance, could be any other numeric values which are not related to any ports in the data.</p>
+<p>we convert the two sets into matrix form. (we also remove the column names)</p>
+<pre class="r"><code>trained&lt;-as.matrix(train)
+dimnames(trained)&lt;-NULL
+
+tested&lt;-as.matrix(test)
+dimnames(tested)&lt;-NULL
+str(tested)</code></pre>
+<pre><code>##  num [1:178, 1:8] 0 0 1 1 1 1 1 1 0 0 ...</code></pre>
+<p>Now we pull out the target variable</p>
+<pre class="r"><code>trainy&lt;-trained[,1]
+testy&lt;-tested[,1]
+trainx&lt;-trained[,-1]
+testx&lt;-tested[,-1]</code></pre>
+<p>Then we Apply one hot encoding on the target variable.</p>
+<pre class="r"><code>trainlabel&lt;-to_categorical(trainy)
+testlabel&lt;-to_categorical(testy)</code></pre>
+</div>
+</div>
+<div id="train-the-model." class="section level2">
+<h2>Train the model.</h2>
+<p>Now it is time to build our model. Th first step is to define the model architecture and the number of layers that will be used with the prespecified parameters.
+We will choose a simple model with one hidden layer with 10 unites (nodes). Since we have 7 predictors the input_shape will be 7, and the activation function is <strong>relu</strong> which is the most used one, but for the output layer we choose sigmoid function since we have binary classification.</p>
+<div id="create-the-model" class="section level3">
+<h3>Create the model</h3>
+<pre class="r"><code>model &lt;- keras_model_sequential()
+
+model %&gt;%
+    layer_dense(units=10,activation = &quot;relu&quot;,
+              kernel_initializer = &quot;he_normal&quot;,input_shape =c(7))%&gt;%
+    layer_dense(units=2,activation = &quot;sigmoid&quot;)
+
+summary(model)  </code></pre>
+<pre><code>## Model: &quot;sequential&quot;
+## ________________________________________________________________________________
+## Layer (type)                        Output Shape                    Param #     
+## ================================================================================
+## dense (Dense)                       (None, 10)                      80          
+## ________________________________________________________________________________
+## dense_1 (Dense)                     (None, 2)                       22          
+## ================================================================================
+## Total params: 102
+## Trainable params: 102
+## Non-trainable params: 0
+## ________________________________________________________________________________</code></pre>
+<p>We have in total 102 parameters to estimate, since we have 7 inputs and 10 nodes and 10 biases, so the parameters number of the hidden layer is 80 (7*10+10). By the same way get the parameters number of the output layer.</p>
+</div>
+<div id="compile-the-model" class="section level3">
+<h3>Compile the model</h3>
+<p>In the <strong>compile</strong> function (from keras) we specify the loss function, the optimizer and the metric type that will be used. In our case we use the <strong>binary crossentropy</strong>, the optimizer is the popular one <strong>adam</strong> and for the metric we use <strong>accuracy</strong>.</p>
+<pre class="r"><code>model %&gt;%
+  compile(loss=&quot;binary_crossentropy&quot;,
+          optimizer=&quot;adam&quot;,
+          metric=&quot;accuracy&quot;)</code></pre>
+</div>
+<div id="fit-the-model" class="section level3">
+<h3>Fit the model</h3>
+<p>Now we can run our model and follow the dynamic evolution of the process in the plot window on the right lower corner of the screen. and you can also plot the model in a static way.
+for our model we choose 100 epochs (iterations), for the stochastic gradient we use 20 samples at each iteration, and we hold out 20% of the training data to asses the model.</p>
+<pre class="r"><code>#history&lt;- model %&gt;%
+# fit(trainx,trainlabel,epoch=100,batch_size=20,validation_split=0.2)</code></pre>
+<p><strong>Note</strong> : if you would like to rerun the model uncomment the above code.</p>
+<p>We can extract the five last metric values from the history object as follows.</p>
+<pre class="r"><code>#df &lt;- tibble(train_loss=history$metrics$loss, valid_loss=history$metrics$val_loss,
+#      train_acc=history$metrics$accuracy, valid_acc=history$metrics$val_accuracy)
+#write_csv(df,&quot;df.csv&quot;)
+df &lt;- read.csv(&quot;df.csv&quot;)
+tail(df,5)</code></pre>
+<pre><code>##     train_loss valid_loss train_acc valid_acc
+## 96   0.4600244  0.4038978 0.7850877 0.8146853
+## 97   0.4655294  0.4080083 0.7850877 0.8181818
+## 98   0.4616975  0.4048636 0.7894737 0.8286713
+## 99   0.4634421  0.4092717 0.7929825 0.8216783
+## 100  0.4639769  0.4116935 0.7789474 0.8216783</code></pre>
+<p>It should be noted here that since the accuracy lines are more or less closer to each other and running together in the same direction we do not have to worry about overfitting, The opposite though is more pronounce since the accuracy of the training samples is less than that of the validation samples (underfitting), so we should increase the complexity of the model (by adding more nodes or more layers).</p>
+<p>We can save this model (or save only the wieghts) and load it again for further use.</p>
+<pre class="r"><code>#save_model_hdf5(model,&quot;simplemodel.h5&quot;)
+model&lt;-load_model_hdf5(&quot;simplemodel.h5&quot;)</code></pre>
+</div>
+</div>
+<div id="the-model-evaluation" class="section level2">
+<h2>The model evaluation</h2>
+<p>Let’s evaluate our model using both the training set then the testing set.</p>
+<pre class="r"><code>train_eva &lt;- model %&gt;%
+  evaluate(trainx,trainlabel)
+test_eva &lt;- model %&gt;% 
+  evaluate(testx, testlabel)
+tibble(train_acc= train_eva$accuracy, test_acc= test_eva$accuracy, train_loss=train_eva$loss,test_loss=test_eva$loss)</code></pre>
+<p>The accuracy rate of the model using the test set is 80.62% which is higher than that of the training set (78.82%) which means that this model needs more improvement.</p>
+</div>
+<div id="model-tuning" class="section level2">
+<h2>model tuning</h2>
+<p>Let’s now include another hidden layer with 20 nodes, and let’s also increase the number of epochs to 200. In addition, as we did with the above model we should save our optimal model.</p>
+<pre class="r"><code>model1 &lt;- keras_model_sequential()
+
+model1 %&gt;%
+    layer_dense(units=10,activation = &quot;relu&quot;,
+              kernel_initializer = &quot;he_normal&quot;,input_shape =c(7)) %&gt;%
+    layer_dense(units=20, activation = &quot;relu&quot;,
+              kernel_initializer = &quot;he_normal&quot;) %&gt;%
+    layer_dense(units=2,activation = &quot;sigmoid&quot;)
+
+model1 %&gt;%
+  compile(loss=&quot;binary_crossentropy&quot;,
+          optimizer=&quot;adam&quot;,
+          metric=&quot;accuracy&quot;)
+
+#history1&lt;- model1 %&gt;%
+#   fit (trainx,trainlabel,epoch=200,batch_size=40,validation_split=0.2)</code></pre>
+<p>Before evalation we should svve it.</p>
+<pre class="r"><code>#save_model_hdf5(model,&quot;simplemodel1.h5&quot;)
+model1&lt;-load_model_hdf5(&quot;simplemodel1.h5&quot;)</code></pre>
+<p>Let’s evaluate this new model.</p>
+<pre class="r"><code>train_eva &lt;- model1 %&gt;%
+  evaluate(trainx,trainlabel)
+test_eva &lt;- model1 %&gt;% 
+  evaluate(testx, testlabel)
+tibble(train_acc= train_eva$accuracy, test_acc= test_eva$accuracy, train_loss=train_eva$loss,test_loss=test_eva$loss)</code></pre>
+<p>with this new model we get a larger improvement with both accuracies. We can go back again to our model and try to increase the nodes or the layers or playing around with other parameters to get better results.</p>
+</div>
+<div id="conclusion" class="section level2">
+<h2>Conclusion</h2>
+<p>Practically, deep learning models are more efficient than most of the classical machine learning models when it comes to fit complex and large data sets. Moreover, some type of data such as images or speeches are exclusively the areas where deep learning rises its great capability.</p>
+</div>
