@@ -1,0 +1,307 @@
+---
+title: deep learning model for titanic data
+author: Metales Abdelkader
+date: '2020-05-13'
+slug: deep-learning-model-for-titanic-data
+categories: []
+tags: []
+subtitle: ''
+summary: '
+Deep learning model belongs to the area of machine learning models which can be used either for supervised or unsupervised learning...'
+output:
+  blogdown::html_page:
+    toc: true
+    fig_width: 6
+    dev: "svg"
+authors: []
+lastmod: '2020-05-13T15:42:02+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+
+```{r setup, include=FALSE,message=FALSE,warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Introducction
+
+Deep learning model belongs to the area of machine learning models which can be used either for supervised or unsupervised learning. Based on [artificial neural network](https://www.digitaltrends.com/cool-tech/what-is-an-artificial-neural-network/), it can handle a wide variety of data types by using different neural network architectures such as [recurrent neural network RNN](https://stanford.edu/~shervine/teaching/cs-230/cheatsheet-recurrent-neural-networks) for sequence data (time series, text data etc.), [convolutional neural network CNN](https://towardsdatascience.com/a-comprehensive-guide-to-convolutional-neural-networks-the-eli5-way-3bd2b1164a53) for computer vision, [generative adversarial network GAN](https://machinelearningmastery.com/what-are-generative-adversarial-networks-gans/) for image generation   and many other types of architecture. 
+The basic architecture of deep learning is the same as the classical artificial neural network (that has one hidden layer) with the difference that deep learning allows more than one hidden layer (this is where does the name deep come from ). Theses layers are called dense layers since that each node of a particular layer is connected with all the nodes of the previous layer, and in addition each node has an [activation function](https://missinglink.ai/guides/neural-network-concepts/7-types-neural-network-activation-functions-right/) to capture any nonlinearity in the data.
+
+In this article, we will use the basic deep learning  model to predict the famous titanic data set (kaggle competition).
+
+## Data preparation
+
+We use the titanic data because of its familiarity with every one and hence focusing more on understanding and implementing our model. So Let's call this data.
+
+```{r results='hide'}
+ssh <- suppressPackageStartupMessages
+ssh(library(tidyverse))
+data <- read_csv("C://Users/dell/Documents/new-blog/content/post/train.csv")
+
+```
+
+Then we will call **keras** package for deep learning models, and **caret** for randomly spliting  the data and creating the confusion matrix.
+
+```{r}
+ssh(library(keras))
+ssh(library(caret))
+
+```
+
+The first step in modeling is to clean and prepare the data. the following code shows the structure of this data. 
+
+```{r}
+glimpse(data)
+```
+
+Using this data we want to predict the variable **Survived** using the remaining variables as predictors. We see that some variables have unique values such as **PassengerId**,**Name**, and **ticket**. Thus, they cannot be used as predictors. the same note applies to the variable **Cabin** with the additional problem of missing values. these variables will be removed as follows:
+
+```{r}
+mydata<-data[,-c(1,4,9,11)]
+
+```
+
+As we see some variables should be of factor type such as **Pclass** (which is now double), **Sex** (character), and "Embarked** (character). thus, we convert them to factor type:
+
+```{r}
+mydata <- mydata %>%  modify_at(c('Pclass', 'Embarked', 'Sex' ), as.factor)
+glimpse(mydata)
+
+```
+
+Now let's get some summary about this data
+
+```{r}
+summary(mydata)
+```
+
+We have two variables that have missing values, **Age** with large number 177 , followed by **Embarked** with 2 missing values.
+ To deal with this issue we have two options:
+ 
+* the first and easy one is to remove the entire rows that have any missing value but with the cost of may losing valuable information specially when we have large number of missing values compared to the total number of obervations as our case.
+
+* the second option is to impute this missing values using the other complete cases, for instance we can replace a missing value of a particular column by the mean of this column (for numeric variable) or we use multinomial method to predict the categorical variables.
+
+Fortunately , there is a useful package called **mice** which will do this imputation for us. However, applying this imputation on the entire data would lead us to fall on a problem called **train-test contamination** ,which means that when we split the data , the missing values of the training set are imputed using cases in the test set, and this violates a crucial concept in machine learning for model evaluation, the test set should never be seen by the model during the training process.
+
+To avoid this problem we apply the imputation separately on the training set and on the testing set. 
+So let's partition the data using **caret** package function.
+
+## Partition the data & impute the missing values.
+
+we randomly split the data into two sets , 80% of samples will be used in the training process and the remaining 20% will be kept as test set.  
+
+```{r}
+set.seed(1234)
+index<-createDataPartition(mydata$Survived,p=0.8,list=FALSE)
+train<-mydata[index,]
+test<-mydata[-index,]
+
+```
+
+Now we are  ready to impute the missing values for both train and test set.
+
+```{r results='hide'}
+
+ssh(library(mice))
+impute_train<-mice(train,m=1,seed = 1111)
+train<-complete(impute_train,1)
+
+impute_test<-mice(test,m=1,seed = 1111)
+test<-complete(impute_test,1)
+```
+
+
+### Convert data into a normalized matrix.
+
+in deep learning all the variables should of numeric type, so first we convert the factors to integer type and recode the levels in order to start from 0, then we convert the data into matrix, and finally we pull out the target variable into a separate vector.
+We do this transformation for both sets (train and test).
+
+
+```{r}
+train$Embarked<-as.integer(train$Embarked)-1
+train$Sex<-as.integer(train$Sex)-1
+train$Pclass<-as.integer(train$Pclass)-1
+
+test$Embarked<-as.integer(test$Embarked)-1
+test$Sex<-as.integer(test$Sex)-1
+test$Pclass<-as.integer(test$Pclass)-1
+glimpse(test)
+```
+
+**Note**: If you noticed the varaibles **Pclass**, **Embarked**, and **Sex**, originally were numeric but we have converted them to factors for an appropriate imputation in the imputation step, if not doing so the imputation of Embarked missing values, for instance, could be any other numeric values which are not related to any ports in the data.    
+
+we convert the two sets into matrix form. (we also remove the column names)
+
+```{r}
+trained<-as.matrix(train)
+dimnames(trained)<-NULL
+
+tested<-as.matrix(test)
+dimnames(tested)<-NULL
+str(tested)
+```
+
+Now we pull out the target variable
+
+```{r}
+trainy<-trained[,1]
+testy<-tested[,1]
+trainx<-trained[,-1]
+testx<-tested[,-1]
+
+```
+
+Then we Apply one hot encoding on the target variable. 
+
+```{r}
+trainlabel<-to_categorical(trainy)
+testlabel<-to_categorical(testy)
+```
+
+
+
+## Train the model.
+
+Now it is time to build our model. Th first step is to define the model architecture and the number of layers that will be used with the prespecified parameters.
+We will choose a simple model with one hidden layer with 10 unites (nodes). Since we have 7 predictors the input_shape will be 7, and the activation function is **relu** which is the most used one, but for the output layer we choose sigmoid function since we have binary classification.
+
+### Create the model
+
+```{r}
+model <- keras_model_sequential()
+
+model %>%
+    layer_dense(units=10,activation = "relu",
+              kernel_initializer = "he_normal",input_shape =c(7))%>%
+    layer_dense(units=2,activation = "sigmoid")
+
+summary(model)  
+
+```
+
+We have in total 102 parameters to estimate, since we have 7 inputs and 10 nodes and 10 biases, so the parameters number of the hidden layer is 80 (7*10+10). By the same way get the parameters number of the output layer.   
+
+### Compile the model
+
+In the **compile** function (from keras) we specify the loss function, the optimizer and the metric type that will be used. In our case we use the **binary crossentropy**, the optimizer is the popular one **adam** and for the metric we use **accuracy**.  
+
+
+```{r}
+model %>%
+  compile(loss="binary_crossentropy",
+          optimizer="adam",
+          metric="accuracy")
+
+```
+
+### Fit the model
+
+Now we can run our model and follow the dynamic evolution of the process in the plot window on the right lower corner of the screen. and you can also plot the model in a static way.
+for our model we choose 100 epochs (iterations), for the stochastic  gradient we use 20 samples at each iteration, and we hold out 20% of the training data to asses the model. 
+
+```{r results='hide'}
+#history<- model %>%
+# fit(trainx,trainlabel,epoch=100,batch_size=20,validation_split=0.2)
+
+```
+
+**Note** : if you would like to rerun the model uncomment the above code. 
+
+We can extract the five last metric values from the history object as follows.
+
+```{r}
+#df <- tibble(train_loss=history$metrics$loss, valid_loss=history$metrics$val_loss,
+#      train_acc=history$metrics$accuracy, valid_acc=history$metrics$val_accuracy)
+#write_csv(df,"df.csv")
+df <- read.csv("df.csv")
+tail(df,5)
+```
+
+
+It should be noted here that since the accuracy lines are more or less closer to each other and running together in the same direction  we do not have to worry about overfitting, The opposite though is more pronounce since the accuracy of the training samples is less than that of the validation samples (underfitting), so we should increase the complexity of the model (by adding more nodes or more layers).   
+
+We can save this model (or save only the wieghts) and load it again for further use.
+
+
+```{r}
+#save_model_hdf5(model,"simplemodel.h5")
+model<-load_model_hdf5("simplemodel.h5")
+
+```
+
+
+## The model evaluation
+
+Let's evaluate our model using both the training set then the testing set.
+
+```{r results='hide'}
+train_eva <- model %>%
+  evaluate(trainx,trainlabel)
+test_eva <- model %>% 
+  evaluate(testx, testlabel)
+tibble(train_acc= train_eva$accuracy, test_acc= test_eva$accuracy, train_loss=train_eva$loss,test_loss=test_eva$loss)
+```
+
+The accuracy rate of the model using the test set is 80.62% which is higher than that of the training set (78.82%) which means that this model needs more improvement. 
+
+
+## model tuning
+
+Let's now include another hidden layer with 20 nodes, and let's also increase the number of epochs to 200. In addition, as we did with the above model we should save our optimal model. 
+
+```{r}
+model1 <- keras_model_sequential()
+
+model1 %>%
+    layer_dense(units=10,activation = "relu",
+              kernel_initializer = "he_normal",input_shape =c(7)) %>%
+    layer_dense(units=20, activation = "relu",
+              kernel_initializer = "he_normal") %>%
+    layer_dense(units=2,activation = "sigmoid")
+
+model1 %>%
+  compile(loss="binary_crossentropy",
+          optimizer="adam",
+          metric="accuracy")
+
+#history1<- model1 %>%
+#   fit (trainx,trainlabel,epoch=200,batch_size=40,validation_split=0.2)
+
+```
+ 
+Before evalation we should svve it.
+
+
+```{r}
+#save_model_hdf5(model,"simplemodel1.h5")
+model1<-load_model_hdf5("simplemodel1.h5")
+
+```
+
+
+Let's evaluate this new model.
+
+
+```{r results='hide'}
+train_eva <- model1 %>%
+  evaluate(trainx,trainlabel)
+test_eva <- model1 %>% 
+  evaluate(testx, testlabel)
+tibble(train_acc= train_eva$accuracy, test_acc= test_eva$accuracy, train_loss=train_eva$loss,test_loss=test_eva$loss)
+```
+
+
+with this new model we get a larger improvement with both accuracies. We can go back again to our model and try to increase the nodes or the layers or playing around with other parameters to get better results.
+
+
+## Conclusion
+
+Practically, deep learning models are more efficient than most of the classical machine learning models when it comes to fit complex and large data sets. Moreover, some type of data such as images or speeches are exclusively the areas where deep learning rises its great capability.     
