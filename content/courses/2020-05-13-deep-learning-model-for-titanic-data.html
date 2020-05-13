@@ -30,7 +30,7 @@ projects: []
 <li><a href="#data-preparation">Data preparation</a></li>
 <li><a href="#partition-the-data-impute-the-missing-values.">Partition the data &amp; impute the missing values.</a>
 <ul>
-<li><a href="#convert-data-into-a-normalized-matrix.">Convert data into a normalized matrix.</a></li>
+<li><a href="#convert-the-data-into-a-numeric-matrix.">Convert the data into a numeric matrix.</a></li>
 </ul></li>
 <li><a href="#train-the-model.">Train the model.</a>
 <ul>
@@ -147,8 +147,8 @@ train&lt;-complete(impute_train,1)
 
 impute_test&lt;-mice(test,m=1,seed = 1111)
 test&lt;-complete(impute_test,1)</code></pre>
-<div id="convert-data-into-a-normalized-matrix." class="section level3">
-<h3>Convert data into a normalized matrix.</h3>
+<div id="convert-the-data-into-a-numeric-matrix." class="section level3">
+<h3>Convert the data into a numeric matrix.</h3>
 <p>in deep learning all the variables should of numeric type, so first we convert the factors to integer type and recode the levels in order to start from 0, then we convert the data into matrix, and finally we pull out the target variable into a separate vector.
 We do this transformation for both sets (train and test).</p>
 <pre class="r"><code>train$Embarked&lt;-as.integer(train$Embarked)-1
