@@ -34,18 +34,19 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-In this article we will make use of the convolutional neural network, the most widely deep learning method used for image classification, object detection,..etc^[Francois chollet, Deep learning with R, Meap edition, 2017, P112 ]. 
+In this article we will make use of the convolutional neural network, the most widely deep learning method used for image classification, object detection,..etc^[Francois chollet, Deep learning with R, Meap edition, 2017, P112 ]. For more detail about how it works please click [here](https://docs.google.com/presentation/d/1f7yAMxElPorSAdy3iiIBWw6Py20uiu2_xK4lmeB9Dpk/edit?usp=sharing).
 
-In this paper we are going be learning how to build and train **convolutional neural network** model using small sample of images collected from google search. The data includes 30 images, each of which is either one of three types of animals: **cat**, **dog**, or **lion**, and each one has equally number of images, that is 10.   
+We are going be learning how to build and train **convolutional neural network** model using small sample of images collected from google search. The data includes 30 images, each of which is either one of three types of animals: **cat**, **dog**, or **lion**, and each one has equally number of images, that is 10.   
 
 ## Data preparation
 
 First, we call the packages needed along this paper and load the data into two different objects, one called **train**, will contain 7 instances of each animal type used for training the model, and another one, called **test**, will contain the remaining instances for the evaluation of the model performance.
 
 ```{r comment="", warning=FALSE,message=FALSE}
-library(EBImage)
-library(keras)
-library(foreach)
+ssh <- suppressPackageStartupMessages
+ssh(library(EBImage))
+ssh(library(keras))
+ssh(library(foreach))
 
 mytrain <- c(paste0("../images/cat",1:7,".jpg"),paste0("../images/dog",1:7,".jpg"),
         paste0("../images/lion",1:7,".jpg"))

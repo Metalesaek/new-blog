@@ -39,15 +39,16 @@ projects: []
 
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
-<p>In this article we will make use of the convolutional neural network, the most widely deep learning method used for image classification, object detection,..etc<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>.</p>
-<p>In this paper we are going be learning how to build and train <strong>convolutional neural network</strong> model using small sample of images collected from google search. The data includes 30 images, each of which is either one of three types of animals: <strong>cat</strong>, <strong>dog</strong>, or <strong>lion</strong>, and each one has equally number of images, that is 10.</p>
+<p>In this article we will make use of the convolutional neural network, the most widely deep learning method used for image classification, object detection,..etc<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>. For more detail about how it works please click <a href="https://docs.google.com/presentation/d/1f7yAMxElPorSAdy3iiIBWw6Py20uiu2_xK4lmeB9Dpk/edit?usp=sharing">here</a>.</p>
+<p>We are going be learning how to build and train <strong>convolutional neural network</strong> model using small sample of images collected from google search. The data includes 30 images, each of which is either one of three types of animals: <strong>cat</strong>, <strong>dog</strong>, or <strong>lion</strong>, and each one has equally number of images, that is 10.</p>
 </div>
 <div id="data-preparation" class="section level2">
 <h2>Data preparation</h2>
 <p>First, we call the packages needed along this paper and load the data into two different objects, one called <strong>train</strong>, will contain 7 instances of each animal type used for training the model, and another one, called <strong>test</strong>, will contain the remaining instances for the evaluation of the model performance.</p>
-<pre class="r"><code>library(EBImage)
-library(keras)
-library(foreach)
+<pre class="r"><code>ssh &lt;- suppressPackageStartupMessages
+ssh(library(EBImage))
+ssh(library(keras))
+ssh(library(foreach))
 
 mytrain &lt;- c(paste0(&quot;../images/cat&quot;,1:7,&quot;.jpg&quot;),paste0(&quot;../images/dog&quot;,1:7,&quot;.jpg&quot;),
         paste0(&quot;../images/lion&quot;,1:7,&quot;.jpg&quot;))
