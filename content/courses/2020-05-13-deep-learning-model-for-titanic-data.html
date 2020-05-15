@@ -92,7 +92,7 @@ ssh(library(caret))</code></pre>
 ## $ Embarked    &lt;chr&gt; &quot;S&quot;, &quot;C&quot;, &quot;S&quot;, &quot;S&quot;, &quot;S&quot;, &quot;Q&quot;, &quot;S&quot;, &quot;S&quot;, &quot;S&quot;, &quot;C&quot;, &quot;S&quot;, ...</code></pre>
 <p>Using this data we want to predict the variable <strong>Survived</strong> using the remaining variables as predictors. We see that some variables have unique values such as <strong>PassengerId</strong>,<strong>Name</strong>, and <strong>ticket</strong>. Thus, they cannot be used as predictors. the same note applies to the variable <strong>Cabin</strong> with the additional problem of missing values. these variables will be removed as follows:</p>
 <pre class="r"><code>mydata&lt;-data[,-c(1,4,9,11)]</code></pre>
-<p>As we see some variables should be of factor type such as <strong>Pclass</strong> (which is now double), <strong>Sex</strong> (character), and "Embarked** (character). thus, we convert them to factor type:</p>
+<p>As we see some variables should be of factor type such as <strong>Pclass</strong> (which is now double), <strong>Sex</strong> (character), and <strong>Embarked</strong> (character). thus, we convert them to factor type:</p>
 <pre class="r"><code>mydata &lt;- mydata %&gt;%  modify_at(c(&#39;Pclass&#39;, &#39;Embarked&#39;, &#39;Sex&#39; ), as.factor)
 glimpse(mydata)</code></pre>
 <pre><code>## Observations: 891

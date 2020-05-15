@@ -67,7 +67,7 @@ mydata<-data[,-c(1,4,9,11)]
 
 ```
 
-As we see some variables should be of factor type such as **Pclass** (which is now double), **Sex** (character), and "Embarked** (character). thus, we convert them to factor type:
+As we see some variables should be of factor type such as **Pclass** (which is now double), **Sex** (character), and **Embarked** (character). thus, we convert them to factor type:
 
 ```{r}
 mydata <- mydata %>%  modify_at(c('Pclass', 'Embarked', 'Sex' ), as.factor)
