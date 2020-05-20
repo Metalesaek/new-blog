@@ -1,0 +1,394 @@
+---
+title: Time series with ARIMA and RNN models
+author: Metales Abdelkader
+date: '2020-05-05'
+slug: time-series-with-recurrent-neaural-network-rnn-lstm-model
+categories: []
+tags:
+  - RNN
+  - LSTM
+  - Time series
+subtitle: ''
+summary: 'The classical methods for predicting univariate time series are ARIMA models (under linearity assumption and provided that the non stationarity is of type DS) that use the autocorrelation function to predict the target variable...'
+output:
+  blogdown::html_page:
+    toc: true
+    fig_width: 6
+    dev: "svg"
+authors: []
+lastmod: '2020-05-15T23:30:22+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#data-preparation">Data preparation</a></li>
+<li><a href="#arima-model">ARIMA model</a></li>
+<li><a href="#rnn-model">RNN model</a>
+<ul>
+<li><a href="#reshape-the-time-series">Reshape the time series</a></li>
+<li><a href="#model-architecture">Model architecture</a></li>
+<li><a href="#model-training">Model training</a></li>
+<li><a href="#prediction">Prediction</a></li>
+</ul></li>
+<li><a href="#results-comparison">results comparison</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+<li><a href="#further-reading">Further reading</a></li>
+</ul>
+</div>
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>The classical methods for predicting univariate time series are <a href="https://otexts.com/fpp2/arima.html">ARIMA</a> models (under linearity assumption and provided that the non stationarity is of type DS) that use the autocorrelation function (up to some order) to predict the target variable based on its own past values (Autoregressive part) and the past values of the errors (moving average part) in a linear function . However, the hardest step in ARIMA models is to derive stationary series from non stationary series that exhibits less well defined trend (deterministic or stochastic) or seasonality. The RNN model, proposed by John Hopfield (1982), is a deep learning model that does not need the above requirements (the type of non stationarity and linearity) and can capture and model the memory of the time series, which is the main characteristic of some type of sequence data, in addition to time series, such as <strong>text data</strong>, <strong>image captioning</strong>, <strong>speech recognition</strong> .. etc.</p>
+<p>The basic idea behind RNN is very simple (As described in the plot below). At each time step <strong>t</strong> the model compute a state value <span class="math inline">\(h_t\)</span> that combines (in linear combination) the previous state <span class="math inline">\(h_{t-1}\)</span> (which contains all the memory available at time <strong>t-1</strong> ) and the current input <span class="math inline">\(x_t\)</span> (which is the current value of the time series), passing then the result to the activation function <strong>tanh</strong> (to capture any nonlinearity relations). The state at each time step t thus can formally be expressed as follows:</p>
+<p><span class="math display">\[h_t=tanh(W_h.h_{t-1}+W_x.x_t+b)\]</span></p>
+<p>And then we leave the work to the gradient descent to decide how much memory we keep by computing the optimum weights <span class="math inline">\(W_h\)</span>.
+Similarely, the output <span class="math display">\[y_t\]</span> will be computed by the following:
+<span class="math display">\[y_t=W_y.h_t\]</span></p>
+<pre class="r"><code>img &lt;- EBImage::readImage(&quot;C://Users/dell/Documents/new-blog/content/courses/rnn/rnn_plot.jpg&quot;)
+plot(img)</code></pre>
+<p><img src="/courses/rnn/2020-05-05-time-series-with-recurrent-neaural-network-rnn-lstm-model_files/figure-html/unnamed-chunk-1-1.svg" width="576" /></p>
+</div>
+<div id="data-preparation" class="section level2">
+<h2>Data preparation</h2>
+<p>First let’s call the packages needed for our analysis</p>
+<pre class="r"><code>ssh &lt;- suppressPackageStartupMessages
+ssh(library(timeSeries))
+ssh(library(tseries))
+ssh(library(aTSA))
+ssh(library(forecast))
+ssh(library(rugarch))
+ssh(library(ModelMetrics))
+ssh(library(keras))</code></pre>
+<p>In this article we will use the data <strong>USDCHF</strong> from the <strong>timeSeries</strong> package which is the univariate series of the intraday foreign exchange rates between US dollar and Swiss franc with <strong>62496</strong> observations.</p>
+<pre class="r"><code>data(USDCHF)
+length(USDCHF)</code></pre>
+<pre><code>## [1] 62496</code></pre>
+<p>Let’s look at this data by the following plot after converting it to ts object.</p>
+<pre class="r"><code>data(USDCHF)
+data &lt;- ts(USDCHF, frequency = 365)
+plot(data)</code></pre>
+<p><img src="/courses/rnn/2020-05-05-time-series-with-recurrent-neaural-network-rnn-lstm-model_files/figure-html/unnamed-chunk-4-1.svg" width="576" /></p>
+<p>This series seems to have a trend and it is not stationary, but let’s verify this by the <a href="https://faculty.washington.edu/ezivot/econ584/notes/unitroot.pdf">dickey fuller</a> and <a href="https://faculty.washington.edu/ezivot/econ584/notes/unitroot.pdf">philip perron</a> tests</p>
+<pre class="r"><code>adf.test(data)
+pp.test(data )</code></pre>
+<p>Both tests confirm that the data has unit roots(high p-value: we do not reject the null hypothesis). We can also check the correlogram of the autocorrelation function
+<a href="https://towardsdatascience.com/significance-of-acf-and-pacf-plots-in-time-series-analysis-2fa11a5d10a8">acf</a> and the Partial autocorrelation function <a href="https://towardsdatascience.com/significance-of-acf-and-pacf-plots-in-time-series-analysis-2fa11a5d10a8">pacf</a> as follows:</p>
+<pre class="r"><code>acf(data)</code></pre>
+<p><img src="/courses/rnn/2020-05-05-time-series-with-recurrent-neaural-network-rnn-lstm-model_files/figure-html/unnamed-chunk-6-1.svg" width="576" /></p>
+<pre class="r"><code>pacf(data)</code></pre>
+<p><img src="/courses/rnn/2020-05-05-time-series-with-recurrent-neaural-network-rnn-lstm-model_files/figure-html/unnamed-chunk-6-2.svg" width="576" /></p>
+<p>As you know the ACF is related to the MA part and PACF to the AR part, so since in the pacf we have one bar that exceeds far away the confidence interval we are confident that our data has unit root and we can get ride of it by differencing the data by one. In ARIMA terms the data should be integrated by 1 (d=1), and this the <strong>I</strong> part of arima. In addition, since we do not have a decay of bars in PACF, the model would not have any lag included in the AR part.
+Whereas, from the ACF plot, all the bars are highly far from the confidence interval then the model would have many lags of MA part.</p>
+</div>
+<div id="arima-model" class="section level2">
+<h2>ARIMA model</h2>
+<p>To fit an ARIMA model we have to determine the lag of the AR (p) and MA(q) components and how many times we integrate the series to be stationary (d). Fortunately, we do not have to worry about these issues, we leave everything to the <strong>forcast</strong> package that provides a fast way to get the best model by calling the function <strong>auto.arima</strong>. But before that let’s held out the last 100 observations to be used as testing data in order to compare the quality of this model and the RNN model.</p>
+<pre class="r"><code>data_test &lt;- data[(length(data)-99):length(data)]
+data_train &lt;- data[1:(length(data)-99-1)]</code></pre>
+<pre class="r"><code>model_arima &lt;- auto.arima(data_train)
+summary(model_arima)</code></pre>
+<pre><code>## Series: data_train 
+## ARIMA(0,1,2) with drift 
+## 
+## Coefficients:
+##           ma1     ma2  drift
+##       -0.0193  0.0113      0
+## s.e.   0.0040  0.0040      0
+## 
+## sigma^2 estimated as 2.29e-06:  log likelihood=316634.5
+## AIC=-633260.9   AICc=-633260.9   BIC=-633224.8
+## 
+## Training set error measures:
+##                        ME        RMSE          MAE           MPE       MAPE
+## Training set 1.900607e-08 0.001513064 0.0009922846 -3.671242e-05 0.06627114
+##                  MASE          ACF1
+## Training set 0.999585 -3.921999e-05</code></pre>
+<p>As expected this model is an ARIMA(0,1,2) integrated by 1 (differenced series is now stationary) and has two MA lags without <strong>drift</strong> (constant). The output also has some metric values like Root mean square error <strong>RMSE</strong> and mean absolute error <strong>MAE</strong> which are the most popular ones. we will use later on this metric to compare this model with the RNN model.
+To validate this model we have to make sure that the residuals are white noise without any problems such as autocorrelation or <a href="https://www.investopedia.com/terms/h/heteroskedasticity.asp">heterskedasticity</a>. Thankfully to <strong>forecast</strong> package we can check the residual straightforwardly by calling the function <strong>checkresiduals</strong></p>
+<pre class="r"><code>checkresiduals(model_arima)</code></pre>
+<p><img src="/courses/rnn/2020-05-05-time-series-with-recurrent-neaural-network-rnn-lstm-model_files/figure-html/unnamed-chunk-9-1.svg" width="576" /></p>
+<pre><code>## 
+##  Ljung-Box test
+## 
+## data:  Residuals from ARIMA(0,1,2) with drift
+## Q* = 8.6631, df = 7, p-value = 0.2778
+## 
+## Model df: 3.   Total lags used: 10</code></pre>
+<p>Since the p-value is far larger than the significance level 5% we do not reject the null hypothesis that the errors are not autocorrelated. However, by looking at the ACF plot we have some bars that go outside the confidence interval, but this can be expected by the significance level of 5% (as false positive). So we can confirm the non correlation with 95% of confidence.
+For possible heteroskedasticity we use <a href="https://hal.archives-ouvertes.fr/hal-00588680/document">ARCH_LM</a> statistic from the package <strong>aTSA</strong> package.</p>
+<pre class="r"><code>arch.test(arima(data_train, order = c(0,1,2)))</code></pre>
+<p><img src="/courses/rnn/2020-05-05-time-series-with-recurrent-neaural-network-rnn-lstm-model_files/figure-html/unnamed-chunk-10-1.svg" width="576" /></p>
+<p>We see that both test are highly significant (we reject the null hypothesis of homoskedasticity), so the above arima model is not able to capture such pattern. That is why we should join to the above model another model that keeps track of this type of patterns which is called <a href="https://medium.com/auquan/time-series-analysis-for-finance-arch-garch-models-822f87f1d755">GARCH</a> model.
+The garch model attempts to model the residuals of the ARIMA model with the general following formula:
+<span class="math display">\[\epsilon_t=w_t\sqrt{h_t}\]</span>
+<span class="math display">\[h_t=w_t\sqrt{a_0+\sum_{i=1}^{p}a_i.\epsilon_{t-i}^2+\sum_{j=1}^{q}b_j.h_{t-j}}\]</span></p>
+<p>Where <span class="math inline">\(w_t\)</span> is white noise error.</p>
+<p>So we fit this model for different lags by calling the function <strong>garch</strong> from the package <strong>tseries</strong>, and we use the <strong>AIC</strong> criterion to get the best model.</p>
+<pre class="r"><code>model &lt;- character()
+AIC &lt;- numeric()
+for (p in 1:5){
+  for(q in 1:5){
+    model_g &lt;- tseries::garch(model_arima$residuals, order = c(p,q), trace=F)
+    model&lt;-c(model,paste(&quot;mod_&quot;, p, q))
+    AIC &lt;- c(AIC, AIC(model_g))
+    def &lt;- tibble::tibble(model,AIC)
+  }
+}</code></pre>
+<pre><code>## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information
+
+## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information
+
+## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information
+
+## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information
+
+## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information
+
+## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information
+
+## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information
+
+## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information
+
+## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information
+
+## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information
+
+## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information
+
+## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information
+
+## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information
+
+## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information
+
+## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information
+
+## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information
+
+## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information
+
+## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information
+
+## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information
+
+## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information
+
+## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information
+
+## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information
+
+## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information
+
+## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information
+
+## Warning in tseries::garch(model_arima$residuals, order = c(p, q), trace = F):
+## singular information</code></pre>
+<pre class="r"><code>def %&gt;% dplyr::arrange(AIC)</code></pre>
+<pre><code>## # A tibble: 25 x 2
+##    model         AIC
+##    &lt;chr&gt;       &lt;dbl&gt;
+##  1 mod_ 1 1 -647018.
+##  2 mod_ 2 1 -647005.
+##  3 mod_ 1 2 -647005.
+##  4 mod_ 2 3 -646986.
+##  5 mod_ 1 3 -646971.
+##  6 mod_ 1 4 -646967.
+##  7 mod_ 2 2 -646900.
+##  8 mod_ 3 3 -646885.
+##  9 mod_ 3 1 -646859.
+## 10 mod_ 1 5 -646859.
+## # ... with 15 more rows</code></pre>
+<p>As we see the simpler model with one lag for each component fit well the residuals
+we can check the residuals of this model with box test.</p>
+<pre class="r"><code>model_garch &lt;- tseries::garch(model_arima$residuals, order = c(1,1), trace=F)</code></pre>
+<pre><code>## Warning in tseries::garch(model_arima$residuals, order = c(1, 1), trace = F):
+## singular information</code></pre>
+<pre class="r"><code>Box.test(model_garch$residuals)</code></pre>
+<pre><code>## 
+##  Box-Pierce test
+## 
+## data:  model_garch$residuals
+## X-squared = 3.1269, df = 1, p-value = 0.07701</code></pre>
+<p>With significance level of 5% we do not reject the null hypothesis of independence.
+As an alternative we can inspect the acf of the residuals.</p>
+<pre class="r"><code>acf(model_garch$residuals[-1])</code></pre>
+<p><img src="/courses/rnn/2020-05-05-time-series-with-recurrent-neaural-network-rnn-lstm-model_files/figure-html/unnamed-chunk-13-1.svg" width="576" /></p>
+<p>The easiest way to get prediction from our model is by making use of the <strong>rugarch</strong> package. First, we specify the model with the parameters obtained above (the different lags)</p>
+<pre class="r"><code># garch1 &lt;- ugarchspec(mean.model = list(armaOrder = c(0,2), include.mean = FALSE), 
+# variance.model = list(garchOrder = c(1,1))) </code></pre>
+<p>Then we use the function <strong>ugarchfit</strong> to predict our data_train. However, you might noticed that we supplied only the lags of the AR and MA parts of our ARIMA model (the d value for integration is not available in this function), so we should provide the differenced series of <strong>data_train</strong> instead of the original series.</p>
+<pre class="r"><code>Ddata_train &lt;- diff(data_train)
+# garchfit &lt;- ugarchfit(data=Ddata_train, spec = garch1, solver = &quot;gosolnp&quot;,trace=F)
+# coef(garchfit)</code></pre>
+<p>Our final model will be written as follows.</p>
+<p><span class="math display">\[y_t=e_t-4.296.10^{-2}e_{t-1}+5.687.10^{-3}e_{t-2} \\
+e_t\sim N(0,\hat\sigma_t^2) \\
+\hat\sigma_t^2=1.950.10^{-7}+2.565.10^{-1}e_{t-1}^2+6.940.10^{-1}\hat\sigma_{t-1}^2\]</span></p>
+<p><strong>NOTE</strong>: when running the above model we get different results due to the internal randomization process, that is why i commented the above code to prevent it to be rerun again when rendering this document.</p>
+<p>Now we use this model for forecasting 100 future values to be compared then with the data_test values.</p>
+<pre class="r"><code># fitted &lt;- ugarchforecast(garchfit, n.ahead=100)
+#yh_test&lt;-numeric()
+#for (i in 2:100){
+#  yh_test[1] &lt;- data_train[length(data_train)]+fitted(fitted)[1]
+#  yh_test[i] &lt;- yh_test[i-1]+fitted(fitted)[i]
+#}
+#df_eval &lt;- tibble::tibble(y_test=data_test, yh_test=yh_test)
+#df_eval</code></pre>
+<p>Finally we should save the <strong>df_eval</strong> table with the original and the fitted values of the data_test for further use.</p>
+<pre class="r"><code>#write.csv(df_eval, &quot;df_eval.csv&quot;)</code></pre>
+</div>
+<div id="rnn-model" class="section level2">
+<h2>RNN model</h2>
+<p>As an alternative to ARIMA prediction method discussed above, the deep learning RNN method can also take into account the memory of the time series. Unlike the classical feedforward networks that process each single input independently, the RNN takes a bunch of inputs that supposed to be in one sequence and process them together as showed in the first plot. In keras this step can be achieved by <strong>layer_simple_rnn</strong> (Chollet, 2017, p167].
+This means we have to decide the length of the sequence, in other words how far back we think that the current value is depending on (the memory of the time series). In our case we think that 7 days values should be satisfactory to predict the current value.</p>
+<div id="reshape-the-time-series" class="section level3">
+<h3>Reshape the time series</h3>
+<p>The first thing we do is organizing the data in such way that the model knows what part is considered as sequences to be processed by the rnn layer, and what part is the target variable. To do so we reorganize the time series into a matrix where each row is a single input , and the columns contain the lagged values (of the target variable) up to 7 and the target variable in the last column. Consequently, The total number of rows will be the <strong>length(data)-maxlen-1</strong>, where maxlen refers to the length of each sequences (constant) which here is equal to 7.</p>
+<p>Let’s first create an empty matrix</p>
+<pre class="r"><code>maxlen &lt;- 7
+exch_matrix&lt;- matrix(0, nrow = length(data_train)-maxlen-1, ncol = maxlen+1) </code></pre>
+<p>Now let’s move our time series to this matrix and display some rows to be sure that the output is as expected to be.</p>
+<pre class="r"><code>for(i in 1:(length(data_train)-maxlen-1)){
+  exch_matrix[i,] &lt;- data_train[i:(i+maxlen)]
+}
+head(exch_matrix)  </code></pre>
+<pre><code>##        [,1]   [,2]   [,3]   [,4]   [,5]   [,6]   [,7]   [,8]
+## [1,] 1.1930 1.1941 1.1933 1.1931 1.1924 1.1926 1.1926 1.1932
+## [2,] 1.1941 1.1933 1.1931 1.1924 1.1926 1.1926 1.1932 1.1933
+## [3,] 1.1933 1.1931 1.1924 1.1926 1.1926 1.1932 1.1933 1.1932
+## [4,] 1.1931 1.1924 1.1926 1.1926 1.1932 1.1933 1.1932 1.1933
+## [5,] 1.1924 1.1926 1.1926 1.1932 1.1933 1.1932 1.1933 1.1934
+## [6,] 1.1926 1.1926 1.1932 1.1933 1.1932 1.1933 1.1934 1.1940</code></pre>
+<p>Now we separate the inputs from the target.</p>
+<pre class="r"><code>x_train &lt;- exch_matrix[, -ncol(exch_matrix)]
+y_train &lt;- exch_matrix[, ncol(exch_matrix)]</code></pre>
+<p>The rnn layer in keras expects the inputs to be of the shape (examples, maxlen, number of features), since then we have only one feature (our single time series that is processed sequentially) the shape of the inputs should be c(examples, 7,1). However, the first dimension can be discarded and we can provide only the last ones.</p>
+<pre class="r"><code>dim(x_train)</code></pre>
+<pre><code>## [1] 62388     7</code></pre>
+<p>As we see this shape does not include the number of features, so we can correct it as follows.</p>
+<pre class="r"><code>x_train &lt;- array_reshape(x_train, dim = c((length(data_train)-maxlen-1), maxlen, 1))
+dim(x_train)</code></pre>
+<pre><code>## [1] 62388     7     1</code></pre>
+</div>
+<div id="model-architecture" class="section level3">
+<h3>Model architecture</h3>
+<p>When it comes to deep learning models, there is a large space for hyperparameters to be defined and the results are heavily depending on these hyperparameters, such as the optimal number of layers, the optimal number of nodes in each layer, the suitable activation function, the suitable loss function, the best optimizer, the best regularization techniques, the best random initialization , …etc. Unfortunately, we do not have yet an exact rule to decide about these hyperparameters, and they depend on the problem under study, the data at hand, and the experience of the modeler. In our case, for instance, our data is very simple, and, actually does not require complex architecture, we will thus use only one hidden rnn layer with 10 nodes, the loss function will be the mean square error <strong>mse</strong> , the optimizer will be <strong>adam</strong>, and the metric will be the mean absolute error <strong>mae</strong>.</p>
+<p><strong>Note</strong> : with large and complex time series it might be needed to stack many rnn layers.</p>
+<pre class="r"><code>model &lt;- keras_model_sequential()
+model %&gt;% 
+  layer_dense(input_shape = dim(x_train)[-1], units=maxlen) %&gt;% 
+  layer_simple_rnn(units=10) %&gt;% 
+  layer_dense(units = 1)
+summary(model)</code></pre>
+<pre><code>## Model: &quot;sequential&quot;
+## ________________________________________________________________________________
+## Layer (type)                        Output Shape                    Param #     
+## ================================================================================
+## dense (Dense)                       (None, 7, 7)                    14          
+## ________________________________________________________________________________
+## simple_rnn (SimpleRNN)              (None, 10)                      180         
+## ________________________________________________________________________________
+## dense_1 (Dense)                     (None, 1)                       11          
+## ================================================================================
+## Total params: 205
+## Trainable params: 205
+## Non-trainable params: 0
+## ________________________________________________________________________________</code></pre>
+</div>
+<div id="model-training" class="section level3">
+<h3>Model training</h3>
+<p>Now let’s compile and run the model with 5 epochs, batch_size of 32 instances at a time to update the weights, and to keep track of the model performance we held out 10% of the training data as validation set.</p>
+<pre class="r"><code>model %&gt;% compile(
+  loss = &quot;mse&quot;,
+  optimizer= &quot;adam&quot;,
+  metric = &quot;mae&quot; 
+)</code></pre>
+<pre class="r"><code>#history &lt;- model %&gt;% 
+#  fit(x_train, y_train, epochs = 5, batch_size = 32, validation_split=0.1)</code></pre>
+<p>since each time we rerun the model we will get different results, so we should save the model (or only the model weights) and reload it again, doing so when rendering the document we will not be surprised by other outputs.</p>
+<pre class="r"><code>#save_model_hdf5(model, &quot;rnn_model.h5&quot;)
+rnn_model &lt;- load_model_hdf5(&quot;rnn_model.h5&quot;)</code></pre>
+</div>
+<div id="prediction" class="section level3">
+<h3>Prediction</h3>
+<p>In order to get the prediction of the last 100 data point, we will predict the entire data then we compute the <strong>rmse</strong> for the last 100 predictions.</p>
+<pre class="r"><code>maxlen &lt;- 7
+exch_matrix2&lt;- matrix(0, nrow = length(data)-maxlen-1, ncol = maxlen+1) 
+
+for(i in 1:(length(data)-maxlen-1)){
+  exch_matrix2[i,] &lt;- data[i:(i+maxlen)]
+}
+
+x_train2 &lt;- exch_matrix2[, -ncol(exch_matrix2)]
+y_train2 &lt;- exch_matrix2[, ncol(exch_matrix2)]
+
+x_train2 &lt;- array_reshape(x_train2, dim = c((length(data)-maxlen-1), maxlen, 1))</code></pre>
+<pre class="r"><code>pred &lt;- rnn_model %&gt;% predict(x_train2)
+df_eval_rnn &lt;- tibble::tibble(y_rnn=y_train2[(length(y_train2)-99):length(y_train2)],
+                          yhat_rnn=as.vector(pred)[(length(y_train2)-99):length(y_train2)])</code></pre>
+</div>
+</div>
+<div id="results-comparison" class="section level2">
+<h2>results comparison</h2>
+<p>we can now compare the prediction of the last 100 data points using this model with the predicted values for the same data points using the ARIMA model. We first load the above data predicted with ARIMA model and join every thing in one data frame, then we use two metrics to compare, <strong>rmse</strong>, <strong>mae</strong> which are easily available in <strong>ModelMetrics</strong> package.</p>
+<p><strong>Note</strong>: You might want to ask why we only use 100 data points for predictions where usually, in machine learning, we use a large number sometimes 20% of the entire data. The answer is because of the nature of the ARIMA models which are a short term prediction models, especially with financial data that are characterized by the high and instable volatility (that is why we use garch model above).</p>
+<pre class="r"><code>df_eval &lt;- read.csv(&quot;df_eval.csv&quot;)
+rmse &lt;- c(rmse(df_eval$y_test, df_eval$yh_test), 
+          rmse(df_eval_rnn$y_rnn, df_eval_rnn$yhat_rnn) )
+mae &lt;- c(mae(df_eval$y_test, df_eval$yh_test), 
+          mae(df_eval_rnn$y_rnn, df_eval_rnn$yhat_rnn) )
+df &lt;- tibble::tibble(model=c(&quot;ARIMA&quot;, &quot;RNN&quot;), rmse, mae)
+df</code></pre>
+<pre><code>## # A tibble: 2 x 3
+##   model    rmse     mae
+##   &lt;chr&gt;   &lt;dbl&gt;   &lt;dbl&gt;
+## 1 ARIMA 0.00563 0.00388
+## 2 RNN   0.00442 0.00401</code></pre>
+<p>As we see, The two models are closer to each other. However, if we use the <strong>rmse</strong>, which is the popular metrics used with continuous variables the rnn model is better, but with <strong>mae</strong> they are approximately the same.</p>
+</div>
+<div id="conclusion" class="section level2">
+<h2>Conclusion</h2>
+<p>Even though this data is very simple and does not need an RNN model, and it can be predicted with the classical ARIMA models, but it is used here for pedagogic purposes to well understand how the RNN works, and how the data should be processed to be ingested by <strong>keras</strong>. However, rnn model suffers from a major problem when running a large sequence known as <strong>Vanishing gradient</strong> and <strong>exploding gradient</strong>. In other words, with the former, when using the chain rule to compute the gradients, if the derivatives have small values then multiplying a large number of small values (as the length of the sequence) yields very tiny values that cause the network to be slowly trainable or even untrainable. The opposite is true when we face the latter problem, in this case we will get very large values and the network never converges.<br />
+Soon I will post an article with multivariate time series by implementing Long Short term memory <strong>LSTM</strong> model that is supposed to overcome the above problems that faces simple rnn model .</p>
+</div>
+<div id="further-reading" class="section level2">
+<h2>Further reading</h2>
+<ul>
+<li>Froncois Chollet, Deep learning with R, Meap edition, 2017, p167</li>
+<li>Ian Godfollow et al, Deep Learning, <a href="http://www.deeplearningbook.org/" class="uri">http://www.deeplearningbook.org/</a></li>
+</ul>
+</div>
