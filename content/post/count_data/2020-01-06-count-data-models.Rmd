@@ -1,0 +1,467 @@
+---
+title: Count data Models
+author: Metales Abdelkader
+date: '2020-01-06'
+slug: count-data-models
+categories:
+  - R
+tags:
+  - poisson
+subtitle: ''
+summary: 'When we deal with data that has a response variable of integer type, using a linear regression may violate the normality assumption and hence all the classical statistic tests would fail to evaluate the model...'
+output:
+  blogdown::html_page:
+    toc: true
+    fig_width: 6
+    dev: "svg"
+authors: []
+lastmod: ''
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+
+```{r setup, include=FALSE, warning=FALSE,error=FALSE,message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Introduction:
+
+
+When we deal with data that has a response variable of integer type, using a linear regression may violate the normality assumption and hence all the classical statistic tests would fail to evaluate the model. However, as we do with logistic regression models, the generalized linear model [GLM](https://en.wikipedia.org/wiki/Generalized_linear_model) can be used instead here by specifying the suitable distribution.
+
+The possible distributions for this type of data are the discrete distributions [poisson](https://en.wikipedia.org/wiki/Poisson_distribution) and [negative binomial](https://en.wikipedia.org/wiki/Negative_binomial_distribution). The former is the best choice if the mean and the variance of the response variable are closer to each other, but if they are not and we persist using this distribution we may cause the rise of the [overdispersion](https://en.wikipedia.org/wiki/Overdispersion) problem of the residuals. As a solution thus, we can use the latter distribution that does not have this restriction.
+  
+There is another alternative if neither the poisson distribution nor the negative binomial are suitable called the [Quasi maximum likelihood](https://en.wikipedia.org/wiki/Quasi-maximum_likelihood_estimate). The advantage of this method is that uses only the relationship between the mean and the variance and does not require any  prespecified distribution. Moreover, its estimators are approximately as efficient as the maximum likelihood estimators.
+
+## Data preparation
+
+To well understand how to model the count data we are going be using **Doctorvisits** data from **AER** package, in which the variable **visits** will be our target variable, so let's call this data with the packages that we need along this article.
+
+```{r,message=FALSE}
+ssh <- suppressPackageStartupMessages
+ssh(library(psych))
+ssh(library(performance))
+ssh(library(ModelMetrics))
+ssh(library(caret))
+ssh(library(MASS))
+ssh(library(tidyverse))
+ssh(library(AER))
+ssh(library(broom))
+data("DoctorVisits")
+doc <- DoctorVisits
+DT::datatable(doc, extensions = 'Buttons', options = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'print', 'csv', 'pdf')
+  )
+)
+```
+
+This data from Australian health survey where **visits** is the number of doctor visits in past two weeks with 11 features listed above.
+
+First we list the summary of the data to inspect any unwanted issue.
+
+```{r}
+summary(doc)
+```
+
+As we see we do not have missing values and the visits values ranges from 0 to 9 but it should be of integer type rather than double. Similarly, the variable **illness** should be converted to factor type since it has a few different values.   
+
+```{r}
+doc$visits<-as.integer(doc$visits)
+doc$illness<-as.factor(doc$illness)
+tab <- table(doc$visits)
+tab
+```
+
+The best thing we do to start analyzing the data is by displaying the **correlation coefficient** of all the variables we have. Thus, any particular predictor that has high correlation with the target variable could be highly likely to be relevant in our future model. Notice that our target variable is not continuous hence we will use the [spearman correlation](https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient).           
+
+```{r,message=FALSE}
+
+pairs.panels(doc, method = "spearman")
+
+```
+
+
+Looking at this plot all the correlations has low values. however, these correlations assess only the monotonic relations, they say nothing about any other form of relation.  
+First let's compare the empirical distribution of the variable  **visits** and the theoretical poisson distribution with $\lambda$ equals the visits mean `mean(doc$visits)`, and the total number of observations is 5190.
+
+```{r}
+pos <- dpois(0:9,0.302)*5190
+both <- numeric(20)
+both[1:20 %% 2 != 0] <- tab
+both[1:20 %% 2 == 0] <- pos
+labels<-character(20)
+labels[1:20 %% 2==0]<-as.character(0:9)
+barplot(both,col=rep(c("red","yellow"),10),names=labels)
+
+```
+
+
+
+As we see the two distributions are more or less closer to each other.
+Let's now check the negative binomial distribution by first estimate the [clumping parameter](https://influentialpoints.com/Training/negative_binomial_distribution-principles-properties-assumptions.htm) $k=\frac{\bar x^2}{s^2-\bar x}$.  
+
+
+
+```{r}
+k<-mean(doc$visits)^2/(var(doc$visits)-mean(doc$visits))
+bin<-dnbinom(0:9,0.27,mu=0.302)*5190
+both1<-numeric(20)
+both1[1:20 %% 2 != 0]<-tab
+both1[1:20 %% 2 == 0]<-bin
+labels<-character(20)
+labels[1:20 %% 2==0]<-as.character(0:9)
+barplot(both1,col=rep(c("red","yellow"),10),names=labels)
+
+```
+
+With this distribution it seems that the empiricall distribution is more closer to the negative binomial than the poisson distribution.
+
+**Note**: This data has very large number of zeros for the outcome compared to the other values which means that any trained model that does not take into account this anomaly will be biased to predict more likely the **zero** value. However, at the end of this article I will show two famous models to handel this type of count data called **Haurdle** model and **zero_inflated** model.         
+
+
+## Data partition
+
+In oreder to evaluate our model we held out 20% of the data as testing set. 
+
+```{r}
+set.seed(123)
+index<-sample(2,nrow(doc),replace = TRUE,p=c(.8,.2))
+train<-doc[index==1,]
+test<-doc[index==2,]
+```
+
+
+
+## Poisson model
+
+This model belongs to the generalized linear model families, so in the function **glm** we set the argument **family** to poisson. In practice this model is sufficient with a wide range of count data. 
+
+
+```{r}
+set.seed(123)
+model1<-glm(visits~., data=train, family ="poisson")
+tidy(model1)
+```
+
+
+As we see all the variables are significant except for the income so we remove this variable and reestimate again.
+
+
+```{r}
+set.seed(123)
+model1<-glm(visits~.-income, data=train, family ="poisson")
+tidy(model1)
+```
+
+For the interpretation of the coefficient estimates, we should exponentiate these values to get the marginal effect since the poisson model uses the log link function to preclude negative values. For continuous predictor, say age, if this predictor increases by one year, ceteris-paribus, we expect the doctor visits will be $exp(0.47876624)=1.614082$ times larger. whereas, for categorical predictor, say gender, the female has $exp(0.21342446)=1.23791$ larger doctor visits than male.      
+By looking at p-values all the predictors are significant. However, we have to check other statistics and metrics.  
+
+
+```{r}
+glance(model1)
+```
+
+since the deviance value **3485.905**	 is lower than the degrees of freedom **4140**, we will then worry about **overdispersion** problem.
+Fortunateley, the **AER** package provides a super easy way to test the significance of this difference via the function **dispersiontest**.
+
+```{r}
+dispersiontest(model1)
+```
+
+If our target variable really follows poisson distribution then its variance $V$ should be approximately equal to its mean $\mu$, which is the null hypothesis of the following **dispersiontest** test against the alternative hypothesis that the variance of the form:
+$$V=\mu+\alpha.trafo(\mu)$$
+
+Where the **trafo** is an hyperparameter that should be specified as an argument of this test. The popular choices for this argument are:
+* trafo = NULL (default): $V=(1+\alpha)\mu$. 
+* trafo = 1:  $V=\mu+\alpha.\mu$.
+* trafo = 2:  $V=\mu+\alpha.\mu^2$.
+For the first choice if true, then the data will be better modeled by quasi-poisson model than poisson model.
+For the last ones if one of them is true then the negative binomial will be better than poisson model.    
+Now once the trafo is defined the test estimates $\alpha$, such that:
+ * if $\alpha = 0$ : equidispersion (The null hypothesis).
+ * if $\alpha < 0$ : underdispersion.
+ * if $\alpha > 0$ : overdispersion.
+Therefore, the result of the test will depend on the direction of the test, where we have **two.sided**, **greater** (default) for the overdispersion, and **less** for underdispersion.
+
+With this in mind the output of the above test (with the default values) tested the overdispersion against the quasi-poisson model, and since the p-value is very small **1.714e-10** then we have overdispersion problem, suggesting the use of quasi-poisson model instead.
+
+Now let's test the negative binomial now.
+
+```{r}
+dispersiontest(model1, trafo = 1)
+```
+
+
+The test suggested the use of negative binomial with linear function for the variance with very tiny p-value **1.714e-10**. This model is known as NB1 (with linear variance function). 
+
+
+```{r}
+dispersiontest(model1, trafo = 2)
+```
+
+If the relation is in quadratic form then this model is called NB2. And since this p-value **3.939e-14** is smaller than the previous one then NB2 could be more appropriate than NB1.
+
+## Quasi poisson model 
+
+The first test suggested the use of quasi-poisson model, so let's train this model with the same predictors as the previous one. 
+
+```{r}
+set.seed(123)
+model2<-glm(visits~.-income, data=train, family ="quasipoisson")
+tidy(model2)
+```
+
+This model uses the quasi maximum likelihood which gives the same coefficient estimates but with different (corrected) standard errors.  
+Since here also all the variables are significant We see that the models are the same except the correction of the standard errors which are now more larger. In other words, the poisson distribution under overdispersion underestimates the standard errors and hence the **t test** would be biased towards the rejection of the null hypothesis. 
+To better understand what is going on with quasi-poisson model let's put the estimates and the standard errors of both models into one table, and we add a column that resulted from dividing the second standard errors vector by the first one.  
+
+```{r}
+D1 <- tidy(model1)
+colnames(D1) <- NULL
+D2 <- tidy(model2)
+colnames(D2) <- NULL
+cbind(term=D1[,1], estimate1=D1[,2], std1=D1[,3],estimate2=D2[,2], std2=D2[,3]) %>% 
+  mutate(dispersion= std2/std1)
+```
+
+**Note**: The first two columns are for the model1, and the last one are for the model 2.
+Not surprisingly that the result is constant since this is exactely what does the quasi maximum likelihood, it computes the corrected standard errors from the original ones as follows $std2=dispersion*std1$, with the dispersion value being estimated as **1.15718**. if you want to know where this value came from, the answer is simple. this model computes the sigma of the standardized residuals resulted from the original model. we can thus get this value by specifying the  argument type to **pear** then computing sigma by hand as follows:    
+
+```{r}
+resid <- resid(model1, type = "pear")
+sqrt(sum(resid^2)/4140)
+```
+
+Now to test the prediction qualities of our models we use the testing set **test** by ploting the  original and the predicted values.
+Let's start by the model1
+
+```{r}
+pred<- predict.glm(model1,newdata=test[test$visits!=0,],type = "response")
+plot(test$visits[test$visits!=0],type = "b",col="red")
+lines(round(pred),col="blue")
+```
+
+If you noticed, and due to the large number of zero's of the target variable, i have intentionally removed  all theses values in order to get clearer plot. 
+From this plot we can say that the model does not fit well the data especially the larger values that are not well captured, however this may due to the fact that the data are very skewed towards zero.
+
+To compare different models we can use the **root mean-square error** and **mean absolute error** (all the data with zero's included).
+**Note**: Here we are using the **rmse** function from **ModelMetrics** that expects the inpute to be two vectors, and not that with the same name from the **performance** package that expects the input to be a model object . To avoid thus any such ambiguity you should type this command `ModelMetrics::rmse`.    
+
+```{r,message=FALSE}
+
+pred <- predict.glm(model1, newdata = test, type = "response")
+rmsemodelp <- ModelMetrics::rmse(test$visits,round(pred))
+maemodelp <- mae(test$visits,round(pred))
+rmsemodelp
+maemodelp
+```
+
+By the same way, Now let's evaluate the quasi-poisson model. 
+
+```{r}
+predq<- predict.glm(model2,newdata=test[test$visits!=0,],type = "response")
+plot(test$visits[test$visits!=0],type = "b",col="red")
+lines(round(predq),col="blue")
+```
+
+This plot does not seem to be very different from the previous plot.
+The rmse and mae for this model are computed as follows.
+
+```{r}
+predq <- predict.glm(model2,newdata=test, type = "response")
+rmsemodelqp <- ModelMetrics::rmse(test$visits,round(predq))
+maemodelqp <- mae(test$visits,round(predq))
+rmsemodelqp
+maemodelqp
+
+```
+
+we will not compare this two models until we finish with all the incoming models and we compare all the models at once.
+
+## Negative binomial model 
+
+The negative binomial distribution is used as an alternative for the poisson distribution under overdispersion problem. 
+
+```{r,message=FALSE}
+set.seed(123)
+model3<-glm.nb(visits~.-income, data=train)
+summary(model3)
+```
+
+As before we visualize the performance of this model as follows.
+
+
+```{r}
+prednb<- predict.glm(model3,newdata=test[test$visits!=0,],type = "response")
+plot(test$visits[test$visits!=0],type = "b",col="red")
+lines(round(prednb),col="blue")
+```
+
+
+Again this plot also seems to be the same as the previous ones, so to figure out which model is best we use statistic metrics. 
+
+
+```{r}
+prednb<- predict.glm(model3,newdata=test,type = "response")
+rmsemodelnb<-ModelMetrics::rmse(test$visits,round(prednb))
+maemodelnb<-mae(test$visits,round(prednb))
+rmsemodelnb
+maemodelnb
+
+```
+
+we will use these ouputs further. 
+
+## Hurdle model
+
+Originally proposed by Mullahy (1986) this model can take into account the fact that the data has more zeros and also can handle the overdispersion problem. It has two components (or steps), truncated count component defined by the chosen discrete distribution such as poisson or negative binomial, and a hurdle components models zero vs larger counts (that uses censored count distribution or binomial model). In other words, this models asumes that two population distributions underlying the data, one distribution for zero values, and another different distribution the psotive values. For more detail about hurdle and zero inflated models click [here](https://cran.r-project.org/web/packages/pscl/vignettes/countreg.pdf#cite.countreg%3AZeileis%3A2006) 
+
+To perform this model we make use of the function **hurdle** from the package **pscl**. 
+
+### hurdle model with poisson distribution.
+
+This model works in two steps. In the first step it uses binary classification to discriminate between the zero values and the positive values, and in the second step uses the traditional (poisson or binomial model, and here we use poisson model) model for positive values.
+
+```{r,message=FALSE}
+library(pscl)
+set.seed(123)
+modelhp<-hurdle(visits~. -income, data=train,dist = "poisson")
+summary(modelhp)
+```
+
+As we see this output has two tables. The above one is for the poisson model performed only on the truncated positive values, and the below one is the result of the logistic regression with only two classes (zero or positive value)     
+As we did before we plot the results.
+
+
+```{r}
+predhp<- predict(modelhp,newdata=test[test$visits!=0,],type = "response")
+plot(test$visits[test$visits!=0],type = "b",col="red")
+lines(round(predhp),col="blue")
+```
+
+As before by only looking at the plot we can not decide which model is the best. So it is better to use the statistic metrics. 
+
+
+```{r}
+predhp<- predict(modelhp,newdata=test, type = "response")
+rmsemodelhp<-ModelMetrics::rmse(test$visits,round(predhp))
+maemodelhp<-mae(test$visits,round(predhp))
+rmsemodelhp
+maemodelhp
+```
+
+
+### hurdle model with negative binomial distribution.
+
+Now let's try to use the negative binomial instead of poisson distribution.
+
+
+```{r,message=FALSE}
+set.seed(123)
+modelhnb<-hurdle(visits~.-income, data=train,dist = "negbin")
+summary(modelhnb)
+```
+
+And let's plot the difference between the predicted and the actual values of the testing set. . 
+
+```{r}
+predhnb<- predict(modelhnb,newdata=test[test$visits!=0,],type = "response")
+plot(test$visits[test$visits!=0],type = "b",col="red")
+lines(round(predhnb),col="blue")
+```
+
+And for the metrics.
+
+
+```{r}
+predhnb<- predict(modelhnb,newdata=test,type = "response")
+rmsemodelhnb<-ModelMetrics::rmse(test$visits,round(predhnb))
+maemodelhnb<-mae(test$visits,round(predhnb))
+rmsemodelhnb
+maemodelhnb
+```
+
+
+## Zero inflated model
+
+Such as the previous model type , this model also combines two components but with the difference that this model performs a mixture of binomial distribution (between zero and positive values) and the poisson (or negative binomial) distribution for the rest of the values (with the zero included). 
+
+### Zero inflated model with poisson distribution
+
+Here also we fit tow models one with poisson and one with negative binomial
+
+```{r}
+set.seed(123)
+modelzp<-zeroinfl(visits~.-income, data=train,dist = "poisson")
+summary(modelzp)
+```
+
+
+```{r}
+predzp<- predict(modelzp,newdata=test[test$visits!=0,],type = "response")
+plot(test$visits[test$visits!=0],type = "b",col="red")
+lines(round(predzp),col="blue")
+```
+
+
+```{r}
+predzp<- predict(modelzp,newdata=test,type = "response")
+rmsemodelzp<-ModelMetrics::rmse(test$visits,round(predzp))
+maemodelzp<-mae(test$visits,round(predzp))
+rmsemodelzp
+maemodelzp
+```
+
+
+### Zero inflated model with negative binomial distribution
+
+Let's this time try the negative binomial distribution. 
+
+```{r}
+set.seed(123)
+modelznb<-zeroinfl(visits~., data=train,dist = "negbin")
+summary(modelznb)
+```
+
+
+```{r}
+predznb<- predict(modelznb,newdata=test,type = "response")
+rmsemodelznb<-ModelMetrics::rmse(test$visits,round(predznb))
+maemodelznb<-mae(test$visits,round(predznb))
+rmsemodelznb
+maemodelznb
+```
+
+
+Finally let's compare all the above models.
+
+```{r}
+rmse<-c(rmsemodelp,rmsemodelqp,rmsemodelnb,rmsemodelhp,rmsemodelhnb,
+           rmsemodelzp,rmsemodelznb)
+mae<-c(maemodelp,maemodelqp,maemodelnb,maemodelhp,maemodelhnb,
+           maemodelzp,maemodelznb)
+models<-c("pois","q_pois","nb","h_pois","h_nb","zer_pois","zer_nb")
+
+data.frame(models,rmse,mae)%>% 
+  arrange(rmse)
+```
+
+
+The above metrics have chosen the zero inflated negative binomial model as the best model  with minimum rmse value **0.7309579**, and minimum mae value **0.2753623**. this result is in line with the fact that this kind of models take care of the zero inflated data and at the same time the overdispersion problem.
+
+## Conclusion:
+
+If the data is truly follows Poisson distribution then all the the other models have extra parameters that, during training, converges to the optimum parameter values for poisson, this relation is like the linear regression to the Generealized least squares. However, if the data is very skewed towards zero then it should be better to use the last two models to take care of this issue.
+
+## Furhter reading:
+
+* Michael J. Crawley, The R book, WILEY, UK, 2013.  http://www.bio.ic.ac.uk/research/mjcraw/therbook/index.htm
+* 
+
