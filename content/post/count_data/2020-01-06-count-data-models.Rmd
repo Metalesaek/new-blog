@@ -176,16 +176,18 @@ $$V=\mu+\alpha.trafo(\mu)$$
 
 Where the **trafo** is an hyperparameter that should be specified as an argument of this test. The popular choices for this argument are:
 
-* trafo = NULL (default): $V=(1+\alpha)\mu$. 
-* trafo = 1:  $V=\mu+\alpha.\mu$.
-* trafo = 2:  $V=\mu+\alpha.\mu^2$.
+* trafo = NULL (default): $V=(1+\alpha)\mu$ 
+* trafo = 1:  $V=\mu+\alpha.\mu$
+* trafo = 2:  $V=\mu+\alpha.\mu^2$
 
 For the first choice if true, then the data will be better modeled by quasi-poisson model than poisson model.
 For the last ones if one of them is true then the negative binomial will be better than poisson model.    
 Now once the trafo is defined the test estimates $\alpha$, such that:
- * if $\alpha = 0$ : equidispersion (The null hypothesis).
- * if $\alpha < 0$ : underdispersion.
- * if $\alpha > 0$ : overdispersion.
+
+ * if $\alpha = 0$ : equidispersion (The null hypothesis)
+ * if $\alpha < 0$ : underdispersion
+ * if $\alpha > 0$ : overdispersion
+ 
 Therefore, the result of the test will depend on the direction of the test, where we have **two.sided**, **greater** (default) for the overdispersion, and **less** for underdispersion.
 
 With this in mind the output of the above test (with the default values) tested the overdispersion against the quasi-poisson model, and since the p-value is very small **1.714e-10** then we have overdispersion problem, suggesting the use of quasi-poisson model instead.
