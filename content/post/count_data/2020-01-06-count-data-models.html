@@ -221,6 +221,7 @@ dispersion
 <span class="math display">\[V=\mu+\alpha.trafo(\mu)\]</span></p>
 <p>Where the <strong>trafo</strong> is an hyperparameter that should be specified as an argument of this test. The popular choices for this argument are:</p>
 <ul>
+<<<<<<< HEAD
 <li>trafo = NULL (default): <span class="math inline">\(V=(1+\alpha)\mu\)</span></li>
 <li>trafo = 1: <span class="math inline">\(V=\mu+\alpha.\mu\)</span></li>
 <li>trafo = 2: <span class="math inline">\(V=\mu+\alpha.\mu^2\)</span></li>
@@ -234,6 +235,19 @@ Now once the trafo is defined the test estimates <span class="math inline">\(\al
 <li>if <span class="math inline">\(\alpha &gt; 0\)</span> : overdispersion</li>
 </ul>
 <p>Therefore, the result of the test will depend on the direction of the test, where we have <strong>two.sided</strong>, <strong>greater</strong> (default) for the overdispersion, and <strong>less</strong> for underdispersion.</p>
+=======
+<li>trafo = NULL (default): <span class="math inline">\(V=(1+\alpha)\mu\)</span>.</li>
+<li>trafo = 1: <span class="math inline">\(V=\mu+\alpha.\mu\)</span>.</li>
+<li>trafo = 2: <span class="math inline">\(V=\mu+\alpha.\mu^2\)</span>.</li>
+</ul>
+<p>For the first choice if true, then the data will be better modeled by quasi-poisson model than poisson model.
+For the last ones if one of them is true then the negative binomial will be better than poisson model.<br />
+Now once the trafo is defined the test estimates <span class="math inline">\(\alpha\)</span>, such that:
+* if <span class="math inline">\(\alpha = 0\)</span> : equidispersion (The null hypothesis).
+* if <span class="math inline">\(\alpha &lt; 0\)</span> : underdispersion.
+* if <span class="math inline">\(\alpha &gt; 0\)</span> : overdispersion.
+Therefore, the result of the test will depend on the direction of the test, where we have <strong>two.sided</strong>, <strong>greater</strong> (default) for the overdispersion, and <strong>less</strong> for underdispersion.</p>
+>>>>>>> 07aced1a775ea4164e3744b8ed88fed1cecab657
 <p>With this in mind the output of the above test (with the default values) tested the overdispersion against the quasi-poisson model, and since the p-value is very small <strong>1.714e-10</strong> then we have overdispersion problem, suggesting the use of quasi-poisson model instead.</p>
 <p>Now let’s test the negative binomial now.</p>
 <pre class="r"><code>dispersiontest(model1, trafo = 1)</code></pre>
