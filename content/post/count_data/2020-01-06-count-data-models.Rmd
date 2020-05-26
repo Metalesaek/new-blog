@@ -466,7 +466,7 @@ data.frame(models,rmse,mae)%>%
 ```
 
 
-The above metrics have chosen the zero inflated negative binomial model as the best model  with minimum rmse value **0.7309579**, and minimum mae value **0.2753623**. this result is in line with the fact that this kind of models take care of the zero inflated data and at the same time the overdispersion problem.
+Both metrics have chosen the zero inflated negative binomial model as the best model  with minimum rmse value **0.7309579**, and minimum mae value **0.2753623**. this result is in line with the fact that this kind of models take care of the zero inflated data and at the same time the overdispersion problem.
 
 ## Conclusion:
 
