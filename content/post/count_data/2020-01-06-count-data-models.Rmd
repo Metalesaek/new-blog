@@ -458,7 +458,7 @@ The above metrics have chosen the zero inflated negative binomial model as the b
 
 ## Conclusion:
 
-If the data is truly follows Poisson distribution then all the the other models have extra parameters that, during training, converges to the optimum parameter values for poisson, this relation is like the linear regression to the Generealized least squares. However, if the data is very skewed towards zero then it should be better to use the last two models to take care of this issue.
+If the data is truly follows Poisson distribution then all the the other models have extra parameters that, during training process, converges to the optimum parameter values for poisson, this relation is like the linear regression to the Generealized least squares. However, if the data is very skewed towards zero then it should be better to use the last two models to take care of this issue.
 
 ## Furhter reading:
 
