@@ -59,10 +59,10 @@ projects: []
 <h2>Data preparation</h2>
 <p>To well understand how to model the count data we are going be using <strong>Doctorvisits</strong> data from <strong>AER</strong> package, in which the variable <strong>visits</strong> will be our target variable, so let’s call this data with the packages that we need along this article.</p>
 <pre class="r"><code>ssh &lt;- suppressPackageStartupMessages
-ssh(library(psych))
 ssh(library(performance))
 ssh(library(ModelMetrics))
-ssh(library(caret))
+ssh(library(corrr))
+ssh(library(purrr))
 ssh(library(MASS))
 ssh(library(tidyverse))
 ssh(library(AER))
@@ -110,15 +110,19 @@ $ lchronic  &lt;fct&gt; no, no, no, no, no, no, no, no, no, no, no, no, no, no, 
                                  </code></pre>
 <p>As we see we do not have missing values and the visits values ranges from 0 to 9 but it should be of integer type rather than double. Similarly, the variable <strong>illness</strong> should be converted to factor type since it has a few different values.</p>
 <pre class="r"><code>doc$visits&lt;-as.integer(doc$visits)
-doc$illness&lt;-as.factor(doc$illness)
+doc$illness &lt;- as.factor(doc$illness)
 tab &lt;- table(doc$visits)
 tab</code></pre>
 <pre><code>
    0    1    2    3    4    5    6    7    8    9 
 4141  782  174   30   24    9   12   12    5    1 </code></pre>
-<p>The best thing we do to start analyzing the data is by displaying the <strong>correlation coefficient</strong> of all the variables we have. Thus, any particular predictor that has high correlation with the target variable could be highly likely to be relevant in our future model. Notice that our target variable is not continuous hence we will use the <a href="https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient">spearman correlation</a>.</p>
-<pre class="r"><code>pairs.panels(doc, method = &quot;spearman&quot;)</code></pre>
-<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-4-1.svg" width="576" /></p>
+<p>The best thing we do to start analyzing the data is by displaying the <strong>correlation coefficient</strong> of each pair variables we have. Thus, any particular predictor that has high correlation with the target variable could be highly likely to be relevant in our future model. Notice that our target variable is not continuous hence we will use the <a href="https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient">spearman correlation</a>. As required by <strong>correlate</strong> function from <strong>corrr</strong> package, all the variables must be of numeric type so we convert all the factor to integer.</p>
+<pre class="r"><code>doc1 &lt;-modify_if(doc, is.factor, as.integer)</code></pre>
+<p>notice that we have stored the result in another object <strong>doc1</strong> to keep save our original data.</p>
+<pre class="r"><code>M &lt;- correlate(doc1, method=&quot;spearman&quot;)
+rplot(shave(M), colours=c(&quot;red&quot;, &quot;white&quot;, &quot;blue&quot; ))+
+   theme(axis.text.x = element_text(angle = 90, hjust = 1))</code></pre>
+<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-5-1.svg" width="576" /></p>
 <p>Looking at this plot all the correlations has low values. however, these correlations assess only the monotonic relations, they say nothing about any other form of relation.<br />
 First let’s compare the empirical distribution of the variable <strong>visits</strong> and the theoretical poisson distribution with <span class="math inline">\(\lambda\)</span> equals the visits mean <code>mean(doc$visits)</code>, and the total number of observations is 5190.</p>
 <pre class="r"><code>pos &lt;- dpois(0:9,0.302)*5190
@@ -128,7 +132,7 @@ both[1:20 %% 2 == 0] &lt;- pos
 labels&lt;-character(20)
 labels[1:20 %% 2==0]&lt;-as.character(0:9)
 barplot(both,col=rep(c(&quot;red&quot;,&quot;yellow&quot;),10),names=labels)</code></pre>
-<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-5-1.svg" width="576" /></p>
+<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-6-1.svg" width="576" /></p>
 <p>As we see the two distributions are more or less closer to each other.
 Let’s now check the negative binomial distribution by first estimate the <a href="https://influentialpoints.com/Training/negative_binomial_distribution-principles-properties-assumptions.htm">clumping parameter</a> <span class="math inline">\(k=\frac{\bar x^2}{s^2-\bar x}\)</span>.</p>
 <pre class="r"><code>k&lt;-mean(doc$visits)^2/(var(doc$visits)-mean(doc$visits))
@@ -139,7 +143,7 @@ both1[1:20 %% 2 == 0]&lt;-bin
 labels&lt;-character(20)
 labels[1:20 %% 2==0]&lt;-as.character(0:9)
 barplot(both1,col=rep(c(&quot;red&quot;,&quot;yellow&quot;),10),names=labels)</code></pre>
-<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-6-1.svg" width="576" /></p>
+<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-7-1.svg" width="576" /></p>
 <p>With this distribution it seems that the empiricall distribution is more closer to the negative binomial than the poisson distribution.</p>
 <p><strong>Note</strong>: This data has very large number of zeros for the outcome compared to the other values which means that any trained model that does not take into account this anomaly will be biased to predict more likely the <strong>zero</strong> value. However, at the end of this article I will show two famous models to handel this type of count data called <strong>Haurdle</strong> model and <strong>zero_inflated</strong> model.</p>
 </div>
@@ -220,17 +224,29 @@ dispersion
 <p>If our target variable really follows poisson distribution then its variance <span class="math inline">\(V\)</span> should be approximately equal to its mean <span class="math inline">\(\mu\)</span>, which is the null hypothesis of the following <strong>dispersiontest</strong> test against the alternative hypothesis that the variance of the form:
 <span class="math display">\[V=\mu+\alpha.trafo(\mu)\]</span></p>
 <p>Where the <strong>trafo</strong> is an hyperparameter that should be specified as an argument of this test. The popular choices for this argument are:</p>
-<ul>
-<li>trafo = NULL (default): <span class="math inline">\(V=(1+\alpha)\mu\)</span>.</li>
-<li>trafo = 1: <span class="math inline">\(V=\mu+\alpha.\mu\)</span>.</li>
-<li>trafo = 2: <span class="math inline">\(V=\mu+\alpha.\mu^2\)</span>.</li>
-</ul>
+<p>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
+* trafo = NULL (default): <span class="math inline">\(V=(1+\alpha)\mu\)</span>
+* trafo = 1: <span class="math inline">\(V=\mu+\alpha.\mu\)</span>
+* trafo = 2: <span class="math inline">\(V=\mu+\alpha.\mu^2\)</span>
+=======
+* trafo = NULL (default): <span class="math inline">\(V=(1+\alpha)\mu\)</span>.
+* trafo = 1: <span class="math inline">\(V=\mu+\alpha.\mu\)</span>.
+* trafo = 2: <span class="math inline">\(V=\mu+\alpha.\mu^2\)</span>.
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; 07aced1a775ea4164e3744b8ed88fed1cecab657</p>
 <p>For the first choice if true, then the data will be better modeled by quasi-poisson model than poisson model.
 For the last ones if one of them is true then the negative binomial will be better than poisson model.<br />
 Now once the trafo is defined the test estimates <span class="math inline">\(\alpha\)</span>, such that:
+&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD</p>
+<ul>
+<li>if <span class="math inline">\(\alpha = 0\)</span> : equidispersion (The null hypothesis)</li>
+<li>if <span class="math inline">\(\alpha &lt; 0\)</span> : underdispersion</li>
+<li>if <span class="math inline">\(\alpha &gt; 0\)</span> : overdispersion</li>
+</ul>
+<p>=======
 * if <span class="math inline">\(\alpha = 0\)</span> : equidispersion (The null hypothesis).
 * if <span class="math inline">\(\alpha &lt; 0\)</span> : underdispersion.
 * if <span class="math inline">\(\alpha &gt; 0\)</span> : overdispersion.
+&gt;&gt;&gt;&gt;&gt;&gt;&gt; 07aced1a775ea4164e3744b8ed88fed1cecab657
 Therefore, the result of the test will depend on the direction of the test, where we have <strong>two.sided</strong>, <strong>greater</strong> (default) for the overdispersion, and <strong>less</strong> for underdispersion.</p>
 <p>With this in mind the output of the above test (with the default values) tested the overdispersion against the quasi-poisson model, and since the p-value is very small <strong>1.714e-10</strong> then we have overdispersion problem, suggesting the use of quasi-poisson model instead.</p>
 <p>Now let’s test the negative binomial now.</p>
@@ -307,7 +323,7 @@ cbind(term=D1[,1], estimate1=D1[,2], std1=D1[,3],estimate2=D2[,2], std2=D2[,3]) 
 14  nchronicyes  0.01714304 0.073082122  0.01714304 0.084569188    1.15718
 15  lchronicyes  0.02818992 0.091425522  0.02818992 0.105795808    1.15718</code></pre>
 <p><strong>Note</strong>: The first two columns are for the model1, and the last one are for the model 2.
-Not surprisingly that the result is constant since this is exactely what does the quasi maximum likelihood, it computes the corrected standard errors from the original ones as follows <span class="math inline">\(std2=dispersion*std1\)</span>, with the dispersion value being estimated as <strong>1.15718</strong>. if you want to know where this value came from, the answer is simple. this model computes the sigma of the standardized residuals resulted from the original model. we can thus get this value by specifying the argument type to <strong>pear</strong> then computing sigma by hand as follows:</p>
+Not surprisingly that the result of the last column is constant since this is exactely what the quasi maximum likelihood does, it computes the corrected standard errors from the original ones as follows <span class="math inline">\(std2=dispersion*std1\)</span>, with the dispersion value being estimated as <strong>1.15718</strong>. if you want to know where this value came from, the answer is simple. this model computes the sigma of the standardized residuals resulted from the original model. we can thus get this value by specifying the argument type to <strong>pear</strong> then computing sigma by hand as follows:</p>
 <pre class="r"><code>resid &lt;- resid(model1, type = &quot;pear&quot;)
 sqrt(sum(resid^2)/4140)</code></pre>
 <pre><code>[1] 1.15718</code></pre>
@@ -316,7 +332,7 @@ Let’s start by the model1</p>
 <pre class="r"><code>pred&lt;- predict.glm(model1,newdata=test[test$visits!=0,],type = &quot;response&quot;)
 plot(test$visits[test$visits!=0],type = &quot;b&quot;,col=&quot;red&quot;)
 lines(round(pred),col=&quot;blue&quot;)</code></pre>
-<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-17-1.svg" width="576" /></p>
+<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-18-1.svg" width="576" /></p>
 <p>If you noticed, and due to the large number of zero’s of the target variable, i have intentionally removed all theses values in order to get clearer plot.
 From this plot we can say that the model does not fit well the data especially the larger values that are not well captured, however this may due to the fact that the data are very skewed towards zero.</p>
 <p>To compare different models we can use the <strong>root mean-square error</strong> and <strong>mean absolute error</strong> (all the data with zero’s included).
@@ -332,7 +348,7 @@ rmsemodelp</code></pre>
 <pre class="r"><code>predq&lt;- predict.glm(model2,newdata=test[test$visits!=0,],type = &quot;response&quot;)
 plot(test$visits[test$visits!=0],type = &quot;b&quot;,col=&quot;red&quot;)
 lines(round(predq),col=&quot;blue&quot;)</code></pre>
-<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-19-1.svg" width="576" /></p>
+<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-20-1.svg" width="576" /></p>
 <p>This plot does not seem to be very different from the previous plot.
 The rmse and mae for this model are computed as follows.</p>
 <pre class="r"><code>predq &lt;- predict.glm(model2,newdata=test, type = &quot;response&quot;)
@@ -395,7 +411,7 @@ Number of Fisher Scoring iterations: 1
 <pre class="r"><code>prednb&lt;- predict.glm(model3,newdata=test[test$visits!=0,],type = &quot;response&quot;)
 plot(test$visits[test$visits!=0],type = &quot;b&quot;,col=&quot;red&quot;)
 lines(round(prednb),col=&quot;blue&quot;)</code></pre>
-<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-22-1.svg" width="576" /></p>
+<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-23-1.svg" width="576" /></p>
 <p>Again this plot also seems to be the same as the previous ones, so to figure out which model is best we use statistic metrics.</p>
 <pre class="r"><code>prednb&lt;- predict.glm(model3,newdata=test,type = &quot;response&quot;)
 rmsemodelnb&lt;-ModelMetrics::rmse(test$visits,round(prednb))
@@ -469,7 +485,7 @@ As we did before we plot the results.</p>
 <pre class="r"><code>predhp&lt;- predict(modelhp,newdata=test[test$visits!=0,],type = &quot;response&quot;)
 plot(test$visits[test$visits!=0],type = &quot;b&quot;,col=&quot;red&quot;)
 lines(round(predhp),col=&quot;blue&quot;)</code></pre>
-<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-25-1.svg" width="576" /></p>
+<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-26-1.svg" width="576" /></p>
 <p>As before by only looking at the plot we can not decide which model is the best. So it is better to use the statistic metrics.</p>
 <pre class="r"><code>predhp&lt;- predict(modelhp,newdata=test, type = &quot;response&quot;)
 rmsemodelhp&lt;-ModelMetrics::rmse(test$visits,round(predhp))
@@ -538,7 +554,7 @@ Log-likelihood: -2524 on 31 Df</code></pre>
 <pre class="r"><code>predhnb&lt;- predict(modelhnb,newdata=test[test$visits!=0,],type = &quot;response&quot;)
 plot(test$visits[test$visits!=0],type = &quot;b&quot;,col=&quot;red&quot;)
 lines(round(predhnb),col=&quot;blue&quot;)</code></pre>
-<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-28-1.svg" width="576" /></p>
+<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-29-1.svg" width="576" /></p>
 <p>And for the metrics.</p>
 <pre class="r"><code>predhnb&lt;- predict(modelhnb,newdata=test,type = &quot;response&quot;)
 rmsemodelhnb&lt;-ModelMetrics::rmse(test$visits,round(predhnb))
@@ -609,7 +625,7 @@ Log-likelihood: -2579 on 30 Df</code></pre>
 <pre class="r"><code>predzp&lt;- predict(modelzp,newdata=test[test$visits!=0,],type = &quot;response&quot;)
 plot(test$visits[test$visits!=0],type = &quot;b&quot;,col=&quot;red&quot;)
 lines(round(predzp),col=&quot;blue&quot;)</code></pre>
-<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-31-1.svg" width="576" /></p>
+<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-32-1.svg" width="576" /></p>
 <pre class="r"><code>predzp&lt;- predict(modelzp,newdata=test,type = &quot;response&quot;)
 rmsemodelzp&lt;-ModelMetrics::rmse(test$visits,round(predzp))
 maemodelzp&lt;-mae(test$visits,round(predzp))
@@ -700,12 +716,12 @@ data.frame(models,rmse,mae)%&gt;%
 5     h_nb 0.7408052 0.2879227
 6 zer_pois 0.7485897 0.2898551
 7       nb 0.7808085 0.2966184</code></pre>
-<p>The above metrics have chosen the zero inflated negative binomial model as the best model with minimum rmse value <strong>0.7309579</strong>, and minimum mae value <strong>0.2753623</strong>. this result is in line with the fact that this kind of models take care of the zero inflated data and at the same time the overdispersion problem.</p>
+<p>Both metrics have chosen the zero inflated negative binomial model as the best model with minimum rmse value <strong>0.7309579</strong>, and minimum mae value <strong>0.2753623</strong>. this result is in line with the fact that this kind of models take care of the zero inflated data and at the same time the overdispersion problem.</p>
 </div>
 </div>
 <div id="conclusion" class="section level2">
 <h2>Conclusion:</h2>
-<p>If the data is truly follows Poisson distribution then all the the other models have extra parameters that, during training, converges to the optimum parameter values for poisson, this relation is like the linear regression to the Generealized least squares. However, if the data is very skewed towards zero then it should be better to use the last two models to take care of this issue.</p>
+<p>If the data is truly follows Poisson distribution then all the the other models have extra parameters that, during training process, converges to the optimum parameter values for poisson, this relation is like the linear regression to the Generealized least squares. However, if the data is very skewed towards zero then it should be better to use the last two models to take care of this issue.</p>
 </div>
 <div id="furhter-reading" class="section level2">
 <h2>Furhter reading:</h2>

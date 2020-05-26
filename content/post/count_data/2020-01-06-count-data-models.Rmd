@@ -45,10 +45,10 @@ To well understand how to model the count data we are going be using **Doctorvis
 
 ```{r,message=FALSE}
 ssh <- suppressPackageStartupMessages
-ssh(library(psych))
 ssh(library(performance))
 ssh(library(ModelMetrics))
-ssh(library(caret))
+ssh(library(corrr))
+ssh(library(purrr))
 ssh(library(MASS))
 ssh(library(tidyverse))
 ssh(library(AER))
@@ -70,17 +70,23 @@ As we see we do not have missing values and the visits values ranges from 0 to 9
 
 ```{r}
 doc$visits<-as.integer(doc$visits)
-doc$illness<-as.factor(doc$illness)
+doc$illness <- as.factor(doc$illness)
 tab <- table(doc$visits)
 tab
 ```
 
-The best thing we do to start analyzing the data is by displaying the **correlation coefficient** of all the variables we have. Thus, any particular predictor that has high correlation with the target variable could be highly likely to be relevant in our future model. Notice that our target variable is not continuous hence we will use the [spearman correlation](https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient).           
+The best thing we do to start analyzing the data is by displaying the **correlation coefficient** of each pair variables we have. Thus, any particular predictor that has high correlation with the target variable could be highly likely to be relevant in our future model. Notice that our target variable is not continuous hence we will use the [spearman correlation](https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient). As required by **correlate** function from **corrr** package, all the variables must be of numeric type so we convert all the factor to integer.            
+
+```{r}
+doc1 <-modify_if(doc, is.factor, as.integer)
+```
+
+notice that we have stored the result in another object **doc1** to keep save our original data.   
 
 ```{r,message=FALSE}
-
-pairs.panels(doc, method = "spearman")
-
+M <- correlate(doc1, method="spearman")
+rplot(shave(M), colours=c("red", "white", "blue" ))+
+   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
 
@@ -184,10 +190,10 @@ For the first choice if true, then the data will be better modeled by quasi-pois
 For the last ones if one of them is true then the negative binomial will be better than poisson model.    
 Now once the trafo is defined the test estimates $\alpha$, such that:
 
- * if $\alpha = 0$ : equidispersion (The null hypothesis)
- * if $\alpha < 0$ : underdispersion
- * if $\alpha > 0$ : overdispersion
- 
+* if $\alpha = 0$ : equidispersion (The null hypothesis)
+* if $\alpha < 0$ : underdispersion
+* if $\alpha > 0$ : overdispersion
+
 Therefore, the result of the test will depend on the direction of the test, where we have **two.sided**, **greater** (default) for the overdispersion, and **less** for underdispersion.
 
 With this in mind the output of the above test (with the default values) tested the overdispersion against the quasi-poisson model, and since the p-value is very small **1.714e-10** then we have overdispersion problem, suggesting the use of quasi-poisson model instead.
@@ -232,7 +238,7 @@ cbind(term=D1[,1], estimate1=D1[,2], std1=D1[,3],estimate2=D2[,2], std2=D2[,3]) 
 ```
 
 **Note**: The first two columns are for the model1, and the last one are for the model 2.
-Not surprisingly that the result is constant since this is exactely what does the quasi maximum likelihood, it computes the corrected standard errors from the original ones as follows $std2=dispersion*std1$, with the dispersion value being estimated as **1.15718**. if you want to know where this value came from, the answer is simple. this model computes the sigma of the standardized residuals resulted from the original model. we can thus get this value by specifying the  argument type to **pear** then computing sigma by hand as follows:    
+Not surprisingly that the result of the last column is constant since this is exactely what the quasi maximum likelihood does, it computes the corrected standard errors from the original ones as follows $std2=dispersion*std1$, with the dispersion value being estimated as **1.15718**. if you want to know where this value came from, the answer is simple. this model computes the sigma of the standardized residuals resulted from the original model. we can thus get this value by specifying the  argument type to **pear** then computing sigma by hand as follows:    
 
 ```{r}
 resid <- resid(model1, type = "pear")
@@ -454,11 +460,12 @@ data.frame(models,rmse,mae)%>%
 ```
 
 
-The above metrics have chosen the zero inflated negative binomial model as the best model  with minimum rmse value **0.7309579**, and minimum mae value **0.2753623**. this result is in line with the fact that this kind of models take care of the zero inflated data and at the same time the overdispersion problem.
+Both metrics have chosen the zero inflated negative binomial model as the best model  with minimum rmse value **0.7309579**, and minimum mae value **0.2753623**. this result is in line with the fact that this kind of models take care of the zero inflated data and at the same time the overdispersion problem.
 
 ## Conclusion:
 
-If the data is truly follows Poisson distribution then all the the other models have extra parameters that, during training, converges to the optimum parameter values for poisson, this relation is like the linear regression to the Generealized least squares. However, if the data is very skewed towards zero then it should be better to use the last two models to take care of this issue.
+
+If the data is truly follows Poisson distribution then all the the other models have extra parameters that, during training process, converges to the optimum parameter values for poisson, this relation is like the linear regression to the Generealized least squares. However, if the data is very skewed towards zero then it should be better to use the last two models to take care of this issue.
 
 ## Furhter reading:
 
