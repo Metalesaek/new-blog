@@ -1,0 +1,673 @@
+---
+title: Predicting large and imbalanced data set using the R package tidymodels
+author: Metales Abdelkader
+date: '2020-04-14'
+slug: predicting-large-and-imbalanced-data-set-using-the-r-package-tidymodels
+categories:
+  - R
+tags:
+  - tidymodels
+  - imbalanced
+subtitle: ''
+summary: 'The super easy way, at least for me, to deploy machine learning models is by making use of the R package **tidymodels**, which is a collection of many packages that makes...'
+output:
+  blogdown::html_page:
+    toc: true
+    fig_width: 6
+    dev: "svg"
+authors: []
+lastmod: '2020-05-30T15:53:28+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#data-exploration">Data exploration</a>
+<ul>
+<li><a href="#summary-of-the-variables">Summary of the variables</a></li>
+<li><a href="#missing-values">Missing values</a></li>
+<li><a href="#imbalanced-data">imbalanced data</a></li>
+</ul></li>
+<li><a href="#building-the-recipe">building the recipe</a></li>
+<li><a href="#building-the-workflow">Building the workflow</a></li>
+<li><a href="#random-forest-model">random forest model</a>
+<ul>
+<li><a href="#model-training">model training</a></li>
+<li><a href="#model-evaluation">model evaluation</a></li>
+<li><a href="#model-tuning">Model tuning:</a></li>
+</ul></li>
+<li><a href="#logistic-regression-model">logistic regression model</a></li>
+<li><a href="#session-information">Session information</a></li>
+</ul>
+</div>
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>The super easy way, at least for me, to deploy machine learning models is by making use of the R package <strong>tidymodels</strong>, which is a collection of many packages that makes the workflow steps for your project very smooth and tightly connected to each other and easily managable in a well-structured manner.
+The core packages contained in tidymodels are:</p>
+<ul>
+<li>rsample: for data splitting and rsampling.</li>
+<li>parsnip: Unified interface to the most common machine learning models.</li>
+<li>recipes: unified interface to the most common pre-processing tools for feature engineering.</li>
+<li>workflows: bundle the workflow steps together.</li>
+<li>tune: for optimization of the hyperparameters.</li>
+<li>yardstick: provides the most common performance metrics.</li>
+<li>broom: converts the outputs into user friendly formats such as tibble.</li>
+<li>dials: provides tools for parameter grids.</li>
+<li>infer: provides tools for statistical inferences.</li>
+</ul>
+<p>In addition to the above apackages tidymodels contains also some classical packages such as: dplyr, ggplot2, purrr, tibble. For more detail click <a href="https://www.tidymodels.org">here</a>.</p>
+<p>In order to widely explore and understand the tidymodels, we should look for a noisy dataset that has large number of variables with missing values. Fortunately, I found an open source dataset that fulfils these requirements and in addition, it is highly imbalanced. This data is about <strong>scania trucks</strong> and can be downloaded from <a href="https://archive.ics.uci.edu/ml/datasets/APS+Failure+at+Scania+Trucks">UCI machine learning repository</a> with an extra file for its description.</p>
+<p>the target variable of this data is the air pressure system <strong>APS</strong> in the truck that generates the pressurized air that are utilized in various function in the truck. It has two classes: positive <strong>pos</strong> if a component failures due to a failures in the APS system, negative <strong>neg</strong> if a component failures are not related to the APS system. This means that we are dealing with binary classification problem.</p>
+</div>
+<div id="data-exploration" class="section level2">
+<h2>Data exploration</h2>
+<p>The data is already separated into training and testing set from the source, so let’s call the packages that we need and the data.</p>
+<pre class="r"><code>ssh &lt;- suppressPackageStartupMessages
+ssh(library(readr))
+ssh(library(caret))
+ssh(library(themis))
+ssh(library(tidymodels))
+train &lt;- read_csv(&quot;https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_training_set.csv&quot;, skip = 20)</code></pre>
+<pre><code>Parsed with column specification:
+cols(
+  .default = col_character(),
+  aa_000 = col_double()
+)</code></pre>
+<pre><code>See spec(...) for full column specifications.</code></pre>
+<pre class="r"><code>test &lt;- read_csv(&quot;https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_test_set.csv&quot;, skip = 20)</code></pre>
+<pre><code>Parsed with column specification:
+cols(
+  .default = col_character(),
+  aa_000 = col_double(),
+  bt_000 = col_double()
+)
+See spec(...) for full column specifications.</code></pre>
+<pre><code>Warning: 28 parsing failures.
+ row    col expected actual                                                                                       file
+2006 bt_000 a double     na &#39;https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_test_set.csv&#39;
+2554 bt_000 a double     na &#39;https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_test_set.csv&#39;
+3337 bt_000 a double     na &#39;https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_test_set.csv&#39;
+3698 bt_000 a double     na &#39;https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_test_set.csv&#39;
+4103 bt_000 a double     na &#39;https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_test_set.csv&#39;
+.... ...... ........ ...... ..........................................................................................
+See problems(...) for more details.</code></pre>
+<p>Notice that the data is a tibble where the first twenty rows are a mix of rows that contain some text descritpion and empty rows. and the 21th row contains the column names. That is why we have set the <strong>skip</strong> argument equals to <strong>20</strong>, and for the 21th column by default has been read as colnames <code>col_names = TRUE</code>.</p>
+<div id="summary-of-the-variables" class="section level3">
+<h3>Summary of the variables</h3>
+<p>First let’s check the dimension of the two sets to be aware of what we are dealing with.</p>
+<pre class="r"><code>dim(train)</code></pre>
+<pre><code>[1] 60000   171</code></pre>
+<pre class="r"><code>dim(test)</code></pre>
+<pre><code>[1] 16000   171</code></pre>
+<p>The training set has 60000 rows and 171 variables which is moderately large dataset. Inspecting thus this data by the usual functions such as <strong>summary</strong>, <strong>str</strong> would give heavy and not easily readable outputs. the best alternative However is by extracting the most important information that is required for building any machine learning model in aggregated way, for instance, what type of variables it has, some statistics about the variable values, the missing values..etc.</p>
+<pre class="r"><code>map_chr(train, typeof) %&gt;% 
+  tibble() %&gt;% 
+  table()</code></pre>
+<pre><code>.
+character    double 
+      170         1 </code></pre>
+<p>Strangely, all the variables but one are characters, which is in contradiction with the description of this data from the file description. To figure out what is going on we display some few rows and some few columns.</p>
+<pre class="r"><code>train[1:5,1:7]</code></pre>
+<pre><code># A tibble: 5 x 7
+  class aa_000 ab_000 ac_000     ad_000 ae_000 af_000
+  &lt;chr&gt;  &lt;dbl&gt; &lt;chr&gt;  &lt;chr&gt;      &lt;chr&gt;  &lt;chr&gt;  &lt;chr&gt; 
+1 neg    76698 na     2130706438 280    0      0     
+2 neg    33058 na     0          na     0      0     
+3 neg    41040 na     228        100    0      0     
+4 neg       12 0      70         66     0      10    
+5 neg    60874 na     1368       458    0      0     </code></pre>
+<p>I think, the problem is that the missing values in the data indicated by <strong>na</strong> are not recognized as missing values, instead they are treated as characters and this what makes the function <strong>read_csv</strong> coerces every variable that has this <strong>na</strong> values to character type. To fix this problem we can either go back and set the <strong>na</strong> argument to <strong>“na”</strong>, or we set the missing values by hand as follows.</p>
+<pre class="r"><code>train[-1] &lt;- train[-1] %&gt;% 
+  modify(~replace(., .==&quot;na&quot;, NA)) %&gt;%
+  modify(., as.double)</code></pre>
+<p>Now let’s check again</p>
+<pre class="r"><code>map_chr(train, typeof) %&gt;% 
+  tibble() %&gt;% 
+  table()</code></pre>
+<pre><code>.
+character    double 
+        1       170 </code></pre>
+<p>The first column excluded above is our target variable <strong>class</strong>. We should not forget to do the same transformation to the test set.</p>
+<pre class="r"><code>test[-1] &lt;- test[-1] %&gt;% 
+  modify(~replace(., .==&quot;na&quot;, NA)) %&gt;%
+  modify(., as.double)</code></pre>
+<p>If we try to apply the <strong>summary</strong> function on the entire variables (170), we will spent a lot of time to read the summary of each variable without much gain. Instead, we try to get an automated way to get only the information needed to build efficiently our model. To decide whether we should normalize the data or not, for instance, we display the standard deviances of all the variable in decreasing order.</p>
+<p><strong>Note</strong>: with tree based models we do not need neither normalize the data nor converting factors to dummies.</p>
+<pre class="r"><code>map_dbl(train[-1], sd, na.rm=TRUE) %&gt;% 
+  tibble(sd = .) %&gt;% 
+  arrange(-sd)</code></pre>
+<pre><code># A tibble: 170 x 1
+           sd
+        &lt;dbl&gt;
+ 1 794874918.
+ 2  97484780.
+ 3  42746746.
+ 4  40404413.
+ 5  40404412.
+ 6  40404411.
+ 7  11567771.
+ 8  10886737.
+ 9  10859905.
+10  10859904.
+# ... with 160 more rows</code></pre>
+<p>We have very large variability, which means that the data should be normalized for any machine learning model that uses gradient descent or based on class distances.</p>
+<p>Another thing we can check is if some variabels have small number of unique values which can hence be converted to factor type.</p>
+<pre class="r"><code>map(train[-1], unique) %&gt;% 
+  lengths(.) %&gt;% 
+  sort(.) %&gt;% 
+  head(5)</code></pre>
+<pre><code>cd_000 ch_000 as_000 ef_000 ab_000 
+     2      3     22     29     30 </code></pre>
+<p>To make things simple we consider only the first two ones to be converted to factor type.</p>
+<p>the first one is constant which is of type zero variance because its variance equals to zero, and the second one should be converted to factor type with two levels (for the two sets), but since it has large missing values we will decide about it later on. Notice that we do not apply theses transformations here because they will be combined at once with all the required transformations as what will be shown shortly.</p>
+</div>
+<div id="missing-values" class="section level3">
+<h3>Missing values</h3>
+<p>The best way to deal with missing values depends on their number compared to the dataset size. if we have small number then it would be easier to completely remove them from the data, if in contrast we have large number then the best choice is to impute them using one of the common methods designed for this type of issue.</p>
+<pre class="r"><code>dim(train[!complete.cases(train),])</code></pre>
+<pre><code>[1] 59409   171</code></pre>
+<p>As we see almost every row contains at least one missing value in some columns. Let’s check the distribution of missing values within columns.</p>
+<pre class="r"><code>df &lt;- modify(train[-1], is.na) %&gt;% 
+  colSums() %&gt;%
+  tibble(names = colnames(train[-1]),missing_values=.) %&gt;% 
+  arrange(-missing_values)
+  
+df</code></pre>
+<pre><code># A tibble: 170 x 2
+   names  missing_values
+   &lt;chr&gt;           &lt;dbl&gt;
+ 1 br_000          49264
+ 2 bq_000          48722
+ 3 bp_000          47740
+ 4 bo_000          46333
+ 5 ab_000          46329
+ 6 cr_000          46329
+ 7 bn_000          44009
+ 8 bm_000          39549
+ 9 bl_000          27277
+10 bk_000          23034
+# ... with 160 more rows</code></pre>
+<p>I think the best strategy is to first remove columns that have a large number of missing values then we impute the rest, thereby we reduce the number of predictors and the number of missing values at ones. The following script keep the predictors that have a number of missing values less than <strong>10000</strong>.</p>
+<pre class="r"><code>names &lt;- modify(train[-1], is.na) %&gt;% 
+  colSums() %&gt;%
+  tibble(names = colnames(train[-1]), missing_values=.) %&gt;% 
+  filter(missing_values &lt; 10000) %&gt;% 
+  select(1)
+train1 &lt;- train[c(&quot;class&quot;,names$names)]
+test1 &lt;- test[c(&quot;class&quot;,names$names)]</code></pre>
+<p>An important thing should be noted here is that, if we use imputation methods that use information from all other columns and/or rows to predict the current missing value, therefore the data must be first split between training and testing sets before any imputation, to abide by the crucial rule of machine learning: the test data should never be seen by the model during training process.
+Fortunately, our data is already split so that the imputation can be done separately. However, the imputation methods will be implemented later on by the help of the <strong>recipes</strong> package where we bundle all the pre-processing steps together.
+<strong>Note</strong>: the above <strong>ch_000</strong> was removed since it did not fulfill the required threshold.</p>
+</div>
+<div id="imbalanced-data" class="section level3">
+<h3>imbalanced data</h3>
+<p>Another important issue that we face when predicting this data is the <strong>imbalanced</strong> problem.</p>
+<pre class="r"><code>prop.table(table(train1$class))</code></pre>
+<pre><code>
+       neg        pos 
+0.98333333 0.01666667 </code></pre>
+<p>This data is highly imbalanced, which tends to make even the worst machine learning model gives very high accuracy rate. In other words, if we do not use any model and predict every class as the largest class label (in our case negative) the accuracy rate will be approximately equal to the proportion of the largest class (in our case 98%), which is very big misleading result. Moreover, this misleading result can be catastrophic if we are more interested to predict the small class (in our case positive) such as detecting fraudulent credit cards. If you would like to get more detail about how to deal with imbalanced data please check this <a href="https://modelingwithr.rbind.io/post/methods-to-deal-with-imbalanced-data/">article</a>.</p>
+</div>
+</div>
+<div id="building-the-recipe" class="section level2">
+<h2>building the recipe</h2>
+<p>Our initial model will be the <strong>random forest</strong> wich is the most popular one . So the first step to build our model is by defining our model with the <strong>engine</strong>, which is the method (or the package) used to fit this model, and the <strong>mode</strong> with two possible values <strong>classification</strong> or <strong>regression</strong>. In our case, for instance, there exists two available engines: <strong>randomForest</strong> or <strong>ranger</strong>. Notice that the <strong>parsnip</strong> package who provides these settings. For more detail about all the models available click <a href="https://cran.r-project.org/web/packages/parsnip/parsnip.pdf">here</a>.</p>
+<p><strong>Note</strong>: To speed up the computation process we restrict the forest to <strong>100</strong> trees instead of the default <strong>500</strong>.</p>
+<pre class="r"><code>rf &lt;- rand_forest(trees = 100) %&gt;% 
+  set_engine(&quot;ranger&quot;, num.threads=3, seed = 123) %&gt;%
+  set_mode(&quot;classification&quot;)</code></pre>
+<p>Most machine learning models require pre-processed data with some feature engineering. Traditionally, R has (and some other packages such as dplyr and stringr) provides a wide range of functions such that we can do almost every kind of feature engineering. However, if we have many different transformations to perform then they will be done separately and it will be a little cumbersome to repeat the same scripts again for testing set for instance. Therefore, the <strong>recipes</strong> package provides an easy way to combine all the transformations and other features related to the model, such as selecting the predictors that should be included, identifiers, …etc, as a single block that can be used for any other subset of the data.</p>
+<p>For our case we will apply the following transformations:</p>
+<ul>
+<li>Imputing the missing values by the median of the corresponding variable since we have only numeric variables (for simplicity).</li>
+<li>removing variables that have zero variance (variable that has one unique value).</li>
+<li>removing highly correlated predictor using threshold <strong>0.8</strong>.</li>
+<li>Normalizing the data (even we do not need it in this model but we add this step since this recipe will be used with other models that use gradient decent or distances calculations).</li>
+<li>using the subsampling method <strong>smote</strong> to create a balanced data.
+Notice that the <strong>smote</strong> method is provided by the package <strong>themis</strong></li>
+</ul>
+<p>To combine all these operations together we call the function <strong>recipe</strong>.</p>
+<pre class="r"><code>data_rec &lt;- recipe(class~., data=train1) %&gt;% 
+  step_medianimpute(all_predictors() , seed_val = 111) %&gt;% 
+  step_zv(all_predictors()) %&gt;% 
+  step_corr(all_predictors(), threshold = 0.8) %&gt;% 
+  step_normalize(all_predictors()) %&gt;%
+  step_smote(class) </code></pre>
+<p>As you see everything combined nicely and elegantly. However, this recipe transformed nothing yet, it just recorded the formula, the predictors and the transformations that should be applied. This means that we can update, at any time before fitting our model, the formula, add or remove some steps. The super interesting feature of recipe is that we can apply it to any other data (than that mentioned above, train) provided that has the same variable names. In case you want to apply these transformations to the training data use the <strong>prep</strong> function, and to retrieve the results use the function <strong>juice</strong>, and for other data use <strong>bake</strong> after <strong>prep</strong> to be able to apply some parameters from the training data, for instance, when we normalize the data this function lets us use the mean of predictors computed from the training data rather than from the testing data. However, in our case, we will combine everything until the model fitting step.<br />
+For more detail about all the steps available click <a href="https://cran.r-project.org/web/packages/recipes/recipes.pdf">here</a>.</p>
+</div>
+<div id="building-the-workflow" class="section level2">
+<h2>Building the workflow</h2>
+<p>To well organize our workflow in a structured and smoother way, we use the <strong>workflow</strong> package that is one of the tidymodels collection.</p>
+<pre class="r"><code>rf_wf &lt;- workflow() %&gt;% 
+  add_model(rf) %&gt;% 
+  add_recipe(data_rec)
+rf_wf</code></pre>
+<pre><code>== Workflow ======================================
+Preprocessor: Recipe
+Model: rand_forest()
+
+-- Preprocessor ----------------------------------
+5 Recipe Steps
+
+* step_medianimpute()
+* step_zv()
+* step_corr()
+* step_normalize()
+* step_smote()
+
+-- Model -----------------------------------------
+Random Forest Model Specification (classification)
+
+Main Arguments:
+  trees = 100
+
+Engine-Specific Arguments:
+  num.threads = 3
+  seed = 123
+
+Computational engine: ranger </code></pre>
+</div>
+<div id="random-forest-model" class="section level2">
+<h2>random forest model</h2>
+<p>Now we can run everything at once, the recipe and the model, notice that here we can also update, add or remove some elements before going ahead and fit the model.</p>
+<div id="model-training" class="section level3">
+<h3>model training</h3>
+<p>Moreover, we use here parallel processing by the help of the <strong>doSNOW</strong> package to speed up the training process.</p>
+<pre class="r"><code>model_rf &lt;- rf_wf %&gt;% 
+  fit(data = train1)</code></pre>
+<p>We can extract the summary of this model as follows</p>
+<pre class="r"><code>model_rf %&gt;% pull_workflow_fit()</code></pre>
+<pre><code>parsnip model object
+
+Fit time:  48.8s 
+Ranger result
+
+Call:
+ ranger::ranger(formula = formula, data = data, num.trees = ~100,      num.threads = ~3, seed = ~123, verbose = FALSE, probability = TRUE) 
+
+Type:                             Probability estimation 
+Number of trees:                  100 
+Sample size:                      118000 
+Number of independent variables:  95 
+Mtry:                             9 
+Target node size:                 10 
+Variable importance mode:         none 
+Splitrule:                        gini 
+OOB prediction error (Brier s.):  0.003971806 </code></pre>
+<p>This model has created 100 trees and has chosen randomly 9 predictors with each tree. with these settings thus we do obtain very low oob error rate which is 0.4% (accuracy rate 99.6% ). However, be cautious with such high accuracy rate, since, in practice, This result may highly related to an overfitting problem. Last thing I want to mention about this output, by looking at the confusion matrix, is the fact that we have now balanced data.</p>
+</div>
+<div id="model-evaluation" class="section level3">
+<h3>model evaluation</h3>
+<p>The best way to evaluate our model is by using the testing set. Notice that the <strong>yardstick</strong> provides bunch of metrics to use, but let’s use the most popular one for classification problems <strong>accuracy</strong>.</p>
+<pre class="r"><code>model_rf %&gt;% 
+  predict( new_data = test1) %&gt;% 
+  bind_cols(test1[&quot;class&quot;]) %&gt;% 
+  accuracy(truth= as.factor(class), .pred_class) </code></pre>
+<pre><code># A tibble: 1 x 3
+  .metric  .estimator .estimate
+  &lt;chr&gt;    &lt;chr&gt;          &lt;dbl&gt;
+1 accuracy binary         0.990</code></pre>
+<p>with this model we get high accuracy which is very closer to the previous one. However, we should not forget that we are dealing with imbalanced data, and even though we have used subsampling methods (like smote method used here), they do not completely solve this issue, they can only minimize it at certain level and this is the reason why we have many of these methods. Therefore, it is better to use the confusion matrix from the <strong>caret</strong> package since it gives more information.</p>
+<pre class="r"><code>caret::confusionMatrix(as.factor(test1$class), predict(model_rf, new_data = test1)$.pred_class)</code></pre>
+<pre><code>Confusion Matrix and Statistics
+
+          Reference
+Prediction   neg   pos
+       neg 15533    92
+       pos    64   311
+                                          
+               Accuracy : 0.9902          
+                 95% CI : (0.9886, 0.9917)
+    No Information Rate : 0.9748          
+    P-Value [Acc &gt; NIR] : &lt; 2e-16         
+                                          
+                  Kappa : 0.7945          
+                                          
+ Mcnemar&#39;s Test P-Value : 0.03064         
+                                          
+            Sensitivity : 0.9959          
+            Specificity : 0.7717          
+         Pos Pred Value : 0.9941          
+         Neg Pred Value : 0.8293          
+             Prevalence : 0.9748          
+         Detection Rate : 0.9708          
+   Detection Prevalence : 0.9766          
+      Balanced Accuracy : 0.8838          
+                                          
+       &#39;Positive&#39; Class : neg             
+                                          </code></pre>
+<p>As said shortly, the specificity rate related to the minor class <strong>77%</strong> is very low compared to the major class <strong>99%</strong>, and You can think of this as a partial overfitting towards the major class. So if we are more interested to the minor class (which is often the case) then we have go back to our model and try tuning our model or try another subsampling method.</p>
+</div>
+<div id="model-tuning" class="section level3">
+<h3>Model tuning:</h3>
+<p>For model tuning we try other values for some arguments rather than the default vaues. and leave the tuning for some others to the <strong>dials</strong> package. So let’s try the following argument values:</p>
+<ul>
+<li>num.trees = 100. The default is 500.</li>
+<li>num.threads = 3. The default is 1.</li>
+</ul>
+<p>And tune the following:</p>
+<ul>
+<li>mtry = tune(). The default is square root of the number of the variables.</li>
+<li>min_n = tune(). The default is 1.</li>
+</ul>
+<p>First, we define the model with these new arguments.</p>
+<pre class="r"><code>model_tune &lt;- rand_forest(trees= 100, mtry=tune(), min_n = tune()) %&gt;%
+  set_engine(&quot;ranger&quot;, num.threads=3, seed=123) %&gt;% 
+  set_mode(&quot;classification&quot;)</code></pre>
+<p>Since in grid search the two arguments mtry and min_n are data dependent, then we should at least specify their ranges.</p>
+<pre class="r"><code>grid &lt;- grid_regular(mtry(range = c(9,15)), min_n(range = c(5,40)), levels = 3)
+grid</code></pre>
+<pre><code># A tibble: 9 x 2
+   mtry min_n
+  &lt;int&gt; &lt;int&gt;
+1     9     5
+2    12     5
+3    15     5
+4     9    22
+5    12    22
+6    15    22
+7     9    40
+8    12    40
+9    15    40</code></pre>
+<p>By setting the levels equal to 3 we get four combinations and hence 9 models will be trained.
+The above recipe has steps that should not be repeated many times when tuning the model, we apply therefore the recipe to the training data in order to get the transformed data, and do not forget to apply the recipe to the testing data.</p>
+<pre class="r"><code>train2 &lt;- prep(data_rec) %&gt;% 
+  juice()
+test2 &lt;- prep(data_rec) %&gt;% 
+  bake(test1)</code></pre>
+<p>To tune our model we use cross validation technique. since we have large data set we use only 3 folds.</p>
+<pre class="r"><code>set.seed(111)
+fold &lt;- vfold_cv(train2, v = 3, strata = class)</code></pre>
+<p>Now we bundle our recipe with the specified model.</p>
+<pre class="r"><code>tune_wf &lt;- workflow() %&gt;% 
+  add_model(model_tune) %&gt;%
+  add_formula(class~.)</code></pre>
+<p>To fit these models across the folds we use the <strong>tune_grid</strong> function instead of <strong>fit</strong>.</p>
+<pre class="r"><code>tune_rf &lt;- tune_wf %&gt;% 
+  tune_grid(resamples = fold, grid = grid)</code></pre>
+<pre><code>i Creating pre-processing data to finalize unknown parameter: mtry</code></pre>
+<p>For classification problems this function uses two metrics: accuracy and area under the ROC curve. SO we can extract the metric values as follows.</p>
+<pre class="r"><code>tune_rf %&gt;% collect_metrics()</code></pre>
+<pre><code># A tibble: 18 x 7
+    mtry min_n .metric  .estimator  mean     n    std_err
+   &lt;int&gt; &lt;int&gt; &lt;chr&gt;    &lt;chr&gt;      &lt;dbl&gt; &lt;int&gt;      &lt;dbl&gt;
+ 1     9     5 accuracy binary     0.995     3 0.000119  
+ 2     9     5 roc_auc  binary     1.00      3 0.0000125 
+ 3     9    22 accuracy binary     0.994     3 0.000333  
+ 4     9    22 roc_auc  binary     1.00      3 0.00000833
+ 5     9    40 accuracy binary     0.993     3 0.000335  
+ 6     9    40 roc_auc  binary     1.00      3 0.00000445
+ 7    12     5 accuracy binary     0.995     3 0.000115  
+ 8    12     5 roc_auc  binary     1.00      3 0.00000961
+ 9    12    22 accuracy binary     0.994     3 0.000272  
+10    12    22 roc_auc  binary     1.00      3 0.00000350
+11    12    40 accuracy binary     0.993     3 0.000261  
+12    12    40 roc_auc  binary     1.00      3 0.00000578
+13    15     5 accuracy binary     0.995     3 0.000208  
+14    15     5 roc_auc  binary     1.00      3 0.00000437
+15    15    22 accuracy binary     0.995     3 0.000178  
+16    15    22 roc_auc  binary     1.00      3 0.0000102 
+17    15    40 accuracy binary     0.993     3 0.000224  
+18    15    40 roc_auc  binary     1.00      3 0.00000541</code></pre>
+<p>To get the best model we have to choose one of the two metrics, so let’s go ahead with the accuracy rate.</p>
+<pre class="r"><code>best_param &lt;- 
+  tune_rf %&gt;% select_best(metric = &quot;accuracy&quot;)
+best_param</code></pre>
+<pre><code># A tibble: 1 x 2
+   mtry min_n
+  &lt;int&gt; &lt;int&gt;
+1    15     5</code></pre>
+<p>we can finalize the workflow with the new parameter values.</p>
+<pre class="r"><code>tune_wf2 &lt;- tune_wf %&gt;% 
+  finalize_workflow(best_param)
+tune_wf2</code></pre>
+<pre><code>== Workflow ======================================
+Preprocessor: Formula
+Model: rand_forest()
+
+-- Preprocessor ----------------------------------
+class ~ .
+
+-- Model -----------------------------------------
+Random Forest Model Specification (classification)
+
+Main Arguments:
+  mtry = 15
+  trees = 100
+  min_n = 5
+
+Engine-Specific Arguments:
+  num.threads = 3
+  seed = 123
+
+Computational engine: ranger </code></pre>
+<p>Now we fit the model with the best parameter values to the entire training data.</p>
+<pre class="r"><code>best_model &lt;- tune_wf2 %&gt;% 
+  fit(train2)
+best_model</code></pre>
+<pre><code>== Workflow [trained] ============================
+Preprocessor: Formula
+Model: rand_forest()
+
+-- Preprocessor ----------------------------------
+class ~ .
+
+-- Model -----------------------------------------
+Ranger result
+
+Call:
+ ranger::ranger(formula = formula, data = data, mtry = ~15L, num.trees = ~100,      min.node.size = ~5L, num.threads = ~3, seed = ~123, verbose = FALSE,      probability = TRUE) 
+
+Type:                             Probability estimation 
+Number of trees:                  100 
+Sample size:                      118000 
+Number of independent variables:  95 
+Mtry:                             15 
+Target node size:                 5 
+Variable importance mode:         none 
+Splitrule:                        gini 
+OOB prediction error (Brier s.):  0.00364163 </code></pre>
+<p>Let’s get the confusion matrix</p>
+<pre class="r"><code>caret::confusionMatrix(as.factor(test2$class), predict(best_model, new_data = test2)$.pred_class)</code></pre>
+<pre><code>Confusion Matrix and Statistics
+
+          Reference
+Prediction   neg   pos
+       neg 15530    95
+       pos    65   310
+                                          
+               Accuracy : 0.99            
+                 95% CI : (0.9883, 0.9915)
+    No Information Rate : 0.9747          
+    P-Value [Acc &gt; NIR] : &lt; 2e-16         
+                                          
+                  Kappa : 0.7898          
+                                          
+ Mcnemar&#39;s Test P-Value : 0.02187         
+                                          
+            Sensitivity : 0.9958          
+            Specificity : 0.7654          
+         Pos Pred Value : 0.9939          
+         Neg Pred Value : 0.8267          
+             Prevalence : 0.9747          
+         Detection Rate : 0.9706          
+   Detection Prevalence : 0.9766          
+      Balanced Accuracy : 0.8806          
+                                          
+       &#39;Positive&#39; Class : neg             
+                                          </code></pre>
+<p>As we see we do not get any improvement for the specificity rate. so let’s try another subsampling method, say <strong>Rose</strong> method.</p>
+<pre class="r"><code>rf_rose &lt;- rand_forest(trees = 100, mtry=15, min_n = 5) %&gt;% 
+  set_engine(&quot;ranger&quot;, num.threads=3, seed = 123) %&gt;%
+  set_mode(&quot;classification&quot;)
+data_rec2 &lt;- recipe(class~., data=train1) %&gt;% 
+  step_medianimpute(all_predictors() , seed_val = 111) %&gt;% 
+  step_zv(all_predictors()) %&gt;% 
+  step_corr(all_predictors(), threshold = 0.8) %&gt;% 
+  step_normalize(all_predictors()) %&gt;%
+  step_rose(class) 
+rf_rose_wf &lt;- workflow() %&gt;% 
+  add_model(rf_rose) %&gt;% 
+  add_recipe(data_rec2)
+model_rose_rf &lt;- rf_rose_wf %&gt;% 
+  fit(data = train1)
+caret::confusionMatrix(as.factor(test1$class), predict(model_rose_rf, new_data = test1)$.pred_class)</code></pre>
+<pre><code>Confusion Matrix and Statistics
+
+          Reference
+Prediction   neg   pos
+       neg 15328   297
+       pos    55   320
+                                          
+               Accuracy : 0.978           
+                 95% CI : (0.9756, 0.9802)
+    No Information Rate : 0.9614          
+    P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+                                          
+                  Kappa : 0.6345          
+                                          
+ Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
+                                          
+            Sensitivity : 0.9964          
+            Specificity : 0.5186          
+         Pos Pred Value : 0.9810          
+         Neg Pred Value : 0.8533          
+             Prevalence : 0.9614          
+         Detection Rate : 0.9580          
+   Detection Prevalence : 0.9766          
+      Balanced Accuracy : 0.7575          
+                                          
+       &#39;Positive&#39; Class : neg             
+                                          </code></pre>
+<p>The rose method is much worse than smote method since the specificity rate has doped down to 52%.</p>
+</div>
+</div>
+<div id="logistic-regression-model" class="section level2">
+<h2>logistic regression model</h2>
+<p>The logistic regression is another model to fit data with binary outcome. As before we use the first recipe with smote method.</p>
+<pre class="r"><code>logit &lt;- logistic_reg() %&gt;% 
+  set_engine(&quot;glm&quot;) %&gt;%
+  set_mode(&quot;classification&quot;)
+
+logit_wf &lt;- workflow() %&gt;% 
+  add_model(logit) %&gt;% 
+  add_recipe(data_rec)
+
+set.seed(123)
+model_logit &lt;- logit_wf %&gt;% 
+  fit(data = train1)</code></pre>
+<pre><code>Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre class="r"><code>caret::confusionMatrix(as.factor(test1$class), predict(model_logit, new_data = test1)$.pred_class)</code></pre>
+<pre><code>Confusion Matrix and Statistics
+
+          Reference
+Prediction   neg   pos
+       neg 14902   723
+       pos    28   347
+                                          
+               Accuracy : 0.9531          
+                 95% CI : (0.9497, 0.9563)
+    No Information Rate : 0.9331          
+    P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+                                          
+                  Kappa : 0.4616          
+                                          
+ Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
+                                          
+            Sensitivity : 0.9981          
+            Specificity : 0.3243          
+         Pos Pred Value : 0.9537          
+         Neg Pred Value : 0.9253          
+             Prevalence : 0.9331          
+         Detection Rate : 0.9314          
+   Detection Prevalence : 0.9766          
+      Balanced Accuracy : 0.6612          
+                                          
+       &#39;Positive&#39; Class : neg             
+                                          </code></pre>
+<p>with this model we do not get better rate for minority class than random forest model.</p>
+</div>
+<div id="session-information" class="section level2">
+<h2>Session information</h2>
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 3.6.3 (2020-02-29)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 10 x64 (build 18362)
+
+Matrix products: default
+
+locale:
+[1] LC_COLLATE=English_United States.1252 
+[2] LC_CTYPE=English_United States.1252   
+[3] LC_MONETARY=English_United States.1252
+[4] LC_NUMERIC=C                          
+[5] LC_TIME=English_United States.1252    
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] yardstick_0.0.6  workflows_0.1.1  tune_0.1.0       tibble_2.1.3    
+ [5] rsample_0.0.6    purrr_0.3.3      parsnip_0.1.0    infer_0.5.1     
+ [9] dials_0.0.6      scales_1.1.0     broom_0.5.5      tidymodels_0.1.0
+[13] themis_0.1.1     recipes_0.1.9    dplyr_0.8.3      caret_6.0-85    
+[17] ggplot2_3.3.0    lattice_0.20-40  readr_1.3.1     
+
+loaded via a namespace (and not attached):
+  [1] mlr_2.17.1           backports_1.1.5      fastmatch_1.1-0     
+  [4] tidytext_0.2.3       plyr_1.8.6           igraph_1.2.4.2      
+  [7] splines_3.6.3        crosstalk_1.0.0      listenv_0.8.0       
+ [10] SnowballC_0.6.0      rstantools_2.0.0     inline_0.3.15       
+ [13] digest_0.6.23        foreach_1.4.8        htmltools_0.4.0     
+ [16] rsconnect_0.8.16     fansi_0.4.1          magrittr_1.5        
+ [19] checkmate_2.0.0      BBmisc_1.11          unbalanced_2.0      
+ [22] doParallel_1.0.15    globals_0.12.5       gower_0.2.1         
+ [25] matrixStats_0.55.0   xts_0.12-0           hardhat_0.1.2       
+ [28] prettyunits_1.1.1    colorspace_1.4-1     xfun_0.12           
+ [31] callr_3.4.2          crayon_1.3.4         lme4_1.1-21         
+ [34] survival_3.1-8       zoo_1.8-7            iterators_1.0.12    
+ [37] glue_1.3.1           gtable_0.3.0         ipred_0.9-9         
+ [40] pkgbuild_1.0.6       rstan_2.19.3         miniUI_0.1.1.1      
+ [43] Rcpp_1.0.4           xtable_1.8-4         GPfit_1.0-8         
+ [46] stats4_3.6.3         lava_1.6.7           StanHeaders_2.21.0-1
+ [49] prodlim_2019.11.13   DT_0.12              htmlwidgets_1.5.1   
+ [52] threejs_0.3.3        FNN_1.1.3            ellipsis_0.3.0      
+ [55] pkgconfig_2.0.3      loo_2.2.0            ParamHelpers_1.14   
+ [58] nnet_7.3-13          utf8_1.1.4           tidyselect_1.0.0    
+ [61] rlang_0.4.5          DiceDesign_1.8-1     reshape2_1.4.3      
+ [64] later_1.0.0          munsell_0.5.0        tools_3.6.3         
+ [67] cli_2.0.2            generics_0.0.2       ranger_0.12.1       
+ [70] ggridges_0.5.2       evaluate_0.14        stringr_1.4.0       
+ [73] fastmap_1.0.1        yaml_2.2.1           ModelMetrics_1.2.2.1
+ [76] processx_3.4.2       knitr_1.28           RANN_2.6.1          
+ [79] future_1.17.0        nlme_3.1-145         mime_0.9            
+ [82] rstanarm_2.19.3      rstudioapi_0.11      tokenizers_0.2.1    
+ [85] compiler_3.6.3       bayesplot_1.7.1      shinythemes_1.1.2   
+ [88] curl_4.3             e1071_1.7-3          tidyposterior_0.0.2 
+ [91] lhs_1.0.2            stringi_1.4.6        ps_1.3.2            
+ [94] blogdown_0.18        Matrix_1.2-18        nloptr_1.2.2        
+ [97] markdown_1.1         shinyjs_1.1          vctrs_0.2.4         
+[100] pillar_1.4.3         lifecycle_0.2.0      furrr_0.1.0         
+[103] data.table_1.12.8    httpuv_1.5.2         R6_2.4.1            
+[106] bookdown_0.18        promises_1.1.0       gridExtra_2.3       
+[109] janeaustenr_0.1.5    codetools_0.2-16     boot_1.3-24         
+[112] colourpicker_1.0     MASS_7.3-51.5        gtools_3.8.1        
+[115] assertthat_0.2.1     ROSE_0.0-3           withr_2.1.2         
+[118] shinystan_2.5.0      parallel_3.6.3       hms_0.5.3           
+[121] grid_3.6.3           rpart_4.1-15         timeDate_3043.102   
+[124] minqa_1.2.4          tidyr_1.0.0          class_7.3-15        
+[127] rmarkdown_2.1        parallelMap_1.5.0    pROC_1.16.1         
+[130] tidypredict_0.4.5    shiny_1.4.0          lubridate_1.7.4     
+[133] base64enc_0.1-3      dygraphs_1.1.1.6    </code></pre>
+</div>

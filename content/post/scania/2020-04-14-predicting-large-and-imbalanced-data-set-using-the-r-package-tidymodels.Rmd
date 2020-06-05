@@ -1,0 +1,453 @@
+---
+title: Predicting large and imbalanced data set using the R package tidymodels
+author: Metales Abdelkader
+date: '2020-04-14'
+slug: predicting-large-and-imbalanced-data-set-using-the-r-package-tidymodels
+categories:
+  - R
+tags:
+  - tidymodels
+  - imbalanced
+subtitle: ''
+summary: 'The super easy way, at least for me, to deploy machine learning models is by making use of the R package **tidymodels**, which is a collection of many packages that makes...'
+output:
+  blogdown::html_page:
+    toc: true
+    fig_width: 6
+    dev: "svg"
+authors: []
+lastmod: '2020-05-30T15:53:28+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+
+```{r setup, include=FALSE, warning=FALSE,error=FALSE,message=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = NA)
+```
+
+
+## Introduction
+
+The super easy way, at least for me, to deploy machine learning models is by making use of the R package **tidymodels**, which is a collection of many packages that makes the workflow steps for your project very smooth and tightly connected to each other and easily managable in a well-structured manner.
+The core packages contained in tidymodels are:
+
+* rsample: for data splitting and rsampling.
+* parsnip: Unified interface to the most common machine learning models.
+* recipes: unified interface to the most common pre-processing tools for feature engineering.
+* workflows: bundle the workflow steps together.
+* tune: for optimization of the hyperparameters.
+* yardstick: provides the most common performance metrics.
+* broom: converts the outputs into user friendly formats such as tibble.
+* dials: provides tools for parameter grids.
+* infer: provides tools for statistical inferences.
+
+In addition to the above apackages tidymodels contains also some classical packages such as: dplyr, ggplot2, purrr, tibble. For more detail click [here](https://www.tidymodels.org).
+
+In order to widely explore and understand the tidymodels, we should look for a noisy dataset that has large number of variables with missing values. Fortunately, I found an open source dataset that fulfils these requirements and in addition, it is highly imbalanced. This data is about **scania trucks** and can be downloaded from [UCI machine learning repository](https://archive.ics.uci.edu/ml/datasets/APS+Failure+at+Scania+Trucks) with an extra file for its description.
+
+the target variable of this data is the air pressure system **APS** in the truck that generates the pressurized air that are utilized in various function in the truck. It has two classes: positive **pos** if a component failures due to a failures in the APS system, negative **neg** if a component failures are not related to the APS system. This means that we are dealing with binary classification problem.
+
+## Data exploration
+
+The data is already separated into training and testing set from the source, so let's call the packages that we need and the data. 
+
+```{r results='hide'}
+ssh <- suppressPackageStartupMessages
+ssh(library(readr))
+ssh(library(caret))
+ssh(library(themis))
+ssh(library(tidymodels))
+train <- read_csv("https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_training_set.csv", skip = 20)
+test <- read_csv("https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_test_set.csv", skip = 20)
+```
+
+
+Notice that the data is a tibble where the first twenty rows are a mix of rows that contain some text descritpion and empty rows. and the 21th row contains the column names. That is why we have set the **skip** argument equals to **20**, and for the 21th column by default has been read as colnames `col_names = TRUE`.    
+
+### Summary of the variables
+
+First let's check the dimension of the two sets to be aware of what we are dealing with.
+
+```{r}
+dim(train)
+dim(test)
+```
+
+
+The training set has 60000 rows and 171 variables which is moderately large dataset. Inspecting thus this data by the usual functions such as **summary**, **str** would give heavy and not easily readable outputs. the best alternative However is by extracting the most important information that is required for building any machine learning model in aggregated way, for instance, what type of variables it has, some statistics about the variable values, the missing values..etc.              
+
+
+```{r}
+map_chr(train, typeof) %>% 
+  tibble() %>% 
+  table()
+```
+
+Strangely, all the variables but one are characters, which is in contradiction with the description of this data from the file description. To figure out what is going on we display some few rows and some few columns.
+
+```{r}
+train[1:5,1:7]
+```
+
+I think, the problem is that the missing values in the data indicated by **na** are not recognized as missing values, instead they are treated as characters and this what makes the function **read_csv** coerces every variable that has this **na** values to character type. To fix this problem we can either go back and set the **na** argument to **"na"**, or we set the missing values by hand as follows.
+
+```{r}
+train[-1] <- train[-1] %>% 
+  modify(~replace(., .=="na", NA)) %>%
+  modify(., as.double)
+```
+
+Now let's check again
+
+```{r}
+map_chr(train, typeof) %>% 
+  tibble() %>% 
+  table()
+
+```
+
+The first column excluded above is our target variable **class**. We should not forget to do the same transformation to the test set.
+
+
+```{r}
+test[-1] <- test[-1] %>% 
+  modify(~replace(., .=="na", NA)) %>%
+  modify(., as.double)
+```
+
+If we try to apply the **summary** function on the entire variables (170), we will spent a lot of time to read the summary of each variable without much gain. Instead, we try to get an automated way to get only the information needed to build efficiently our model. To decide whether we should normalize the data or not, for instance, we display the standard deviances of all the variable in decreasing order.
+
+**Note**: with tree based models we do not need neither normalize the data nor converting factors  to dummies. 
+
+```{r}
+map_dbl(train[-1], sd, na.rm=TRUE) %>% 
+  tibble(sd = .) %>% 
+  arrange(-sd)
+```
+
+We have very large variability, which means that the data should be normalized  for any machine learning model that uses gradient descent or based on class distances.
+
+Another thing we can check is if some variabels have small number of unique values which can hence be converted to factor type.
+
+
+```{r}
+map(train[-1], unique) %>% 
+  lengths(.) %>% 
+  sort(.) %>% 
+  head(5)
+```
+
+
+To make things simple we consider only the first two ones to be converted to factor type.
+
+the first one is constant which is of type zero variance because its variance equals to zero, and the second one should be converted to factor type with two levels (for the two sets), but since it has large missing values we will decide about it later on. Notice that we do not apply theses transformations here because they will be combined at once with all the required transformations as what will be shown shortly.   
+
+
+### Missing values
+
+The best way to deal with missing values depends on their number compared to the dataset size. if we have small number then it would be easier to completely remove them from the data, if in contrast  we have large number then the best choice is to impute them using one of the common  methods designed for this type of issue. 
+
+```{r}
+dim(train[!complete.cases(train),])
+```
+
+As we see almost every row contains at least one missing value in some columns. Let's check the distribution of missing  values within columns.
+
+```{r}
+df <- modify(train[-1], is.na) %>% 
+  colSums() %>%
+  tibble(names = colnames(train[-1]),missing_values=.) %>% 
+  arrange(-missing_values)
+  
+df
+```
+
+
+
+
+I think the best strategy is to first remove columns that have a large number of missing values then we impute the rest, thereby we reduce the number of predictors and the number of missing values at ones. The following script keep the predictors that have a number of missing values less than **10000**.
+
+```{r}
+names <- modify(train[-1], is.na) %>% 
+  colSums() %>%
+  tibble(names = colnames(train[-1]), missing_values=.) %>% 
+  filter(missing_values < 10000) %>% 
+  select(1)
+train1 <- train[c("class",names$names)]
+test1 <- test[c("class",names$names)]
+```
+
+
+An important thing should be noted here is that, if we use imputation methods that use information from all other columns and/or rows to predict the current missing value, therefore the data must be first split between training and testing sets before any imputation, to abide by the crucial rule of machine learning: the test data should never be seen by the model during training process.
+Fortunately, our data is already split so that the imputation can be done separately. However, the imputation methods will be implemented later on by the help of the **recipes** package where we bundle all the pre-processing steps together.
+**Note**: the above **ch_000** was removed since it did not fulfill the required threshold.
+
+### imbalanced data
+
+Another important issue that we face when predicting this data is the **imbalanced** problem.
+
+```{r}
+prop.table(table(train1$class))
+```
+
+This data is highly imbalanced, which tends to make even the worst machine learning model gives very high accuracy rate. In other words, if we do not use any model and predict every class as the largest class label (in our case negative) the accuracy rate will be approximately equal to the proportion of the largest class (in our case 98%), which is very big misleading result. Moreover, this misleading result can be catastrophic  if we are more interested to predict the small class (in our case positive) such as detecting fraudulent credit cards. If you would like to get more detail about how to deal with imbalanced data please check this [article](https://modelingwithr.rbind.io/post/methods-to-deal-with-imbalanced-data/).
+
+## building the recipe
+
+Our initial model will be the **random forest** wich is the most popular one . So the first step to build our model is by defining our model with the **engine**, which is the method (or the package) used to fit this model, and the **mode** with two possible values **classification** or **regression**. In our case, for instance, there exists two available engines: **randomForest** or **ranger**. Notice that the **parsnip** package who provides these settings. For more detail about all the models available click [here](https://cran.r-project.org/web/packages/parsnip/parsnip.pdf).
+
+**Note**: To speed up the computation process we restrict the forest to **100** trees instead of the default **500**.
+
+```{r}
+rf <- rand_forest(trees = 100) %>% 
+  set_engine("ranger", num.threads=3, seed = 123) %>%
+  set_mode("classification")
+```
+
+Most machine learning models require pre-processed data with some feature engineering. Traditionally, R has (and some other packages such as dplyr and stringr) provides a wide range of functions such that we can do almost every kind of feature engineering. However, if we have many different transformations to perform then they will be done separately and it will be a little cumbersome to repeat the same scripts again for testing set for instance. Therefore, the **recipes** package provides an easy way to combine all the transformations and other features related to the model, such as selecting the predictors that should be included, identifiers, ...etc, as a single block that can be used for any other subset of the data.                       
+
+For our case we will apply the following transformations:
+
+* Imputing the missing values by the median of the corresponding variable since we have only numeric variables (for simplicity).
+* removing variables that have zero variance (variable that has one unique value).
+* removing highly correlated predictor using threshold **0.8**.
+* Normalizing the data (even we do not need it in this model but we add this step since this recipe will be used with other models that use gradient decent or distances calculations).
+* using the subsampling method **smote** to create a balanced data.
+Notice that the **smote** method is provided by the package **themis**
+
+
+To combine all these operations together we call the function **recipe**.
+ 
+```{r}
+data_rec <- recipe(class~., data=train1) %>% 
+  step_medianimpute(all_predictors() , seed_val = 111) %>% 
+  step_zv(all_predictors()) %>% 
+  step_corr(all_predictors(), threshold = 0.8) %>% 
+  step_normalize(all_predictors()) %>%
+  step_smote(class) 
+```
+
+
+As you see everything combined nicely and elegantly. However, this recipe transformed nothing yet, it just recorded the formula, the predictors and the transformations that should be applied. This means that we can update, at any time before fitting our model, the formula, add or remove some steps. The super interesting feature of recipe is that we can apply it to any other data (than that mentioned above, train) provided that has the same variable names. In case you want to apply these transformations to the training data use the **prep** function, and to retrieve the results use the function **juice**, and for other data use **bake** after **prep** to be able to apply some parameters from the training data, for instance, when we normalize the data this function lets us use the mean of predictors computed from the training data rather than from the testing data. However, in our case, we will combine everything until the model fitting step.     
+For more detail about all the steps available click [here](https://cran.r-project.org/web/packages/recipes/recipes.pdf).
+
+## Building the workflow
+
+To well organize our workflow in a structured and smoother way, we use the **workflow** package that is one of the tidymodels collection.
+
+
+```{r}
+
+rf_wf <- workflow() %>% 
+  add_model(rf) %>% 
+  add_recipe(data_rec)
+rf_wf
+```
+
+## random forest model
+
+Now we can run everything at once, the recipe and the model,  notice that here we can also update, add or remove some  elements before going ahead and fit the model.
+
+### model training
+
+Moreover, we use here parallel processing by the help of the **doSNOW** package to speed up the training process.
+
+```{r}
+model_rf <- rf_wf %>% 
+  fit(data = train1)
+```
+
+We can extract the summary of this model as follows 
+
+```{r}
+model_rf %>% pull_workflow_fit()
+
+```
+
+This model has created 100 trees and has chosen randomly 9 predictors with each tree. with these settings thus we do obtain very low oob error rate which is 0.4% (accuracy rate 99.6% ). However, be cautious with such high accuracy rate, since, in practice, This result may highly related to an overfitting problem. Last thing I want to mention about this output, by looking at the confusion matrix, is the fact that we have now balanced data.
+
+
+### model evaluation
+
+
+The best way to evaluate our model is by using the testing set. Notice that the **yardstick** provides bunch of metrics to use, but let's use the most popular one for classification problems **accuracy**.
+
+```{r}
+model_rf %>% 
+  predict( new_data = test1) %>% 
+  bind_cols(test1["class"]) %>% 
+  accuracy(truth= as.factor(class), .pred_class) 
+
+```
+
+with this model we get high accuracy which is very closer to the previous one. However, we should not forget that we are dealing with imbalanced data, and even though we have used subsampling methods (like smote method used here), they do not completely solve this issue, they can only minimize it at certain level and this is the reason why we have many of these methods. Therefore, it is better to use the confusion matrix from the **caret** package since it gives more information.    
+
+```{r}
+caret::confusionMatrix(as.factor(test1$class), predict(model_rf, new_data = test1)$.pred_class)
+```
+
+As said shortly, the specificity rate related to the minor class **77%** is very low compared to the major class **99%**, and You can think of this as a partial overfitting towards the major class. So if we are more interested to the minor class (which is often the case) then we have go back to our model and try tuning our model or try another subsampling method. 
+
+### Model tuning: 
+
+For model tuning we try other values for some arguments rather than the default vaues. and leave the tuning for some others to the **dials** package. So let's try the following argument values:
+
+* num.trees = 100. The default is 500.
+* num.threads = 3. The default is 1.
+
+And tune the following:
+
+* mtry = tune(). The default is square root of the number of the variables.
+* min_n = tune(). The default is 1.
+
+First, we define the model with these new arguments.  
+
+```{r}
+model_tune <- rand_forest(trees= 100, mtry=tune(), min_n = tune()) %>%
+  set_engine("ranger", num.threads=3, seed=123) %>% 
+  set_mode("classification")
+
+```
+
+Since in grid search the two arguments mtry and min_n are data dependent, then we should at least specify their ranges.  
+
+```{r}
+grid <- grid_regular(mtry(range = c(9,15)), min_n(range = c(5,40)), levels = 3)
+grid
+```
+
+By setting the levels equal to 3 we get four combinations and hence 9 models will be trained. 
+The above recipe has steps that should not be repeated many times when tuning the model, we apply therefore the recipe to the training data in order to get the transformed data, and do not forget to apply the recipe to the testing data.   
+
+```{r}
+train2 <- prep(data_rec) %>% 
+  juice()
+test2 <- prep(data_rec) %>% 
+  bake(test1)
+```
+
+To tune our model we use cross validation technique. since we have large data set we use only 3 folds.
+
+
+```{r}
+set.seed(111)
+fold <- vfold_cv(train2, v = 3, strata = class)
+```
+
+Now we bundle our recipe with the specified model.
+
+```{r}
+tune_wf <- workflow() %>% 
+  add_model(model_tune) %>%
+  add_formula(class~.)
+  
+```
+
+To fit these models across the folds we use the **tune_grid** function instead of **fit**. 
+
+
+```{r}
+tune_rf <- tune_wf %>% 
+  tune_grid(resamples = fold, grid = grid)
+```
+
+
+For classification problems this function uses two metrics: accuracy and area under the ROC curve. SO we can extract the metric values as follows.   
+ 
+```{r}
+tune_rf %>% collect_metrics()
+```
+
+To get the best model we have to choose one of the two metrics, so let's go ahead with the accuracy rate.
+
+```{r}
+best_param <- 
+  tune_rf %>% select_best(metric = "accuracy")
+best_param
+```
+
+we can finalize the workflow with the new parameter values.
+
+```{r}
+tune_wf2 <- tune_wf %>% 
+  finalize_workflow(best_param)
+tune_wf2
+```
+
+Now we fit the model with the best parameter values to the entire training data.
+
+```{r}
+best_model <- tune_wf2 %>% 
+  fit(train2)
+best_model
+```
+
+Let's get the confusion matrix
+
+
+```{r}
+caret::confusionMatrix(as.factor(test2$class), predict(best_model, new_data = test2)$.pred_class)
+
+```
+
+As we see we do not get any improvement for the specificity rate. so let's try another subsampling method, say **Rose** method.
+
+
+```{r}
+rf_rose <- rand_forest(trees = 100, mtry=15, min_n = 5) %>% 
+  set_engine("ranger", num.threads=3, seed = 123) %>%
+  set_mode("classification")
+data_rec2 <- recipe(class~., data=train1) %>% 
+  step_medianimpute(all_predictors() , seed_val = 111) %>% 
+  step_zv(all_predictors()) %>% 
+  step_corr(all_predictors(), threshold = 0.8) %>% 
+  step_normalize(all_predictors()) %>%
+  step_rose(class) 
+rf_rose_wf <- workflow() %>% 
+  add_model(rf_rose) %>% 
+  add_recipe(data_rec2)
+model_rose_rf <- rf_rose_wf %>% 
+  fit(data = train1)
+caret::confusionMatrix(as.factor(test1$class), predict(model_rose_rf, new_data = test1)$.pred_class)
+
+```
+
+The rose method is much worse than smote method since the specificity rate has doped down to 52%.
+
+## logistic regression model
+
+The logistic regression is another model to fit data with binary outcome. As before we use the first recipe with smote method.
+
+
+```{r}
+logit <- logistic_reg() %>% 
+  set_engine("glm") %>%
+  set_mode("classification")
+
+logit_wf <- workflow() %>% 
+  add_model(logit) %>% 
+  add_recipe(data_rec)
+
+set.seed(123)
+model_logit <- logit_wf %>% 
+  fit(data = train1)
+
+caret::confusionMatrix(as.factor(test1$class), predict(model_logit, new_data = test1)$.pred_class)
+
+```
+
+
+
+with this model we do not get better rate for minority class than random forest model.
+
+## Session information
+
+```{r}
+sessionInfo()
+```
+
