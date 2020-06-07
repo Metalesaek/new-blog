@@ -76,30 +76,8 @@ ssh(library(readr))
 ssh(library(caret))
 ssh(library(themis))
 ssh(library(tidymodels))
-train &lt;- read_csv(&quot;https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_training_set.csv&quot;, skip = 20)</code></pre>
-<pre><code>Parsed with column specification:
-cols(
-  .default = col_character(),
-  aa_000 = col_double()
-)</code></pre>
-<pre><code>See spec(...) for full column specifications.</code></pre>
-<pre class="r"><code>test &lt;- read_csv(&quot;https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_test_set.csv&quot;, skip = 20)</code></pre>
-<pre><code>Parsed with column specification:
-cols(
-  .default = col_character(),
-  aa_000 = col_double(),
-  bt_000 = col_double()
-)
-See spec(...) for full column specifications.</code></pre>
-<pre><code>Warning: 28 parsing failures.
- row    col expected actual                                                                                       file
-2006 bt_000 a double     na &#39;https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_test_set.csv&#39;
-2554 bt_000 a double     na &#39;https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_test_set.csv&#39;
-3337 bt_000 a double     na &#39;https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_test_set.csv&#39;
-3698 bt_000 a double     na &#39;https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_test_set.csv&#39;
-4103 bt_000 a double     na &#39;https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_test_set.csv&#39;
-.... ...... ........ ...... ..........................................................................................
-See problems(...) for more details.</code></pre>
+train &lt;- read_csv(&quot;https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_training_set.csv&quot;, skip = 20)
+test &lt;- read_csv(&quot;https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_test_set.csv&quot;, skip = 20)</code></pre>
 <p>Notice that the data is a tibble where the first twenty rows are a mix of rows that contain some text descritpion and empty rows. and the 21th row contains the column names. That is why we have set the <strong>skip</strong> argument equals to <strong>20</strong>, and for the 21th column by default has been read as colnames <code>col_names = TRUE</code>.</p>
 <div id="summary-of-the-variables" class="section level3">
 <h3>Summary of the variables</h3>
@@ -282,14 +260,14 @@ Computational engine: ranger </code></pre>
 <p>Now we can run everything at once, the recipe and the model, notice that here we can also update, add or remove some elements before going ahead and fit the model.</p>
 <div id="model-training" class="section level3">
 <h3>model training</h3>
-<p>Moreover, we use here parallel processing by the help of the <strong>doSNOW</strong> package to speed up the training process.</p>
+<p>Everything now is ready to run our model with the default values.</p>
 <pre class="r"><code>model_rf &lt;- rf_wf %&gt;% 
   fit(data = train1)</code></pre>
 <p>We can extract the summary of this model as follows</p>
 <pre class="r"><code>model_rf %&gt;% pull_workflow_fit()</code></pre>
 <pre><code>parsnip model object
 
-Fit time:  48.8s 
+Fit time:  49.9s 
 Ranger result
 
 Call:
@@ -303,7 +281,7 @@ Mtry:                             9
 Target node size:                 10 
 Variable importance mode:         none 
 Splitrule:                        gini 
-OOB prediction error (Brier s.):  0.003971806 </code></pre>
+OOB prediction error (Brier s.):  0.003974456 </code></pre>
 <p>This model has created 100 trees and has chosen randomly 9 predictors with each tree. with these settings thus we do obtain very low oob error rate which is 0.4% (accuracy rate 99.6% ). However, be cautious with such high accuracy rate, since, in practice, This result may highly related to an overfitting problem. Last thing I want to mention about this output, by looking at the confusion matrix, is the fact that we have now balanced data.</p>
 </div>
 <div id="model-evaluation" class="section level3">
@@ -323,26 +301,26 @@ OOB prediction error (Brier s.):  0.003971806 </code></pre>
 
           Reference
 Prediction   neg   pos
-       neg 15533    92
-       pos    64   311
+       neg 15535    90
+       pos    62   313
                                           
-               Accuracy : 0.9902          
-                 95% CI : (0.9886, 0.9917)
+               Accuracy : 0.9905          
+                 95% CI : (0.9889, 0.9919)
     No Information Rate : 0.9748          
     P-Value [Acc &gt; NIR] : &lt; 2e-16         
                                           
-                  Kappa : 0.7945          
+                  Kappa : 0.7998          
                                           
- Mcnemar&#39;s Test P-Value : 0.03064         
+ Mcnemar&#39;s Test P-Value : 0.02853         
                                           
-            Sensitivity : 0.9959          
-            Specificity : 0.7717          
-         Pos Pred Value : 0.9941          
-         Neg Pred Value : 0.8293          
+            Sensitivity : 0.9960          
+            Specificity : 0.7767          
+         Pos Pred Value : 0.9942          
+         Neg Pred Value : 0.8347          
              Prevalence : 0.9748          
-         Detection Rate : 0.9708          
+         Detection Rate : 0.9709          
    Detection Prevalence : 0.9766          
-      Balanced Accuracy : 0.8838          
+      Balanced Accuracy : 0.8863          
                                           
        &#39;Positive&#39; Class : neg             
                                           </code></pre>
@@ -379,7 +357,7 @@ grid</code></pre>
 7     9    40
 8    12    40
 9    15    40</code></pre>
-<p>By setting the levels equal to 3 we get four combinations and hence 9 models will be trained.
+<p>By setting the levels equal to 3 we get 9 combinations and hence 9 models will be trained.
 The above recipe has steps that should not be repeated many times when tuning the model, we apply therefore the recipe to the training data in order to get the transformed data, and do not forget to apply the recipe to the testing data.</p>
 <pre class="r"><code>train2 &lt;- prep(data_rec) %&gt;% 
   juice()
@@ -395,30 +373,29 @@ fold &lt;- vfold_cv(train2, v = 3, strata = class)</code></pre>
 <p>To fit these models across the folds we use the <strong>tune_grid</strong> function instead of <strong>fit</strong>.</p>
 <pre class="r"><code>tune_rf &lt;- tune_wf %&gt;% 
   tune_grid(resamples = fold, grid = grid)</code></pre>
-<pre><code>i Creating pre-processing data to finalize unknown parameter: mtry</code></pre>
 <p>For classification problems this function uses two metrics: accuracy and area under the ROC curve. SO we can extract the metric values as follows.</p>
 <pre class="r"><code>tune_rf %&gt;% collect_metrics()</code></pre>
 <pre><code># A tibble: 18 x 7
     mtry min_n .metric  .estimator  mean     n    std_err
    &lt;int&gt; &lt;int&gt; &lt;chr&gt;    &lt;chr&gt;      &lt;dbl&gt; &lt;int&gt;      &lt;dbl&gt;
- 1     9     5 accuracy binary     0.995     3 0.000119  
- 2     9     5 roc_auc  binary     1.00      3 0.0000125 
- 3     9    22 accuracy binary     0.994     3 0.000333  
- 4     9    22 roc_auc  binary     1.00      3 0.00000833
- 5     9    40 accuracy binary     0.993     3 0.000335  
- 6     9    40 roc_auc  binary     1.00      3 0.00000445
- 7    12     5 accuracy binary     0.995     3 0.000115  
- 8    12     5 roc_auc  binary     1.00      3 0.00000961
- 9    12    22 accuracy binary     0.994     3 0.000272  
-10    12    22 roc_auc  binary     1.00      3 0.00000350
-11    12    40 accuracy binary     0.993     3 0.000261  
-12    12    40 roc_auc  binary     1.00      3 0.00000578
-13    15     5 accuracy binary     0.995     3 0.000208  
-14    15     5 roc_auc  binary     1.00      3 0.00000437
-15    15    22 accuracy binary     0.995     3 0.000178  
-16    15    22 roc_auc  binary     1.00      3 0.0000102 
-17    15    40 accuracy binary     0.993     3 0.000224  
-18    15    40 roc_auc  binary     1.00      3 0.00000541</code></pre>
+ 1     9     5 accuracy binary     0.995     3 0.000150  
+ 2     9     5 roc_auc  binary     1.00      3 0.0000105 
+ 3     9    22 accuracy binary     0.994     3 0.000170  
+ 4     9    22 roc_auc  binary     1.00      3 0.0000195 
+ 5     9    40 accuracy binary     0.993     3 0.000461  
+ 6     9    40 roc_auc  binary     1.00      3 0.00000961
+ 7    12     5 accuracy binary     0.995     3 0.000290  
+ 8    12     5 roc_auc  binary     1.00      3 0.0000159 
+ 9    12    22 accuracy binary     0.994     3 0.000119  
+10    12    22 roc_auc  binary     1.00      3 0.0000257 
+11    12    40 accuracy binary     0.993     3 0.000239  
+12    12    40 roc_auc  binary     1.00      3 0.00000559
+13    15     5 accuracy binary     0.995     3 0.000231  
+14    15     5 roc_auc  binary     1.00      3 0.0000162 
+15    15    22 accuracy binary     0.994     3 0.000180  
+16    15    22 roc_auc  binary     1.00      3 0.0000132 
+17    15    40 accuracy binary     0.993     3 0.000274  
+18    15    40 roc_auc  binary     1.00      3 0.0000184 </code></pre>
 <p>To get the best model we have to choose one of the two metrics, so let’s go ahead with the accuracy rate.</p>
 <pre class="r"><code>best_param &lt;- 
   tune_rf %&gt;% select_best(metric = &quot;accuracy&quot;)
@@ -426,7 +403,7 @@ best_param</code></pre>
 <pre><code># A tibble: 1 x 2
    mtry min_n
   &lt;int&gt; &lt;int&gt;
-1    15     5</code></pre>
+1    12     5</code></pre>
 <p>we can finalize the workflow with the new parameter values.</p>
 <pre class="r"><code>tune_wf2 &lt;- tune_wf %&gt;% 
   finalize_workflow(best_param)
@@ -442,7 +419,7 @@ class ~ .
 Random Forest Model Specification (classification)
 
 Main Arguments:
-  mtry = 15
+  mtry = 12
   trees = 100
   min_n = 5
 
@@ -466,43 +443,43 @@ class ~ .
 Ranger result
 
 Call:
- ranger::ranger(formula = formula, data = data, mtry = ~15L, num.trees = ~100,      min.node.size = ~5L, num.threads = ~3, seed = ~123, verbose = FALSE,      probability = TRUE) 
+ ranger::ranger(formula = formula, data = data, mtry = ~12L, num.trees = ~100,      min.node.size = ~5L, num.threads = ~3, seed = ~123, verbose = FALSE,      probability = TRUE) 
 
 Type:                             Probability estimation 
 Number of trees:                  100 
 Sample size:                      118000 
 Number of independent variables:  95 
-Mtry:                             15 
+Mtry:                             12 
 Target node size:                 5 
 Variable importance mode:         none 
 Splitrule:                        gini 
-OOB prediction error (Brier s.):  0.00364163 </code></pre>
+OOB prediction error (Brier s.):  0.003681062 </code></pre>
 <p>Let’s get the confusion matrix</p>
 <pre class="r"><code>caret::confusionMatrix(as.factor(test2$class), predict(best_model, new_data = test2)$.pred_class)</code></pre>
 <pre><code>Confusion Matrix and Statistics
 
           Reference
 Prediction   neg   pos
-       neg 15530    95
+       neg 15535    90
        pos    65   310
                                           
-               Accuracy : 0.99            
-                 95% CI : (0.9883, 0.9915)
-    No Information Rate : 0.9747          
+               Accuracy : 0.9903          
+                 95% CI : (0.9887, 0.9918)
+    No Information Rate : 0.975           
     P-Value [Acc &gt; NIR] : &lt; 2e-16         
                                           
-                  Kappa : 0.7898          
+                  Kappa : 0.795           
                                           
- Mcnemar&#39;s Test P-Value : 0.02187         
+ Mcnemar&#39;s Test P-Value : 0.05389         
                                           
             Sensitivity : 0.9958          
-            Specificity : 0.7654          
-         Pos Pred Value : 0.9939          
+            Specificity : 0.7750          
+         Pos Pred Value : 0.9942          
          Neg Pred Value : 0.8267          
-             Prevalence : 0.9747          
-         Detection Rate : 0.9706          
+             Prevalence : 0.9750          
+         Detection Rate : 0.9709          
    Detection Prevalence : 0.9766          
-      Balanced Accuracy : 0.8806          
+      Balanced Accuracy : 0.8854          
                                           
        &#39;Positive&#39; Class : neg             
                                           </code></pre>
@@ -565,37 +542,36 @@ logit_wf &lt;- workflow() %&gt;%
 
 set.seed(123)
 model_logit &lt;- logit_wf %&gt;% 
-  fit(data = train1)</code></pre>
-<pre><code>Warning: glm.fit: algorithm did not converge</code></pre>
-<pre><code>Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
-<pre class="r"><code>caret::confusionMatrix(as.factor(test1$class), predict(model_logit, new_data = test1)$.pred_class)</code></pre>
+  fit(data = train1)
+
+caret::confusionMatrix(as.factor(test1$class), predict(model_logit, new_data = test1)$.pred_class)</code></pre>
 <pre><code>Confusion Matrix and Statistics
 
           Reference
 Prediction   neg   pos
-       neg 14902   723
-       pos    28   347
-                                          
-               Accuracy : 0.9531          
-                 95% CI : (0.9497, 0.9563)
-    No Information Rate : 0.9331          
-    P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-                                          
-                  Kappa : 0.4616          
-                                          
- Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
-                                          
-            Sensitivity : 0.9981          
-            Specificity : 0.3243          
-         Pos Pred Value : 0.9537          
-         Neg Pred Value : 0.9253          
-             Prevalence : 0.9331          
-         Detection Rate : 0.9314          
-   Detection Prevalence : 0.9766          
-      Balanced Accuracy : 0.6612          
-                                          
-       &#39;Positive&#39; Class : neg             
-                                          </code></pre>
+       neg 14813   812
+       pos    27   348
+                                        
+               Accuracy : 0.9476        
+                 95% CI : (0.944, 0.951)
+    No Information Rate : 0.9275        
+    P-Value [Acc &gt; NIR] : &lt; 2.2e-16     
+                                        
+                  Kappa : 0.4333        
+                                        
+ Mcnemar&#39;s Test P-Value : &lt; 2.2e-16     
+                                        
+            Sensitivity : 0.9982        
+            Specificity : 0.3000        
+         Pos Pred Value : 0.9480        
+         Neg Pred Value : 0.9280        
+             Prevalence : 0.9275        
+         Detection Rate : 0.9258        
+   Detection Prevalence : 0.9766        
+      Balanced Accuracy : 0.6491        
+                                        
+       &#39;Positive&#39; Class : neg           
+                                        </code></pre>
 <p>with this model we do not get better rate for minority class than random forest model.</p>
 </div>
 <div id="session-information" class="section level2">

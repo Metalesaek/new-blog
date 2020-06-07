@@ -27,7 +27,7 @@ projects: []
 
 
 ```{r setup, include=FALSE, warning=FALSE,error=FALSE,message=FALSE}
-knitr::opts_chunk$set(echo = TRUE, comment = NA)
+knitr::opts_chunk$set(echo = TRUE, comment = NA, warning=FALSE, error=FALSE, message=FALSE)
 ```
 
 
@@ -255,7 +255,7 @@ Now we can run everything at once, the recipe and the model,  notice that here w
 
 ### model training
 
-Moreover, we use here parallel processing by the help of the **doSNOW** package to speed up the training process.
+Everything now is ready to run our model with the default values.
 
 ```{r}
 model_rf <- rf_wf %>% 
@@ -321,7 +321,7 @@ grid <- grid_regular(mtry(range = c(9,15)), min_n(range = c(5,40)), levels = 3)
 grid
 ```
 
-By setting the levels equal to 3 we get four combinations and hence 9 models will be trained. 
+By setting the levels equal to 3 we get 9 combinations and hence 9 models will be trained. 
 The above recipe has steps that should not be repeated many times when tuning the model, we apply therefore the recipe to the training data in order to get the transformed data, and do not forget to apply the recipe to the testing data.   
 
 ```{r}
