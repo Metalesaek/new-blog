@@ -552,7 +552,7 @@ As we see, we do not obtain any significance difference between these methods, w
 
 ## Conclusion
 
-The main purpose for this article is more to show how implementing these methods in practice rather than highlighting the difference of performance between each other. However, the Bayesian optimization is known as the most efficient method, but with the downside that it also requires defining some hyperparameters like the acquisition function, sometimes arbitrarily. In other words, we cannot waste, say the limited budget, that should be concentrated to search for the optimum, to instead try different acquisition functions.           
+The main purpose of this article is more to show how implementing these methods in practice rather than highlighting the difference of performance between each other. However, the Bayesian optimization is known as the most efficient method, but with the downside that it also requires defining some hyperparameters like the acquisition function, sometimes arbitrarily. In other words, we cannot waste, say the limited budget, that should be concentrated to search for the optimum, to instead try different acquisition functions.           
 
 ## Session info
 
