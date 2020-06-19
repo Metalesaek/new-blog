@@ -1,5 +1,5 @@
 ---
-title: bayesian hyperparameters optimization
+title: Bayesian hyperparameters optimization
 author: ''
 date: '2020-05-13'
 slug: bayesian-hyperparameters-method
