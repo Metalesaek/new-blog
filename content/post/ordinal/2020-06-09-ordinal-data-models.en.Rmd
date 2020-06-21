@@ -1,0 +1,500 @@
+---
+title: Ordinal data models
+author: Metales Abdelkader
+date: '2020-06-09'
+slug: ordinal-data-models
+categories:
+  - R
+tags:
+  - ordinal
+subtitle: ''
+summary: 'This tutorial aims to explore the most popular models used to predict an ordered response variable...'
+output:
+  blogdown::html_page:
+    toc: true
+    fig_width: 6
+    dev: "svg"
+authors: []
+lastmod: '2020-06-21T22:12:38+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,warning = FALSE,error = FALSE,message = FALSE
+                      , comment = "")
+```
+
+
+## Introduction
+
+This tutorial aims to explore the most popular models used to predict an ordered response variable. We will use the **heart disease** data [uploaded from kaggle website](https://www.kaggle.com/johnsmith88/heart-disease-dataset), where our response will be the chest pain **cp** variable instead of the **target** variable used usually.
+
+## Data preparation
+
+First, we call the data and the libraries that we need along with this illustration as follows.
+
+
+```{r results='hide'}
+library(tidyverse)
+library(caret)
+library(tidymodels)
+mydata<-read.csv("../heart.csv",header = TRUE)
+names(mydata)[1]<-"age"
+```
+
+The data at hand has the following features:
+
+* age.
+* sex: 1=male,0=female
+* cp : chest pain type.
+* trestbps :  resting blood pressure.
+* chol: serum cholestoral.
+* fbs : fasting blood sugar.
+* restecg : resting electrocardiographic results.
+* thalach : maximum heart rate achieved
+* exang : exercise induced angina. 
+* oldpeak : ST depression induced by exercise relative to rest.
+* slope : the slope of the peak exercise ST segment.
+* ca : number of major vessels colored by flourosopy.
+* thal : it is not well defined from the data source.
+* target: have heart disease or not.
+
+
+I think the best start to explore the summary of all predictors and  missing values is by using the powerful function **skim** from **skimr** package.
+
+```{r}
+skimr::skim(mydata)
+```
+
+
+For our case we will use the chest pain type **cp** variable as our target variable since it is a categorical variable. However, for pedagogic purposes, we will manipulate it so that it will be an ordered factor with only three levels **no pain**,**moderate pain**, **severe pain** (instead of 4 levels now).   
+
+Looking at the above output, we convert the variables that should be of factor type, which are: **sex**, **target**, **fbs**, **resecg**, **exang**, **slope**, **ca**, **thal**.  For the response variable **cp**, we drop its less frequently level with all its related rows, then we rename the remaining ones as **no** pain for the most frequently one, **severe** pain for the less frequently one, and **moderate** pain for the last one.
+
+```{r}
+table(mydata$cp)
+```
+
+we see the level **3** is the less frequently one. 
+
+```{r}
+mydata<-mydata %>%
+  modify_at(c("cp", "sex", "target", "fbs", "resecg", "exang", "slope", "ca", "thal"),
+            as.factor)
+mydata<-mydata[mydata$cp!=3,]
+mydata$cp<-fct_drop(mydata$cp,only=levels(mydata$cp))
+table(mydata$cp)
+```
+
+According to these frequencies we rename and we order the levels as follows.
+
+```{r}
+mydata$cp<-fct_recode(mydata$cp,no="0",sev="1",mod="2")
+mydata$cp<-factor(mydata$cp,ordered = TRUE)
+mydata$cp<-fct_infreq(mydata$cp)
+mydata$cp[1:5]
+```
+
+Similar to the logistic regression, the number of cases in each cell from each cross table between the outcome and each factor should be above the threshold of 5 applied in practice.
+
+
+```{r}
+
+xtabs(~cp+sex,data=mydata)
+xtabs(~cp+target,data=mydata)
+xtabs(~cp+fbs,data=mydata)
+xtabs(~cp+restecg,data=mydata)
+xtabs(~cp+exang,data=mydata)
+xtabs(~cp+slope,data=mydata)
+xtabs(~cp+ca,data=mydata)
+xtabs(~cp+thal,data=mydata)
+```
+
+The following variables do not respect this threshold and hence they will be removed from the predictors set: **restecg**, **exang**, **slope**, **ca**, and **thal**.
+
+```{r}
+mydata<-mydata[,setdiff(names(mydata), c("restecg", "exang", "slope", "ca",  "thal"))]
+```
+
+The data is ready and we can now split the data between training and testing set.
+
+```{r}
+set.seed(1122)
+parts <- initial_split(mydata, prop=0.8, strata = cp)
+train <- training(parts)
+test <- testing(parts)
+```
+
+
+The most popular models that we will use are: ordinal logistic model, cart model, ordinal random forest model, Continuation ratio model.  
+
+## ordered logistic regression (logit)
+
+
+Before training this type of model let's show how it works. For simplicity suppose we have data that has an ordered outcome $y$ with three class labels ("1","2","3") and only two features $x_1$ and $x_2$.  
+
+First we define a latent variable as a linear combination of the features:
+
+$$y_i^*=\beta_1 X_{i1}+\beta_2 X_{i2}$$
+
+Then since we have three classes we define two thresholds for this latent variable $\alpha_1$ and $\alpha_2$ such that a particular observation $y_i$ will be classified as follows:
+
+
+$$\begin{cases} y_i=1 & \text{if $y_i^* \leq \alpha_1$} \\
+                y_i=2 & \text{if $\alpha_1 < y_i^* \leq \alpha_2$} \\
+                y_i=3 & \text{if $y_i^* > \alpha_2$}\end{cases}$$
+
+
+Now we can obtain the probability of a particular observation to fall into a specific class as follows:
+
+
+$$\begin{cases} p(y_i=1)=p(y_i^* \leq \alpha_1)=F(\alpha_1-\beta_1 X_{i1}-\beta_2 X_{i2}) \\
+                p(y_i=2)=p(\alpha_1 < y_i^* \leq \alpha_2)=F(\alpha_2-\beta_1 X_{i1}-\beta_2 X_{i2})-F(\alpha_1-\beta_1 X_{i1}-\beta_2 X_{i2}) \\
+                p(y_i=3)=1-p(y_i=2)-p(y_i=1)\end{cases}$$
+
+
+It remains now to define the suitable distribution function F. There are two  commonly used ones for this type of data, the **logit** function  $F(x)=\frac{1}{1+exp^{-x}}$ and the normal distribution function  aka **probit**. 
+
+**Note**: there exist other functions like **loglog**, **cloglog**, and **cauchit**.
+
+Using the **logit** function the probabilities will be. 
+
+
+$$\begin{cases} p(y_i=1)=\frac{1}{1+exp^{-(\alpha_1-\beta_1 X_{i1}-\beta_2 X_{i2})}} \\
+                p(y_i=2)=\frac{1}{1+exp^{-(\alpha_2-\beta_1 X_{i1}-\beta_2 X_{i2})}}-p(y_i=1) \\
+                p(y_i=3)=1-p(y_i=2)-p(y_i=1)\end{cases}$$
+
+The **MASS** package provides the method **polr** to perform an ordinal logistic regression.
+
+```{r}
+library(MASS)
+set.seed(1234)
+model_logistic<-train(cp~., data=train,
+                      method="polr",
+                      tuneGrid=expand.grid(method="logistic"))
+
+summary(model_logistic)
+```
+
+This table does not provide the p-values. However, it is not a big problem since we can add the p_values by the following script.
+
+
+```{r}
+prob <- pnorm(abs(summary(model_logistic)$coefficients[,3]),lower.tail = FALSE)*2
+cbind(summary(model_logistic)$coefficients,prob)
+```
+
+Using the threshold p-value 0.05, we remove the non significant variables. **age**, **trestbps**, **chol**.
+
+
+```{r}
+set.seed(1234)
+model_logistic<-train(cp~.-age-trestbps-chol, data=train,
+                      method="polr",tuneGrid=expand.grid(method="logistic"))
+prob <- pnorm(abs(summary(model_logistic)$coefficients[,3]),lower.tail = FALSE)*2
+cbind(summary(model_logistic)$coefficients,prob)
+```
+
+Notice that we do not remove the factors **sex** and **fbs** even they are not significant due to the significance of the intercepts.
+
+To well understand these coefficients lets restrict the model with only two predictors.
+
+
+```{r}
+
+set.seed(1234)
+model1<-train(cp~target+thalach, 
+              data=train,
+              method = "polr",
+              tuneGrid=expand.grid(method="logistic"))
+summary(model1)
+```
+
+
+
+Let's plug in these coefficients in the above equations we obtain the probability of each class as follows:
+
+
+
+$$\begin{cases} p(no)=\frac{1}{1+exp^{-(4.6457-1.87953X_{i1}-0.02347X_{i2})}} \\
+                p(mod)=\frac{1}{1+exp^{-(6.5325-1.87953X_{i1}-0.02347X_{i2})}}-p(no) \\
+                p(sev)=1-p(mod)-p(no)\end{cases}$$
+
+
+
+
+Let's now predict a particular patient, say the third one.
+
+
+```{r}
+train[3,c("cp","thalach","target")]
+
+```
+
+We plug in the predictor values as follows:
+
+$$\begin{cases} p(no)=\frac{1}{1+exp^{-(4.6457-1.87953*1-0.02347*178)}} \\
+                p(mod)=\frac{1}{1+exp^{-(6.5325-1.87953*1-0.02347*178)}}-p(no) \\
+                p(sev)=1-p(mod)-p(no)\end{cases}=\begin{cases} p(no)=0.1959992 \\
+                p(mod)=0.6166398-0.1959992=0.4206406 \\
+                p(sev)=1-0.4206406-0.1959992=0.3833602\end{cases}$$
+
+
+Using the highest probability this patient will be predicted to have **mod** pain.
+Now let's compare these probabilities with those obtained from function **predict**.
+
+```{r}
+predict(model1, train[1:3,], type = "prob") %>% tail(1)
+```
+
+Now we go back to our original model and compute the accuracy rate for the training data.
+
+```{r}
+predict(model_logistic, train) %>% 
+  bind_cols(train) %>%
+  rename(pred="...1", truth=cp) %>% 
+  accuracy(pred, truth)
+```
+
+with the logistic regression model we get 61% accuracy  for the training set, which is quite bad. So let's test the model using the testing set now. 
+
+
+```{r}
+predict(model_logistic, test) %>% 
+  bind_cols(test) %>%
+  rename(pred="...1", truth=cp) %>% 
+  accuracy(pred, truth)
+```
+
+Surprisingly, the accuracy rate for the testing set is about 65%, which is larger than that computed from the training data (61%). This is an indication of an underfitting problem (The opposite effect of overfitting problem). Is there any way to improve the model performance? Maybe yes, by going back and tune some hyperparameters, but since we have an underfitting problem we do not have much hyperparameters for this model except the type of function used which is by default the **logistic** function, but there exist as well other functions like **probit**, **loglog**, ...ect. 
+
+For our case let's try this model with the probit function
+
+## Ordinal logistic rgeression (probit) 
+
+```{r}
+set.seed(1234)
+model_probit<-train(cp~.-age-trestbps-chol, data=train,                                        method="polr",
+                    tuneGrid=expand.grid(method="probit"))
+
+predict(model_probit, train) %>% 
+  bind_cols(train) %>%
+  rename(pred="...1", truth=cp) %>% 
+  accuracy(pred, truth)
+```
+
+This rate is slightly worse than that from the previous model. But what about the testing set. 
+
+```{r}
+predict(model_probit, test) %>% 
+  bind_cols(test) %>%
+  rename(pred="...1", truth=cp) %>% 
+  accuracy(pred, truth)
+
+```
+
+This one also is worse than the previous model. So this means that the logistic function for this data performs better than the probit one.
+
+
+When we try many things to improve the model performance and we do not gain much, it will be better to think to try different types of models.
+
+
+## CART model
+
+This is a tree-based model. To train this model we make use of **rpartScore** package, and for simplification, we will include only the significant predictors from the previous model. 
+
+
+
+```{r}
+library(rpartScore)
+set.seed(1234)
+model_cart<-train(cp~.-age-trestbps-chol, data=train,
+                      method="rpartScore")
+model_cart
+```
+
+
+The caret model uses the bootstrapping technique for hyperparameters tuning. In our case, the largest accuracy rate is about 59.59%, with the complexity parameter `**cp**=0.2162162`, the `**split**=abs`, and `**prune**= **mc**`.   
+
+The argument **split** controls the splitting function used to grow the tree by setting the misclassification costs in the generalized **Gini** impurity function to the absolute **abs** or squared **quad**. 
+The argument **prune** is used to select the performance measure to prune the tree between total misclassification rate **mr** or misclassification cost **mc**.
+
+```{r}
+predict(model_cart, train) %>% 
+  bind_cols(train) %>%
+  rename(pred="...1", truth=cp) %>% 
+  accuracy(pred, truth)
+
+```
+
+Surprisingly, we get approximately the same accuracy rate as the logit model. Let's check the testing set.
+
+```{r}
+predict(model_cart, test) %>% 
+  bind_cols(test) %>%
+  rename(pred="...1", truth=cp) %>% 
+  accuracy(pred, truth)
+
+```
+
+Now wit this model we get a lower accuracy rate than that of the logistic model. 
+
+## Ordinal Random forst model.
+
+This model is a corrected version of random forest model that takes into account the ordinal nature of the response variable. For more detail about this model read this great [paper](https://pdfs.semanticscholar.org/5bb3/5b76774bf0d582eda4ec06e2cb3ce021772c.pdf).  
+
+To train ordinal random forest model, we need to call the following packages:
+**e1071**, **ranger**, **ordinalForest**.  
+
+```{r}
+library(ordinalForest)
+library(ranger)
+library(e1071)
+```
+
+Since the create function **train** use bootstrapping method to perform hyperparameters tuning to choose the best values, this makes the training process very slow, that is why i save the resulted output and load it again   
+
+```{r}
+# set.seed(1234)
+# model_forest<-train(cp~.-age-trestbps-chol, data=train,
+#                       method='ordinalRF')
+
+# saveRDS(model_forest, "C://Users/dell/Documents/new-blog/content/post/ordinal/model_forest.rds")
+
+model_forest <- readRDS("C://Users/dell/Documents/new-blog/content/post/ordinal/model_forest.rds")
+
+model_forest
+```
+
+We can plot the important predictors as follows.
+
+```{r}
+plot(varImp(model_forest))
+
+```
+
+Now we can obtain the accuracy rate for the training rate as follows.
+
+
+```{r}
+predict(model_forest, train) %>% 
+  bind_cols(train) %>%
+  rename(pred="...1", truth=cp) %>% 
+  accuracy(pred, truth)
+
+```
+
+Great!, with this model, the accuracy rate has largely improved to roughly 84%. But wait, what matters is the accuracy of the testing set.
+
+
+```{r}
+predict(model_forest, test) %>% 
+  bind_cols(test) %>%
+  rename(pred="...1", truth=cp) %>% 
+  accuracy(pred, truth)
+
+```
+
+This is exactly what is called the overfitting problem. The model generalizes poorly to new unseen data. We can go back and tune some other hyperparameters like increasing the minimum size of nodes (default is 5) to fight the overfitting problem. we do not, however, do that here since it is not the purpose of this tutorial.  
+
+
+## Continuation Ratio Model
+
+This model uses The vector generalized additive models which are available in the **VGAM** package. for more detail about these models click [here](https://cran.r-project.org/web/packages/VGAM/vignettes/categoricalVGAM.pdf).  
+
+
+```{r,message=FALSE,error=FALSE,warning=FALSE}
+library(VGAM)
+set.seed(1234)
+model_vgam<-train(cp~.-age-trestbps-chol, data=train,
+                  method="vglmContRatio", trace=FALSE)
+
+```
+
+```{r}
+model_vgam
+```
+
+the best model is obtained when the argument **parallel** is FALSE and **link** is **cauchit** which is the tangent function. 
+
+The accuracy rate of the training data is:
+
+```{r}
+predict(model_vgam, train) %>% 
+  bind_cols(train) %>%
+  rename(pred="...1", truth=cp) %>% 
+  accuracy(pred, truth)
+```
+
+And the accuracy of the testing set is:
+
+
+```{r}
+predict(model_vgam, test) %>% 
+  bind_cols(test) %>%
+  rename(pred="...1", truth=cp) %>% 
+  accuracy(pred, truth)
+```
+
+This the best accuracy rate compared to the other models. 
+
+
+## Compare models
+
+We can compare between the above models using **resample** caret function.
+
+```{r}
+models_eval<-resamples(list(logit=model_logistic,
+                            cart=model_cart,
+                            forest=model_forest,
+                            vgam=model_vgam))
+summary(models_eval)
+```
+
+Based on the training set and using the mean of the accuracy rate we can say that **cart** model is the best model for this data with 60.97% accuracy for the training set. However, things are different when it comes to use the testing set instead.
+ 
+
+```{r}
+tibble(models=c("logit", "cart", "forest", "vgam"), 
+       accuracy=c(
+  predict(model_logistic, test) %>% 
+  bind_cols(test) %>%
+  rename(pred="...1", truth=cp) %>% 
+  accuracy(pred, truth) %>% 
+  .[, ".estimate"],
+  predict(model_cart, test) %>% 
+  bind_cols(test) %>%
+  rename(pred="...1", truth=cp) %>% 
+  accuracy(pred, truth) %>% 
+  .[, ".estimate"],
+  predict(model_forest, test) %>% 
+  bind_cols(test) %>%
+  rename(pred="...1", truth=cp) %>% 
+  accuracy(pred, truth) %>% 
+  .[, ".estimate"],
+  predict(model_vgam, test) %>% 
+  bind_cols(test) %>%
+  rename(pred="...1", truth=cp) %>% 
+  accuracy(pred, truth) %>% 
+  .[, ".estimate"])) %>% 
+  unnest()
+```
+
+Using the testing set, the logistic model with the link **logit** is the best model to predict this data.  
+
+## Conclusion
+
+We have seen so far how to model ordinal data by exploring several models, and it happened that the logistic model is the best on for our data. However, in general the best model depends strongly on the data at hand.
+
+## Session information
+
+```{r}
+sessionInfo()
+```
+

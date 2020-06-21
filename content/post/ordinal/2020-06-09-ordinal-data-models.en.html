@@ -1,0 +1,894 @@
+---
+title: Ordinal data models
+author: Metales Abdelkader
+date: '2020-06-09'
+slug: ordinal-data-models
+categories:
+  - R
+tags:
+  - ordinal
+subtitle: ''
+summary: 'This tutorial aims to explore the most popular models used to predict an ordered response variable...'
+output:
+  blogdown::html_page:
+    toc: true
+    fig_width: 6
+    dev: "svg"
+authors: []
+lastmod: '2020-06-21T22:12:38+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#data-preparation">Data preparation</a></li>
+<li><a href="#ordered-logistic-regression-logit">ordered logistic regression (logit)</a></li>
+<li><a href="#ordinal-logistic-rgeression-probit">Ordinal logistic rgeression (probit)</a></li>
+<li><a href="#cart-model">CART model</a></li>
+<li><a href="#ordinal-random-forst-model.">Ordinal Random forst model.</a></li>
+<li><a href="#continuation-ratio-model">Continuation Ratio Model</a></li>
+<li><a href="#compare-models">Compare models</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+<li><a href="#session-information">Session information</a></li>
+</ul>
+</div>
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>This tutorial aims to explore the most popular models used to predict an ordered response variable. We will use the <strong>heart disease</strong> data <a href="https://www.kaggle.com/johnsmith88/heart-disease-dataset">uploaded from kaggle website</a>, where our response will be the chest pain <strong>cp</strong> variable instead of the <strong>target</strong> variable used usually.</p>
+</div>
+<div id="data-preparation" class="section level2">
+<h2>Data preparation</h2>
+<p>First, we call the data and the libraries that we need along with this illustration as follows.</p>
+<pre class="r"><code>library(tidyverse)
+library(caret)
+library(tidymodels)
+mydata&lt;-read.csv(&quot;../heart.csv&quot;,header = TRUE)
+names(mydata)[1]&lt;-&quot;age&quot;</code></pre>
+<p>The data at hand has the following features:</p>
+<ul>
+<li>age.</li>
+<li>sex: 1=male,0=female</li>
+<li>cp : chest pain type.</li>
+<li>trestbps : resting blood pressure.</li>
+<li>chol: serum cholestoral.</li>
+<li>fbs : fasting blood sugar.</li>
+<li>restecg : resting electrocardiographic results.</li>
+<li>thalach : maximum heart rate achieved</li>
+<li>exang : exercise induced angina.</li>
+<li>oldpeak : ST depression induced by exercise relative to rest.</li>
+<li>slope : the slope of the peak exercise ST segment.</li>
+<li>ca : number of major vessels colored by flourosopy.</li>
+<li>thal : it is not well defined from the data source.</li>
+<li>target: have heart disease or not.</li>
+</ul>
+<p>I think the best start to explore the summary of all predictors and missing values is by using the powerful function <strong>skim</strong> from <strong>skimr</strong> package.</p>
+<pre class="r"><code>skimr::skim(mydata)</code></pre>
+<table>
+<caption><span id="tab:unnamed-chunk-2">Table 1: </span>Data summary</caption>
+<tbody>
+<tr class="odd">
+<td align="left">Name</td>
+<td align="left">mydata</td>
+</tr>
+<tr class="even">
+<td align="left">Number of rows</td>
+<td align="left">303</td>
+</tr>
+<tr class="odd">
+<td align="left">Number of columns</td>
+<td align="left">14</td>
+</tr>
+<tr class="even">
+<td align="left">_______________________</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">Column type frequency:</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">numeric</td>
+<td align="left">14</td>
+</tr>
+<tr class="odd">
+<td align="left">________________________</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">Group variables</td>
+<td align="left">None</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: numeric</strong></p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">skim_variable</th>
+<th align="right">n_missing</th>
+<th align="right">complete_rate</th>
+<th align="right">mean</th>
+<th align="right">sd</th>
+<th align="right">p0</th>
+<th align="right">p25</th>
+<th align="right">p50</th>
+<th align="right">p75</th>
+<th align="right">p100</th>
+<th align="left">hist</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">age</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">54.37</td>
+<td align="right">9.08</td>
+<td align="right">29</td>
+<td align="right">47.5</td>
+<td align="right">55.0</td>
+<td align="right">61.0</td>
+<td align="right">77.0</td>
+<td align="left">▁▆▇▇▁</td>
+</tr>
+<tr class="even">
+<td align="left">sex</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">0.68</td>
+<td align="right">0.47</td>
+<td align="right">0</td>
+<td align="right">0.0</td>
+<td align="right">1.0</td>
+<td align="right">1.0</td>
+<td align="right">1.0</td>
+<td align="left">▃▁▁▁▇</td>
+</tr>
+<tr class="odd">
+<td align="left">cp</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">0.97</td>
+<td align="right">1.03</td>
+<td align="right">0</td>
+<td align="right">0.0</td>
+<td align="right">1.0</td>
+<td align="right">2.0</td>
+<td align="right">3.0</td>
+<td align="left">▇▃▁▅▁</td>
+</tr>
+<tr class="even">
+<td align="left">trestbps</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">131.62</td>
+<td align="right">17.54</td>
+<td align="right">94</td>
+<td align="right">120.0</td>
+<td align="right">130.0</td>
+<td align="right">140.0</td>
+<td align="right">200.0</td>
+<td align="left">▃▇▅▁▁</td>
+</tr>
+<tr class="odd">
+<td align="left">chol</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">246.26</td>
+<td align="right">51.83</td>
+<td align="right">126</td>
+<td align="right">211.0</td>
+<td align="right">240.0</td>
+<td align="right">274.5</td>
+<td align="right">564.0</td>
+<td align="left">▃▇▂▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">fbs</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">0.15</td>
+<td align="right">0.36</td>
+<td align="right">0</td>
+<td align="right">0.0</td>
+<td align="right">0.0</td>
+<td align="right">0.0</td>
+<td align="right">1.0</td>
+<td align="left">▇▁▁▁▂</td>
+</tr>
+<tr class="odd">
+<td align="left">restecg</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">0.53</td>
+<td align="right">0.53</td>
+<td align="right">0</td>
+<td align="right">0.0</td>
+<td align="right">1.0</td>
+<td align="right">1.0</td>
+<td align="right">2.0</td>
+<td align="left">▇▁▇▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">thalach</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">149.65</td>
+<td align="right">22.91</td>
+<td align="right">71</td>
+<td align="right">133.5</td>
+<td align="right">153.0</td>
+<td align="right">166.0</td>
+<td align="right">202.0</td>
+<td align="left">▁▂▅▇▂</td>
+</tr>
+<tr class="odd">
+<td align="left">exang</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">0.33</td>
+<td align="right">0.47</td>
+<td align="right">0</td>
+<td align="right">0.0</td>
+<td align="right">0.0</td>
+<td align="right">1.0</td>
+<td align="right">1.0</td>
+<td align="left">▇▁▁▁▃</td>
+</tr>
+<tr class="even">
+<td align="left">oldpeak</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">1.04</td>
+<td align="right">1.16</td>
+<td align="right">0</td>
+<td align="right">0.0</td>
+<td align="right">0.8</td>
+<td align="right">1.6</td>
+<td align="right">6.2</td>
+<td align="left">▇▂▁▁▁</td>
+</tr>
+<tr class="odd">
+<td align="left">slope</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">1.40</td>
+<td align="right">0.62</td>
+<td align="right">0</td>
+<td align="right">1.0</td>
+<td align="right">1.0</td>
+<td align="right">2.0</td>
+<td align="right">2.0</td>
+<td align="left">▁▁▇▁▇</td>
+</tr>
+<tr class="even">
+<td align="left">ca</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">0.73</td>
+<td align="right">1.02</td>
+<td align="right">0</td>
+<td align="right">0.0</td>
+<td align="right">0.0</td>
+<td align="right">1.0</td>
+<td align="right">4.0</td>
+<td align="left">▇▃▂▁▁</td>
+</tr>
+<tr class="odd">
+<td align="left">thal</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">2.31</td>
+<td align="right">0.61</td>
+<td align="right">0</td>
+<td align="right">2.0</td>
+<td align="right">2.0</td>
+<td align="right">3.0</td>
+<td align="right">3.0</td>
+<td align="left">▁▁▁▇▆</td>
+</tr>
+<tr class="even">
+<td align="left">target</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">0.54</td>
+<td align="right">0.50</td>
+<td align="right">0</td>
+<td align="right">0.0</td>
+<td align="right">1.0</td>
+<td align="right">1.0</td>
+<td align="right">1.0</td>
+<td align="left">▇▁▁▁▇</td>
+</tr>
+</tbody>
+</table>
+<p>For our case we will use the chest pain type <strong>cp</strong> variable as our target variable since it is a categorical variable. However, for pedagogic purposes, we will manipulate it so that it will be an ordered factor with only three levels <strong>no pain</strong>,<strong>moderate pain</strong>, <strong>severe pain</strong> (instead of 4 levels now).</p>
+<p>Looking at the above output, we convert the variables that should be of factor type, which are: <strong>sex</strong>, <strong>target</strong>, <strong>fbs</strong>, <strong>resecg</strong>, <strong>exang</strong>, <strong>slope</strong>, <strong>ca</strong>, <strong>thal</strong>. For the response variable <strong>cp</strong>, we drop its less frequently level with all its related rows, then we rename the remaining ones as <strong>no</strong> pain for the most frequently one, <strong>severe</strong> pain for the less frequently one, and <strong>moderate</strong> pain for the last one.</p>
+<pre class="r"><code>table(mydata$cp)</code></pre>
+<pre><code>
+  0   1   2   3 
+143  50  87  23 </code></pre>
+<p>we see the level <strong>3</strong> is the less frequently one.</p>
+<pre class="r"><code>mydata&lt;-mydata %&gt;%
+  modify_at(c(&quot;cp&quot;, &quot;sex&quot;, &quot;target&quot;, &quot;fbs&quot;, &quot;resecg&quot;, &quot;exang&quot;, &quot;slope&quot;, &quot;ca&quot;, &quot;thal&quot;),
+            as.factor)
+mydata&lt;-mydata[mydata$cp!=3,]
+mydata$cp&lt;-fct_drop(mydata$cp,only=levels(mydata$cp))
+table(mydata$cp)</code></pre>
+<pre><code>
+  0   1   2 
+143  50  87 </code></pre>
+<p>According to these frequencies we rename and we order the levels as follows.</p>
+<pre class="r"><code>mydata$cp&lt;-fct_recode(mydata$cp,no=&quot;0&quot;,sev=&quot;1&quot;,mod=&quot;2&quot;)
+mydata$cp&lt;-factor(mydata$cp,ordered = TRUE)
+mydata$cp&lt;-fct_infreq(mydata$cp)
+mydata$cp[1:5]</code></pre>
+<pre><code>[1] mod sev sev no  no 
+Levels: no &lt; mod &lt; sev</code></pre>
+<p>Similar to the logistic regression, the number of cases in each cell from each cross table between the outcome and each factor should be above the threshold of 5 applied in practice.</p>
+<pre class="r"><code>xtabs(~cp+sex,data=mydata)</code></pre>
+<pre><code>     sex
+cp      0   1
+  no   39 104
+  mod  35  52
+  sev  18  32</code></pre>
+<pre class="r"><code>xtabs(~cp+target,data=mydata)</code></pre>
+<pre><code>     target
+cp      0   1
+  no  104  39
+  mod  18  69
+  sev   9  41</code></pre>
+<pre class="r"><code>xtabs(~cp+fbs,data=mydata)</code></pre>
+<pre><code>     fbs
+cp      0   1
+  no  125  18
+  mod  70  17
+  sev  45   5</code></pre>
+<pre class="r"><code>xtabs(~cp+restecg,data=mydata)</code></pre>
+<pre><code>     restecg
+cp     0  1  2
+  no  78 62  3
+  mod 36 50  1
+  sev 19 31  0</code></pre>
+<pre class="r"><code>xtabs(~cp+exang,data=mydata)</code></pre>
+<pre><code>     exang
+cp     0  1
+  no  63 80
+  mod 76 11
+  sev 46  4</code></pre>
+<pre class="r"><code>xtabs(~cp+slope,data=mydata)</code></pre>
+<pre><code>     slope
+cp     0  1  2
+  no  11 84 48
+  mod  5 33 49
+  sev  2 12 36</code></pre>
+<pre class="r"><code>xtabs(~cp+ca,data=mydata)</code></pre>
+<pre><code>     ca
+cp     0  1  2  3  4
+  no  65 34 29 14  1
+  mod 57 20  2  5  3
+  sev 37  8  3  1  1</code></pre>
+<pre class="r"><code>xtabs(~cp+thal,data=mydata)</code></pre>
+<pre><code>     thal
+cp     0  1  2  3
+  no   1 12 52 78
+  mod  1  2 62 22
+  sev  0  2 39  9</code></pre>
+<p>The following variables do not respect this threshold and hence they will be removed from the predictors set: <strong>restecg</strong>, <strong>exang</strong>, <strong>slope</strong>, <strong>ca</strong>, and <strong>thal</strong>.</p>
+<pre class="r"><code>mydata&lt;-mydata[,setdiff(names(mydata), c(&quot;restecg&quot;, &quot;exang&quot;, &quot;slope&quot;, &quot;ca&quot;,  &quot;thal&quot;))]</code></pre>
+<p>The data is ready and we can now split the data between training and testing set.</p>
+<pre class="r"><code>set.seed(1122)
+parts &lt;- initial_split(mydata, prop=0.8, strata = cp)
+train &lt;- training(parts)
+test &lt;- testing(parts)</code></pre>
+<p>The most popular models that we will use are: ordinal logistic model, cart model, ordinal random forest model, Continuation ratio model.</p>
+</div>
+<div id="ordered-logistic-regression-logit" class="section level2">
+<h2>ordered logistic regression (logit)</h2>
+<p>Before training this type of model let’s show how it works. For simplicity suppose we have data that has an ordered outcome <span class="math inline">\(y\)</span> with three class labels (“1”,“2”,“3”) and only two features <span class="math inline">\(x_1\)</span> and <span class="math inline">\(x_2\)</span>.</p>
+<p>First we define a latent variable as a linear combination of the features:</p>
+<p><span class="math display">\[y_i^*=\beta_1 X_{i1}+\beta_2 X_{i2}\]</span></p>
+<p>Then since we have three classes we define two thresholds for this latent variable <span class="math inline">\(\alpha_1\)</span> and <span class="math inline">\(\alpha_2\)</span> such that a particular observation <span class="math inline">\(y_i\)</span> will be classified as follows:</p>
+<p><span class="math display">\[\begin{cases} y_i=1 &amp; \text{if $y_i^* \leq \alpha_1$} \\
+                y_i=2 &amp; \text{if $\alpha_1 &lt; y_i^* \leq \alpha_2$} \\
+                y_i=3 &amp; \text{if $y_i^* &gt; \alpha_2$}\end{cases}\]</span></p>
+<p>Now we can obtain the probability of a particular observation to fall into a specific class as follows:</p>
+<p><span class="math display">\[\begin{cases} p(y_i=1)=p(y_i^* \leq \alpha_1)=F(\alpha_1-\beta_1 X_{i1}-\beta_2 X_{i2}) \\
+                p(y_i=2)=p(\alpha_1 &lt; y_i^* \leq \alpha_2)=F(\alpha_2-\beta_1 X_{i1}-\beta_2 X_{i2})-F(\alpha_1-\beta_1 X_{i1}-\beta_2 X_{i2}) \\
+                p(y_i=3)=1-p(y_i=2)-p(y_i=1)\end{cases}\]</span></p>
+<p>It remains now to define the suitable distribution function F. There are two commonly used ones for this type of data, the <strong>logit</strong> function <span class="math inline">\(F(x)=\frac{1}{1+exp^{-x}}\)</span> and the normal distribution function aka <strong>probit</strong>.</p>
+<p><strong>Note</strong>: there exist other functions like <strong>loglog</strong>, <strong>cloglog</strong>, and <strong>cauchit</strong>.</p>
+<p>Using the <strong>logit</strong> function the probabilities will be.</p>
+<p><span class="math display">\[\begin{cases} p(y_i=1)=\frac{1}{1+exp^{-(\alpha_1-\beta_1 X_{i1}-\beta_2 X_{i2})}} \\
+                p(y_i=2)=\frac{1}{1+exp^{-(\alpha_2-\beta_1 X_{i1}-\beta_2 X_{i2})}}-p(y_i=1) \\
+                p(y_i=3)=1-p(y_i=2)-p(y_i=1)\end{cases}\]</span></p>
+<p>The <strong>MASS</strong> package provides the method <strong>polr</strong> to perform an ordinal logistic regression.</p>
+<pre class="r"><code>library(MASS)
+set.seed(1234)
+model_logistic&lt;-train(cp~., data=train,
+                      method=&quot;polr&quot;,
+                      tuneGrid=expand.grid(method=&quot;logistic&quot;))
+
+summary(model_logistic)</code></pre>
+<pre><code>
+Coefficients:
+              Value Std. Error  t value
+age       0.0112236   0.018219  0.61605
+sex1      0.2593720   0.316333  0.81993
+trestbps -0.0002329   0.009090 -0.02562
+chol     -0.0013238   0.002697 -0.49082
+fbs1      0.3188826   0.401836  0.79356
+thalach   0.0226246   0.008199  2.75933
+oldpeak  -0.3360326   0.163547 -2.05465
+target1   1.7234740   0.376279  4.58031
+
+Intercepts:
+        Value   Std. Error t value
+no|mod   4.5786  1.9271     2.3759
+mod|sev  6.5004  1.9527     3.3289
+
+Residual Deviance: 376.4697 
+AIC: 396.4697 </code></pre>
+<p>This table does not provide the p-values. However, it is not a big problem since we can add the p_values by the following script.</p>
+<pre class="r"><code>prob &lt;- pnorm(abs(summary(model_logistic)$coefficients[,3]),lower.tail = FALSE)*2
+cbind(summary(model_logistic)$coefficients,prob)</code></pre>
+<pre><code>                 Value  Std. Error     t value         prob
+age       0.0112236479 0.018218848  0.61604597 5.378642e-01
+sex1      0.2593719567 0.316332564  0.81993442 4.122535e-01
+trestbps -0.0002329023 0.009090066 -0.02562163 9.795591e-01
+chol     -0.0013237835 0.002697079 -0.49082122 6.235529e-01
+fbs1      0.3188825831 0.401836034  0.79356393 4.274493e-01
+thalach   0.0226246089 0.008199317  2.75932853 5.792027e-03
+oldpeak  -0.3360326371 0.163547467 -2.05464899 3.991292e-02
+target1   1.7234739863 0.376278770  4.58031152 4.642839e-06
+no|mod    4.5785821473 1.927119568  2.37586822 1.750771e-02
+mod|sev   6.5003986218 1.952726089  3.32888399 8.719471e-04</code></pre>
+<p>Using the threshold p-value 0.05, we remove the non significant variables. <strong>age</strong>, <strong>trestbps</strong>, <strong>chol</strong>.</p>
+<pre class="r"><code>set.seed(1234)
+model_logistic&lt;-train(cp~.-age-trestbps-chol, data=train,
+                      method=&quot;polr&quot;,tuneGrid=expand.grid(method=&quot;logistic&quot;))
+prob &lt;- pnorm(abs(summary(model_logistic)$coefficients[,3]),lower.tail = FALSE)*2
+cbind(summary(model_logistic)$coefficients,prob)</code></pre>
+<pre><code>              Value  Std. Error    t value         prob
+sex1     0.25427581 0.308143065  0.8251875 4.092651e-01
+fbs1     0.37177505 0.384667871  0.9664832 3.338024e-01
+thalach  0.02050951 0.007487511  2.7391620 6.159602e-03
+oldpeak -0.33669473 0.161699555 -2.0822242 3.732199e-02
+target1  1.71338020 0.369558584  4.6362885 3.547208e-06
+no|mod   4.00836398 1.143111953  3.5065367 4.539789e-04
+mod|sev  5.92987585 1.185074388  5.0038005 5.621092e-07</code></pre>
+<p>Notice that we do not remove the factors <strong>sex</strong> and <strong>fbs</strong> even they are not significant due to the significance of the intercepts.</p>
+<p>To well understand these coefficients lets restrict the model with only two predictors.</p>
+<pre class="r"><code>set.seed(1234)
+model1&lt;-train(cp~target+thalach, 
+              data=train,
+              method = &quot;polr&quot;,
+              tuneGrid=expand.grid(method=&quot;logistic&quot;))
+summary(model1)</code></pre>
+<pre><code>
+Coefficients:
+          Value Std. Error t value
+target1 1.87953   0.333153   5.642
+thalach 0.02347   0.007372   3.184
+
+Intercepts:
+        Value  Std. Error t value
+no|mod  4.6457 1.0799     4.3018 
+mod|sev 6.5325 1.1271     5.7959 
+
+Residual Deviance: 383.3144 
+AIC: 391.3144 </code></pre>
+<p>Let’s plug in these coefficients in the above equations we obtain the probability of each class as follows:</p>
+<p><span class="math display">\[\begin{cases} p(no)=\frac{1}{1+exp^{-(4.6457-1.87953X_{i1}-0.02347X_{i2})}} \\
+                p(mod)=\frac{1}{1+exp^{-(6.5325-1.87953X_{i1}-0.02347X_{i2})}}-p(no) \\
+                p(sev)=1-p(mod)-p(no)\end{cases}\]</span></p>
+<p>Let’s now predict a particular patient, say the third one.</p>
+<pre class="r"><code>train[3,c(&quot;cp&quot;,&quot;thalach&quot;,&quot;target&quot;)]</code></pre>
+<pre><code>   cp thalach target
+4 sev     178      1</code></pre>
+<p>We plug in the predictor values as follows:</p>
+<p><span class="math display">\[\begin{cases} p(no)=\frac{1}{1+exp^{-(4.6457-1.87953*1-0.02347*178)}} \\
+                p(mod)=\frac{1}{1+exp^{-(6.5325-1.87953*1-0.02347*178)}}-p(no) \\
+                p(sev)=1-p(mod)-p(no)\end{cases}=\begin{cases} p(no)=0.1959992 \\
+                p(mod)=0.6166398-0.1959992=0.4206406 \\
+                p(sev)=1-0.4206406-0.1959992=0.3833602\end{cases}\]</span></p>
+<p>Using the highest probability this patient will be predicted to have <strong>mod</strong> pain.
+Now let’s compare these probabilities with those obtained from function <strong>predict</strong>.</p>
+<pre class="r"><code>predict(model1, train[1:3,], type = &quot;prob&quot;) %&gt;% tail(1)</code></pre>
+<pre><code>         no       mod      sev
+4 0.1958709 0.4205981 0.383531</code></pre>
+<p>Now we go back to our original model and compute the accuracy rate for the training data.</p>
+<pre class="r"><code>predict(model_logistic, train) %&gt;% 
+  bind_cols(train) %&gt;%
+  rename(pred=&quot;...1&quot;, truth=cp) %&gt;% 
+  accuracy(pred, truth)</code></pre>
+<pre><code># A tibble: 1 x 3
+  .metric  .estimator .estimate
+  &lt;chr&gt;    &lt;chr&gt;          &lt;dbl&gt;
+1 accuracy multiclass     0.611</code></pre>
+<p>with the logistic regression model we get 61% accuracy for the training set, which is quite bad. So let’s test the model using the testing set now.</p>
+<pre class="r"><code>predict(model_logistic, test) %&gt;% 
+  bind_cols(test) %&gt;%
+  rename(pred=&quot;...1&quot;, truth=cp) %&gt;% 
+  accuracy(pred, truth)</code></pre>
+<pre><code># A tibble: 1 x 3
+  .metric  .estimator .estimate
+  &lt;chr&gt;    &lt;chr&gt;          &lt;dbl&gt;
+1 accuracy multiclass     0.648</code></pre>
+<p>Surprisingly, the accuracy rate for the testing set is about 65%, which is larger than that computed from the training data (61%). This is an indication of an underfitting problem (The opposite effect of overfitting problem). Is there any way to improve the model performance? Maybe yes, by going back and tune some hyperparameters, but since we have an underfitting problem we do not have much hyperparameters for this model except the type of function used which is by default the <strong>logistic</strong> function, but there exist as well other functions like <strong>probit</strong>, <strong>loglog</strong>, …ect.</p>
+<p>For our case let’s try this model with the probit function</p>
+</div>
+<div id="ordinal-logistic-rgeression-probit" class="section level2">
+<h2>Ordinal logistic rgeression (probit)</h2>
+<pre class="r"><code>set.seed(1234)
+model_probit&lt;-train(cp~.-age-trestbps-chol, data=train,                                        method=&quot;polr&quot;,
+                    tuneGrid=expand.grid(method=&quot;probit&quot;))
+
+predict(model_probit, train) %&gt;% 
+  bind_cols(train) %&gt;%
+  rename(pred=&quot;...1&quot;, truth=cp) %&gt;% 
+  accuracy(pred, truth)</code></pre>
+<pre><code># A tibble: 1 x 3
+  .metric  .estimator .estimate
+  &lt;chr&gt;    &lt;chr&gt;          &lt;dbl&gt;
+1 accuracy multiclass     0.606</code></pre>
+<p>This rate is slightly worse than that from the previous model. But what about the testing set.</p>
+<pre class="r"><code>predict(model_probit, test) %&gt;% 
+  bind_cols(test) %&gt;%
+  rename(pred=&quot;...1&quot;, truth=cp) %&gt;% 
+  accuracy(pred, truth)</code></pre>
+<pre><code># A tibble: 1 x 3
+  .metric  .estimator .estimate
+  &lt;chr&gt;    &lt;chr&gt;          &lt;dbl&gt;
+1 accuracy multiclass     0.593</code></pre>
+<p>This one also is worse than the previous model. So this means that the logistic function for this data performs better than the probit one.</p>
+<p>When we try many things to improve the model performance and we do not gain much, it will be better to think to try different types of models.</p>
+</div>
+<div id="cart-model" class="section level2">
+<h2>CART model</h2>
+<p>This is a tree-based model. To train this model we make use of <strong>rpartScore</strong> package, and for simplification, we will include only the significant predictors from the previous model.</p>
+<pre class="r"><code>library(rpartScore)
+set.seed(1234)
+model_cart&lt;-train(cp~.-age-trestbps-chol, data=train,
+                      method=&quot;rpartScore&quot;)
+model_cart</code></pre>
+<pre><code>CART or Ordinal Responses 
+
+226 samples
+  8 predictor
+  3 classes: &#39;no&#39;, &#39;mod&#39;, &#39;sev&#39; 
+
+No pre-processing
+Resampling: Bootstrapped (25 reps) 
+Summary of sample sizes: 226, 226, 226, 226, 226, 226, ... 
+Resampling results across tuning parameters:
+
+  cp          split  prune  Accuracy   Kappa    
+  0.02702703  abs    mr     0.5748197  0.2845545
+  0.02702703  abs    mc     0.5796085  0.3011122
+  0.02702703  quad   mr     0.5711605  0.2764466
+  0.02702703  quad   mc     0.5805216  0.3020125
+  0.04504505  abs    mr     0.5620975  0.2719646
+  0.04504505  abs    mc     0.5966801  0.3274893
+  0.04504505  quad   mr     0.5592845  0.2608402
+  0.04504505  quad   mc     0.5930817  0.3208220
+  0.21621622  abs    mr     0.5303342  0.1266324
+  0.21621622  abs    mc     0.6004116  0.3343997
+  0.21621622  quad   mr     0.5290009  0.1143360
+  0.21621622  quad   mc     0.5928132  0.3225686
+
+Accuracy was used to select the optimal model using the largest value.
+The final values used for the model were cp = 0.2162162, split = abs and
+ prune = mc.</code></pre>
+<p>The caret model uses the bootstrapping technique for hyperparameters tuning. In our case, the largest accuracy rate is about 59.59%, with the complexity parameter <code>**cp**=0.2162162</code>, the <code>**split**=abs</code>, and <code>**prune**= **mc**</code>.</p>
+<p>The argument <strong>split</strong> controls the splitting function used to grow the tree by setting the misclassification costs in the generalized <strong>Gini</strong> impurity function to the absolute <strong>abs</strong> or squared <strong>quad</strong>.
+The argument <strong>prune</strong> is used to select the performance measure to prune the tree between total misclassification rate <strong>mr</strong> or misclassification cost <strong>mc</strong>.</p>
+<pre class="r"><code>predict(model_cart, train) %&gt;% 
+  bind_cols(train) %&gt;%
+  rename(pred=&quot;...1&quot;, truth=cp) %&gt;% 
+  accuracy(pred, truth)</code></pre>
+<pre><code># A tibble: 1 x 3
+  .metric  .estimator .estimate
+  &lt;chr&gt;    &lt;chr&gt;          &lt;dbl&gt;
+1 accuracy multiclass     0.615</code></pre>
+<p>Surprisingly, we get approximately the same accuracy rate as the logit model. Let’s check the testing set.</p>
+<pre class="r"><code>predict(model_cart, test) %&gt;% 
+  bind_cols(test) %&gt;%
+  rename(pred=&quot;...1&quot;, truth=cp) %&gt;% 
+  accuracy(pred, truth)</code></pre>
+<pre><code># A tibble: 1 x 3
+  .metric  .estimator .estimate
+  &lt;chr&gt;    &lt;chr&gt;          &lt;dbl&gt;
+1 accuracy multiclass     0.630</code></pre>
+<p>Now wit this model we get a lower accuracy rate than that of the logistic model.</p>
+</div>
+<div id="ordinal-random-forst-model." class="section level2">
+<h2>Ordinal Random forst model.</h2>
+<p>This model is a corrected version of random forest model that takes into account the ordinal nature of the response variable. For more detail about this model read this great <a href="https://pdfs.semanticscholar.org/5bb3/5b76774bf0d582eda4ec06e2cb3ce021772c.pdf">paper</a>.</p>
+<p>To train ordinal random forest model, we need to call the following packages:
+<strong>e1071</strong>, <strong>ranger</strong>, <strong>ordinalForest</strong>.</p>
+<pre class="r"><code>library(ordinalForest)
+library(ranger)
+library(e1071)</code></pre>
+<p>Since the create function <strong>train</strong> use bootstrapping method to perform hyperparameters tuning to choose the best values, this makes the training process very slow, that is why i save the resulted output and load it again</p>
+<pre class="r"><code># set.seed(1234)
+# model_forest&lt;-train(cp~.-age-trestbps-chol, data=train,
+#                       method=&#39;ordinalRF&#39;)
+
+# saveRDS(model_forest, &quot;C://Users/dell/Documents/new-blog/content/post/ordinal/model_forest.rds&quot;)
+
+model_forest &lt;- readRDS(&quot;C://Users/dell/Documents/new-blog/content/post/ordinal/model_forest.rds&quot;)
+
+model_forest</code></pre>
+<pre><code>Random Forest 
+
+226 samples
+  8 predictor
+  3 classes: &#39;no&#39;, &#39;mod&#39;, &#39;sev&#39; 
+
+No pre-processing
+Resampling: Bootstrapped (25 reps) 
+Summary of sample sizes: 226, 226, 226, 226, 226, 226, ... 
+Resampling results across tuning parameters:
+
+  nsets  ntreeperdiv  ntreefinal  Accuracy   Kappa    
+   50     50          200         0.5878619  0.3173073
+   50     50          400         0.5862998  0.3174139
+   50     50          600         0.5793897  0.3052328
+   50    100          200         0.5856573  0.3157938
+   50    100          400         0.5865246  0.3155563
+   50    100          600         0.5908431  0.3248941
+   50    150          200         0.5929076  0.3277110
+   50    150          400         0.5822072  0.3092856
+   50    150          600         0.5878854  0.3209507
+  100     50          200         0.5903104  0.3277174
+  100     50          400         0.5817918  0.3127438
+  100     50          600         0.5863685  0.3197145
+  100    100          200         0.5841147  0.3136250
+  100    100          400         0.5830929  0.3115348
+  100    100          600         0.5875075  0.3228354
+  100    150          200         0.5837402  0.3167977
+  100    150          400         0.5841116  0.3187849
+  100    150          600         0.5888038  0.3250622
+  150     50          200         0.5872276  0.3193143
+  150     50          400         0.5873943  0.3198634
+  150     50          600         0.5874236  0.3224713
+  150    100          200         0.5870714  0.3218660
+  150    100          400         0.5805275  0.3107488
+  150    100          600         0.5816353  0.3135750
+  150    150          200         0.5884693  0.3247512
+  150    150          400         0.5830154  0.3154980
+  150    150          600         0.5885156  0.3253794
+
+Accuracy was used to select the optimal model using the largest value.
+The final values used for the model were nsets = 50, ntreeperdiv = 150
+ and ntreefinal = 200.</code></pre>
+<p>We can plot the important predictors as follows.</p>
+<pre class="r"><code>plot(varImp(model_forest))</code></pre>
+<p><img src="/post/ordinal/2020-06-09-ordinal-data-models.en_files/figure-html/unnamed-chunk-24-1.svg" width="576" /></p>
+<p>Now we can obtain the accuracy rate for the training rate as follows.</p>
+<pre class="r"><code>predict(model_forest, train) %&gt;% 
+  bind_cols(train) %&gt;%
+  rename(pred=&quot;...1&quot;, truth=cp) %&gt;% 
+  accuracy(pred, truth)</code></pre>
+<pre><code># A tibble: 1 x 3
+  .metric  .estimator .estimate
+  &lt;chr&gt;    &lt;chr&gt;          &lt;dbl&gt;
+1 accuracy multiclass     0.845</code></pre>
+<p>Great!, with this model, the accuracy rate has largely improved to roughly 84%. But wait, what matters is the accuracy of the testing set.</p>
+<pre class="r"><code>predict(model_forest, test) %&gt;% 
+  bind_cols(test) %&gt;%
+  rename(pred=&quot;...1&quot;, truth=cp) %&gt;% 
+  accuracy(pred, truth)</code></pre>
+<pre><code># A tibble: 1 x 3
+  .metric  .estimator .estimate
+  &lt;chr&gt;    &lt;chr&gt;          &lt;dbl&gt;
+1 accuracy multiclass     0.519</code></pre>
+<p>This is exactly what is called the overfitting problem. The model generalizes poorly to new unseen data. We can go back and tune some other hyperparameters like increasing the minimum size of nodes (default is 5) to fight the overfitting problem. we do not, however, do that here since it is not the purpose of this tutorial.</p>
+</div>
+<div id="continuation-ratio-model" class="section level2">
+<h2>Continuation Ratio Model</h2>
+<p>This model uses The vector generalized additive models which are available in the <strong>VGAM</strong> package. for more detail about these models click <a href="https://cran.r-project.org/web/packages/VGAM/vignettes/categoricalVGAM.pdf">here</a>.</p>
+<pre class="r"><code>library(VGAM)
+set.seed(1234)
+model_vgam&lt;-train(cp~.-age-trestbps-chol, data=train,
+                  method=&quot;vglmContRatio&quot;, trace=FALSE)</code></pre>
+<pre class="r"><code>model_vgam</code></pre>
+<pre><code>Continuation Ratio Model for Ordinal Data 
+
+226 samples
+  8 predictor
+  3 classes: &#39;no&#39;, &#39;mod&#39;, &#39;sev&#39; 
+
+No pre-processing
+Resampling: Bootstrapped (25 reps) 
+Summary of sample sizes: 226, 226, 226, 226, 226, 226, ... 
+Resampling results across tuning parameters:
+
+  parallel  link     Accuracy   Kappa    
+  FALSE     logit    0.5962581  0.3323075
+  FALSE     probit   0.5942637  0.3302998
+  FALSE     cloglog  0.5973844  0.3293056
+  FALSE     cauchit  0.5967368  0.3316896
+  FALSE     logc     0.5945121  0.3152759
+   TRUE     logit    0.5758330  0.2961673
+   TRUE     probit   0.5738297  0.2924747
+   TRUE     cloglog  0.5838764  0.3014038
+   TRUE     cauchit  0.5810184  0.3067004
+   TRUE     logc     0.5302522  0.1031624
+
+Accuracy was used to select the optimal model using the largest value.
+The final values used for the model were parallel = FALSE and link = cloglog.</code></pre>
+<p>the best model is obtained when the argument <strong>parallel</strong> is FALSE and <strong>link</strong> is <strong>cauchit</strong> which is the tangent function.</p>
+<p>The accuracy rate of the training data is:</p>
+<pre class="r"><code>predict(model_vgam, train) %&gt;% 
+  bind_cols(train) %&gt;%
+  rename(pred=&quot;...1&quot;, truth=cp) %&gt;% 
+  accuracy(pred, truth)</code></pre>
+<pre><code># A tibble: 1 x 3
+  .metric  .estimator .estimate
+  &lt;chr&gt;    &lt;chr&gt;          &lt;dbl&gt;
+1 accuracy multiclass     0.659</code></pre>
+<p>And the accuracy of the testing set is:</p>
+<pre class="r"><code>predict(model_vgam, test) %&gt;% 
+  bind_cols(test) %&gt;%
+  rename(pred=&quot;...1&quot;, truth=cp) %&gt;% 
+  accuracy(pred, truth)</code></pre>
+<pre><code># A tibble: 1 x 3
+  .metric  .estimator .estimate
+  &lt;chr&gt;    &lt;chr&gt;          &lt;dbl&gt;
+1 accuracy multiclass     0.630</code></pre>
+<p>This the best accuracy rate compared to the other models.</p>
+</div>
+<div id="compare-models" class="section level2">
+<h2>Compare models</h2>
+<p>We can compare between the above models using <strong>resample</strong> caret function.</p>
+<pre class="r"><code>models_eval&lt;-resamples(list(logit=model_logistic,
+                            cart=model_cart,
+                            forest=model_forest,
+                            vgam=model_vgam))
+summary(models_eval)</code></pre>
+<pre><code>
+Call:
+summary.resamples(object = models_eval)
+
+Models: logit, cart, forest, vgam 
+Number of resamples: 25 
+
+Accuracy 
+            Min.   1st Qu.    Median      Mean   3rd Qu.      Max. NA&#39;s
+logit  0.5060241 0.5731707 0.5822785 0.5871083 0.6097561 0.6627907    0
+cart   0.3734940 0.5824176 0.6097561 0.6004116 0.6279070 0.6746988    0
+forest 0.5357143 0.5569620 0.5853659 0.5929076 0.6117647 0.6860465    0
+vgam   0.4936709 0.5760870 0.6046512 0.5973844 0.6202532 0.6626506    0
+
+Kappa 
+               Min.   1st Qu.    Median      Mean   3rd Qu.      Max. NA&#39;s
+logit   0.189086980 0.2792369 0.3144822 0.3100458 0.3437500 0.4512651    0
+cart   -0.004889406 0.3185420 0.3474144 0.3343997 0.3775576 0.4526136    0
+forest  0.233434988 0.2852665 0.3289346 0.3277110 0.3554862 0.4618772    0
+vgam    0.144558744 0.2993406 0.3367647 0.3293056 0.3690791 0.4142980    0</code></pre>
+<p>Based on the training set and using the mean of the accuracy rate we can say that <strong>cart</strong> model is the best model for this data with 60.97% accuracy for the training set. However, things are different when it comes to use the testing set instead.</p>
+<pre class="r"><code>tibble(models=c(&quot;logit&quot;, &quot;cart&quot;, &quot;forest&quot;, &quot;vgam&quot;), 
+       accuracy=c(
+  predict(model_logistic, test) %&gt;% 
+  bind_cols(test) %&gt;%
+  rename(pred=&quot;...1&quot;, truth=cp) %&gt;% 
+  accuracy(pred, truth) %&gt;% 
+  .[, &quot;.estimate&quot;],
+  predict(model_cart, test) %&gt;% 
+  bind_cols(test) %&gt;%
+  rename(pred=&quot;...1&quot;, truth=cp) %&gt;% 
+  accuracy(pred, truth) %&gt;% 
+  .[, &quot;.estimate&quot;],
+  predict(model_forest, test) %&gt;% 
+  bind_cols(test) %&gt;%
+  rename(pred=&quot;...1&quot;, truth=cp) %&gt;% 
+  accuracy(pred, truth) %&gt;% 
+  .[, &quot;.estimate&quot;],
+  predict(model_vgam, test) %&gt;% 
+  bind_cols(test) %&gt;%
+  rename(pred=&quot;...1&quot;, truth=cp) %&gt;% 
+  accuracy(pred, truth) %&gt;% 
+  .[, &quot;.estimate&quot;])) %&gt;% 
+  unnest()</code></pre>
+<pre><code># A tibble: 4 x 2
+  models accuracy
+  &lt;chr&gt;     &lt;dbl&gt;
+1 logit     0.648
+2 cart      0.630
+3 forest    0.519
+4 vgam      0.630</code></pre>
+<p>Using the testing set, the logistic model with the link <strong>logit</strong> is the best model to predict this data.</p>
+</div>
+<div id="conclusion" class="section level2">
+<h2>Conclusion</h2>
+<p>We have seen so far how to model ordinal data by exploring several models, and it happened that the logistic model is the best on for our data. However, in general the best model depends strongly on the data at hand.</p>
+</div>
+<div id="session-information" class="section level2">
+<h2>Session information</h2>
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.0.1 (2020-06-06)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 10 x64 (build 18362)
+
+Matrix products: default
+
+locale:
+[1] LC_COLLATE=English_United States.1252 
+[2] LC_CTYPE=English_United States.1252   
+[3] LC_MONETARY=English_United States.1252
+[4] LC_NUMERIC=C                          
+[5] LC_TIME=English_United States.1252    
+
+attached base packages:
+[1] splines   stats4    stats     graphics  grDevices utils     datasets 
+[8] methods   base     
+
+other attached packages:
+ [1] VGAM_1.1-3          e1071_1.7-3         ranger_0.12.1      
+ [4] ordinalForest_2.3-1 rpartScore_1.0-1    rpart_4.1-15       
+ [7] MASS_7.3-51.6       yardstick_0.0.6     workflows_0.1.1    
+[10] tune_0.1.0          rsample_0.0.7       recipes_0.1.12     
+[13] parsnip_0.1.1       infer_0.5.2         dials_0.0.7        
+[16] scales_1.1.1        broom_0.5.6         tidymodels_0.1.0   
+[19] caret_6.0-86        lattice_0.20-41     forcats_0.5.0      
+[22] stringr_1.4.0       dplyr_1.0.0         purrr_0.3.4        
+[25] readr_1.3.1         tidyr_1.1.0         tibble_3.0.1       
+[28] ggplot2_3.3.1       tidyverse_1.3.0    
+
+loaded via a namespace (and not attached):
+  [1] readxl_1.3.1         backports_1.1.7      tidytext_0.2.4      
+  [4] plyr_1.8.6           igraph_1.2.5         repr_1.1.0          
+  [7] crosstalk_1.1.0.1    listenv_0.8.0        SnowballC_0.7.0     
+ [10] rstantools_2.0.0     inline_0.3.15        digest_0.6.25       
+ [13] foreach_1.5.0        htmltools_0.4.0      rsconnect_0.8.16    
+ [16] fansi_0.4.1          magrittr_1.5         globals_0.12.5      
+ [19] modelr_0.1.8         gower_0.2.1          matrixStats_0.56.0  
+ [22] RcppParallel_5.0.1   xts_0.12-0           prettyunits_1.1.1   
+ [25] colorspace_1.4-1     skimr_2.1.1          blob_1.2.1          
+ [28] rvest_0.3.5          haven_2.3.1          xfun_0.14           
+ [31] callr_3.4.3          crayon_1.3.4         jsonlite_1.6.1      
+ [34] lme4_1.1-23          survival_3.1-12      zoo_1.8-8           
+ [37] iterators_1.0.12     glue_1.4.1           gtable_0.3.0        
+ [40] ipred_0.9-9          pkgbuild_1.0.8       rstan_2.19.3        
+ [43] DBI_1.1.0            miniUI_0.1.1.1       Rcpp_1.0.4.6        
+ [46] xtable_1.8-4         GPfit_1.0-8          StanHeaders_2.21.0-5
+ [49] lava_1.6.7           prodlim_2019.11.13   DT_0.13             
+ [52] htmlwidgets_1.5.1    httr_1.4.1           threejs_0.3.3       
+ [55] ellipsis_0.3.1       loo_2.2.0            pkgconfig_2.0.3     
+ [58] nnet_7.3-14          dbplyr_1.4.4         utf8_1.1.4          
+ [61] tidyselect_1.1.0     rlang_0.4.6          DiceDesign_1.8-1    
+ [64] reshape2_1.4.4       later_1.1.0.1        munsell_0.5.0       
+ [67] cellranger_1.1.0     tools_4.0.1          cli_2.0.2           
+ [70] generics_0.0.2       ggridges_0.5.2       evaluate_0.14       
+ [73] fastmap_1.0.1        yaml_2.2.1           ModelMetrics_1.2.2.2
+ [76] processx_3.4.2       knitr_1.28           fs_1.4.1            
+ [79] future_1.17.0        nlme_3.1-148         mime_0.9            
+ [82] rstanarm_2.19.3      xml2_1.3.2           tokenizers_0.2.1    
+ [85] compiler_4.0.1       bayesplot_1.7.2      shinythemes_1.1.2   
+ [88] rstudioapi_0.11      reprex_0.3.0         tidyposterior_0.0.3 
+ [91] lhs_1.0.2            statmod_1.4.34       stringi_1.4.6       
+ [94] highr_0.8            ps_1.3.3             blogdown_0.19       
+ [97] Matrix_1.2-18        nloptr_1.2.2.1       markdown_1.1        
+[100] shinyjs_1.1          vctrs_0.3.1          pillar_1.4.4        
+[103] lifecycle_0.2.0      furrr_0.1.0          data.table_1.12.8   
+[106] httpuv_1.5.4         R6_2.4.1             bookdown_0.19       
+[109] promises_1.1.1       gridExtra_2.3        janeaustenr_0.1.5   
+[112] codetools_0.2-16     boot_1.3-25          colourpicker_1.0    
+[115] gtools_3.8.2         assertthat_0.2.1     withr_2.2.0         
+[118] shinystan_2.5.0      parallel_4.0.1       hms_0.5.3           
+[121] grid_4.0.1           timeDate_3043.102    minqa_1.2.4         
+[124] class_7.3-17         rmarkdown_2.2        pROC_1.16.2         
+[127] tidypredict_0.4.5    shiny_1.4.0.2        lubridate_1.7.9     
+[130] base64enc_0.1-3      dygraphs_1.1.1.6    </code></pre>
+</div>
