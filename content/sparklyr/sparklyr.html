@@ -8,17 +8,41 @@ share: false  # Show social sharing links?
 profile: false  # Show author profile?
 comments: true 
 output:
-  html_document:
+  blogdown::html_page:
     toc: true
+    fig_width: 6
+    dev: "svg"
 tags:
 - sparklyr
 - Big data
 - Machine learning
 categories: R
+authors: []
+lastmod: '2020-06-22T16:55:32+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
 ---
 
 <script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
 
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#installing-sparklyr">Installing sparklyr</a></li>
+<li><a href="#installing-spark">Installing spark</a></li>
+<li><a href="#connecting-to-spark">Connecting to spark</a></li>
+<li><a href="#importing-data">Importing data</a></li>
+<li><a href="#manipulating-data">Manipulating data</a></li>
+<li><a href="#disconnecting">Disconnecting</a></li>
+<li><a href="#saving-data">saving data</a></li>
+<li><a href="#example-of-modeling-in-spark">Example of modeling in spark</a></li>
+<li><a href="#streaming">Streaming</a></li>
+</ul>
+</div>
 
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
@@ -53,8 +77,8 @@ sc&lt;-spark_connect(master = &quot;local&quot;)</code></pre>
 <pre class="r"><code>mydata&lt;-copy_to(sc,airquality)</code></pre>
 <p>Then R can get access to this data by the help of sparklyr, for example we can use the dplyr function <strong>glimpse</strong>.</p>
 <pre class="r"><code>glimpse(mydata)</code></pre>
-<pre><code>## Observations: ??
-## Variables: 6
+<pre><code>## Rows: ??
+## Columns: 6
 ## Database: spark_connection
 ## $ Ozone   &lt;int&gt; 41, 36, 12, 18, NA, 28, 23, 19, 8, NA, 7, 16, 11, 14, 18, 1...
 ## $ Solar_R &lt;int&gt; 190, 118, 149, 313, NA, NA, 299, 99, 19, 194, NA, 256, 290,...
@@ -63,7 +87,7 @@ sc&lt;-spark_connect(master = &quot;local&quot;)</code></pre>
 ## $ Month   &lt;int&gt; 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,...
 ## $ Day     &lt;int&gt; 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, ...</code></pre>
 <p>And if the data is stored anywhere outside R with any different format, then sparklyr provides some functions to import these data. For example to load csv file we use the function <strong>spark_read_csv</strong>, and for json we use <strong>spark_read_json</strong>. To get the list of all the sparklyr functions and their usages click <a href="https://cran.r-project.org/web/packages/sparklyr/sparklyr.pdf">here</a>.</p>
-<p>For illustration we will call tha data <strong>creditcards</strong> stored in my machine as follows</p>
+<p>For illustration we will call the data <strong>creditcards</strong> stored in my machine as follows</p>
 <pre class="r"><code>card&lt;-spark_read_csv(sc,&quot;creditcard.csv&quot;)
 sdf_dim(card)</code></pre>
 <pre><code>## [1] 284807     31</code></pre>
@@ -73,7 +97,7 @@ sdf_dim(card)</code></pre>
 </div>
 <div id="manipulating-data" class="section level2">
 <h2>Manipulating data</h2>
-<p>With the help of sparklyr, we can access very easily to the data into spark memory by using the delyr functions. Let’s apply some manipulations on the data <strong>card</strong> such as for example filtering the data using the variable <strong>Time</strong> , then we compute the mean of <strong>Amount</strong> for each class label in the variable <strong>Class</strong>.</p>
+<p>With the help of sparklyr, we can access very easily to the data into spark memory by using the dplyr functions. Let’s apply some manipulations on the data <strong>card</strong> like, for instance, filtering the data using the variable <strong>Time</strong> , then computing the mean of <strong>Amount</strong> for each class label in the variable <strong>Class</strong>.</p>
 <pre class="r"><code>card %&gt;%
   filter(Time &lt;= mean(Time,na.rm = TRUE))%&gt;%
       group_by(Class)%&gt;%
@@ -90,7 +114,7 @@ sdf_dim(card)</code></pre>
   summarise(Class_avg=mean(Amount,na.rm=TRUE))%&gt;%
   collect()%&gt;%
   plot(col=&quot;red&quot;,pch=19,main = &quot;Class average vs Class&quot;)</code></pre>
-<p><img src="/sparklyr/sparklyr_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p><img src="/sparklyr/sparklyr_files/figure-html/unnamed-chunk-9-1.svg" width="576" /></p>
 <p>However , we can plot the sparklyr outputs without having to remove them to R memory by using the <strong>dbplot</strong> functions, since most of the functions of this package are supported by sparklyr. Let’s for example plot the mean of Amount by Class for cards transaction that have time less than the mean.</p>
 <pre class="r"><code>library(dbplot)
 card %&gt;%
@@ -99,7 +123,7 @@ card %&gt;%
 <pre><code>## Warning: Missing values are always removed in SQL.
 ## Use `mean(x, na.rm = TRUE)` to silence this warning
 ## This warning is displayed only once per session.</code></pre>
-<p><img src="/sparklyr/sparklyr_files/figure-html/unnamed-chunk-10-1.png" width="672" /></p>
+<p><img src="/sparklyr/sparklyr_files/figure-html/unnamed-chunk-10-1.svg" width="576" /></p>
 <p>As we see the Amount mean of fraudulent cards is higher than that of regular cards.</p>
 </div>
 <div id="disconnecting" class="section level2">
@@ -190,7 +214,7 @@ model_summary</code></pre>
 ##  - weighted_true_positive_rate()</code></pre>
 <p>To extract the metric that we want we use <strong>$</strong>. we can extract for example <strong>the accuracy rate</strong>, the <strong>AUC</strong> or the <strong>roc</strong></p>
 <pre class="r"><code>model_summary$area_under_roc()</code></pre>
-<pre><code>## [1] 0.9765754</code></pre>
+<pre><code>## [1] 0.9765234</code></pre>
 <pre class="r"><code>model_summary$accuracy()</code></pre>
 <pre><code>## [1] 0.999149</code></pre>
 <pre class="r"><code>model_summary$roc()</code></pre>
@@ -215,13 +239,13 @@ ggplot(aes(FPR,TPR ))+
   geom_line(col=&quot;blue&quot;)+
   geom_abline(intercept = 0,slope = 1,col=&quot;red&quot;)+
   ggtitle(&quot;the roc of model_in_spark &quot;)</code></pre>
-<p><img src="/sparklyr/sparklyr_files/figure-html/unnamed-chunk-19-1.png" width="672" /></p>
+<p><img src="/sparklyr/sparklyr_files/figure-html/unnamed-chunk-19-1.svg" width="576" /></p>
 <p>High accuracy rate for the training set can be only the result of overfitting problem. the accuracy rate using the testing set is the more reliable one.</p>
 <pre class="r"><code>pred&lt;-ml_evaluate(model_in_spark,test)
 pred$accuracy()</code></pre>
 <pre><code>## [1] 0.9994722</code></pre>
 <pre class="r"><code>pred$area_under_roc()</code></pre>
-<pre><code>## [1] 0.9691945</code></pre>
+<pre><code>## [1] 0.9692158</code></pre>
 <p>Finally, to get the prediction we use the function <strong>ml_predict</strong></p>
 <pre class="r"><code>pred&lt;-ml_predict(model_in_spark,test)%&gt;%
 select(.,Class,prediction,probability_0,probability_1)
@@ -247,7 +271,7 @@ pred  </code></pre>
   geom_point(size=0.1)+
   geom_jitter()+
   ggtitle(&quot;Actual vs predicted&quot;)</code></pre>
-<p><img src="/sparklyr/sparklyr_files/figure-html/unnamed-chunk-22-1.png" width="672" /></p>
+<p><img src="/sparklyr/sparklyr_files/figure-html/unnamed-chunk-22-1.svg" width="576" /></p>
 </div>
 <div id="streaming" class="section level2">
 <h2>Streaming</h2>
