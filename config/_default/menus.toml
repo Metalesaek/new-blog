@@ -40,3 +40,8 @@
   name = "RSS"
   url = "http://feeds.feedburner.com/ModelingWithR"
   weight = 90
+
+[[main]]
+  name = "R-bloggers"
+  url = "http://r-bloggers.com"
+  weight = 100
