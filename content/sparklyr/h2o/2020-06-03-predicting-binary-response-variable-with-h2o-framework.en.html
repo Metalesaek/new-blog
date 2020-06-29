@@ -1,0 +1,553 @@
+---
+title: Predicting binary response variable with h2o framework
+author: Metales Abdelkader
+date: '2020-06-03'
+slug: predicting-binary-response-variable-with-h2o-framework
+categories:
+  - R
+tags:
+  - h2o
+  - Big data
+subtitle: ''
+summary: 'H2O is an open source distributed scalable framework used to train machine learning and deep learning models as well as data analysis. It can handle large data sets, with ease of use, by creating...'
+reading_time: true
+output:
+  blogdown::html_page:
+    toc: true
+    fig_width: 6
+    dev: "svg"
+authors: []
+lastmod: '2020-06-22T16:55:32+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#data-preparation">data preparation</a></li>
+<li><a href="#logistic-regression">Logistic regression</a></li>
+<li><a href="#random-forest">Random forest</a></li>
+</ul>
+</div>
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>H2O is an open source distributed scalable framework used to train machine learning and deep learning models as well as data analysis. It can handle large data sets, with ease of use, by creating a cluster from the available nodes. Fortunately, it provides an API for R users to get the most benefits from it, especially when it comes to large data sets, with which R has its most limitations.</p>
+<p>The beauty is that R users are able to load and use this system via the package <strong>h2o</strong> which can be called and used like any other R packages.</p>
+<pre class="r"><code># install.packages(&quot;h2o&quot;) if not already installed
+library(tidyverse)</code></pre>
+<pre><code>-- Attaching packages -------------------</code></pre>
+<pre><code>v ggplot2 3.3.1     v purrr   0.3.4
+v tibble  3.0.1     v dplyr   1.0.0
+v tidyr   1.1.0     v stringr 1.4.0
+v readr   1.3.1     v forcats 0.5.0</code></pre>
+<pre><code>-- Conflicts --- tidyverse_conflicts() --
+x dplyr::filter() masks stats::filter()
+x dplyr::lag()    masks stats::lag()</code></pre>
+<pre class="r"><code>library(h2o)</code></pre>
+<pre><code>
+----------------------------------------------------------------------
+
+Your next step is to start H2O:
+    &gt; h2o.init()
+
+For H2O package documentation, ask for help:
+    &gt; ??h2o
+
+After starting H2O, you can use the Web UI at http://localhost:54321
+For more information visit http://docs.h2o.ai
+
+----------------------------------------------------------------------</code></pre>
+<pre><code>
+Attaching package: &#39;h2o&#39;</code></pre>
+<pre><code>The following objects are masked from &#39;package:stats&#39;:
+
+    cor, sd, var</code></pre>
+<pre><code>The following objects are masked from &#39;package:base&#39;:
+
+    %*%, %in%, &amp;&amp;, ||, apply, as.factor, as.numeric, colnames,
+    colnames&lt;-, ifelse, is.character, is.factor, is.numeric, log,
+    log10, log1p, log2, round, signif, trunc</code></pre>
+<p>Then to lunch the cluster run the following script</p>
+<pre class="r"><code>h2o.init(nthreads = -1)</code></pre>
+<pre><code> Connection successful!
+
+R is connected to the H2O cluster: 
+    H2O cluster uptime:         42 minutes 55 seconds 
+    H2O cluster timezone:       Europe/Paris 
+    H2O data parsing timezone:  UTC 
+    H2O cluster version:        3.30.0.1 
+    H2O cluster version age:    2 months and 25 days  
+    H2O cluster name:           H2O_started_from_R_dell_uhh542 
+    H2O cluster total nodes:    1 
+    H2O cluster total memory:   1.69 GB 
+    H2O cluster total cores:    4 
+    H2O cluster allowed cores:  4 
+    H2O cluster healthy:        TRUE 
+    H2O Connection ip:          localhost 
+    H2O Connection port:        54321 
+    H2O Connection proxy:       NA 
+    H2O Internal Security:      FALSE 
+    H2O API Extensions:         Amazon S3, Algos, AutoML, Core V3, TargetEncoder, Core V4 
+    R Version:                  R version 4.0.1 (2020-06-06) </code></pre>
+<p>Looking at this output, we see that h2o uses java virtual machine JVM, so you need java already installed. If you notice I have specified the <strong>nthreads</strong> argument to be -1 to tell h20 to create its cluster using all the available cores I have less than 1.</p>
+<p>Since our purpose is understanding how to work with h2o, we are going be using a small data set, in wcich the response will be a binary variable. The data that we will use is <strong>creditcard</strong> whcich is downloaded from <a href="https://www.kaggle.com/mlg-ulb/creditcardfraud">kaggle</a> website.</p>
+</div>
+<div id="data-preparation" class="section level2">
+<h2>data preparation</h2>
+<p>To import the data directly into the h2o cluster we use the function <strong>h2O.importFile</strong> as follows.</p>
+<pre class="r"><code>card &lt;- h2o.importFile(&quot;../creditcard.csv&quot;)</code></pre>
+<pre><code>
+  |                                                                            
+  |                                                                      |   0%
+  |                                                                            
+  |=============================================================         |  87%
+  |                                                                            
+  |======================================================================| 100%</code></pre>
+<pre class="r"><code>h2o.dim(card)</code></pre>
+<pre><code>[1] 284807     31</code></pre>
+<p>This data has 284807 and 31 columns. According to the description of this data, the response variable is <strong>class</strong> with two values 1 for <strong>fraudulent card</strong> and 0 for <strong>regular card</strong>. The other variables are PCA components derived from the original ones for privacy purposes to protect, for instance, the users identities.<br />
+So first let’s check the summary of this data.</p>
+<pre class="r"><code>h2o.describe(card)</code></pre>
+<pre><code>    Label Type Missing  Zeros PosInf NegInf         Min          Max
+1    Time  int       0      2      0      0    0.000000 1.727920e+05
+2      V1 real       0      0      0      0  -56.407510 2.454930e+00
+3      V2 real       0      0      0      0  -72.715728 2.205773e+01
+4      V3 real       0      0      0      0  -48.325589 9.382558e+00
+5      V4 real       0      0      0      0   -5.683171 1.687534e+01
+6      V5 real       0      0      0      0 -113.743307 3.480167e+01
+7      V6 real       0      0      0      0  -26.160506 7.330163e+01
+8      V7 real       0      0      0      0  -43.557242 1.205895e+02
+9      V8 real       0      0      0      0  -73.216718 2.000721e+01
+10     V9 real       0      0      0      0  -13.434066 1.559499e+01
+11    V10 real       0      0      0      0  -24.588262 2.374514e+01
+12    V11 real       0      0      0      0   -4.797473 1.201891e+01
+13    V12 real       0      0      0      0  -18.683715 7.848392e+00
+14    V13 real       0      0      0      0   -5.791881 7.126883e+00
+15    V14 real       0      0      0      0  -19.214325 1.052677e+01
+16    V15 real       0      0      0      0   -4.498945 8.877742e+00
+17    V16 real       0      0      0      0  -14.129855 1.731511e+01
+18    V17 real       0      0      0      0  -25.162799 9.253526e+00
+19    V18 real       0      0      0      0   -9.498746 5.041069e+00
+20    V19 real       0      0      0      0   -7.213527 5.591971e+00
+21    V20 real       0      0      0      0  -54.497720 3.942090e+01
+22    V21 real       0      0      0      0  -34.830382 2.720284e+01
+23    V22 real       0      0      0      0  -10.933144 1.050309e+01
+24    V23 real       0      0      0      0  -44.807735 2.252841e+01
+25    V24 real       0      0      0      0   -2.836627 4.584549e+00
+26    V25 real       0      0      0      0  -10.295397 7.519589e+00
+27    V26 real       0      0      0      0   -2.604551 3.517346e+00
+28    V27 real       0      0      0      0  -22.565679 3.161220e+01
+29    V28 real       0      0      0      0  -15.430084 3.384781e+01
+30 Amount real       0   1825      0      0    0.000000 2.569116e+04
+31  Class  int       0 284315      0      0    0.000000 1.000000e+00
+            Mean        Sigma Cardinality
+1   9.481386e+04 4.748815e+04          NA
+2   1.759011e-12 1.958696e+00          NA
+3  -8.250683e-13 1.651309e+00          NA
+4  -9.647560e-13 1.516255e+00          NA
+5   8.321544e-13 1.415869e+00          NA
+6   1.648035e-13 1.380247e+00          NA
+7   4.249739e-13 1.332271e+00          NA
+8  -3.055929e-13 1.237094e+00          NA
+9   8.772193e-14 1.194353e+00          NA
+10 -1.179836e-12 1.098632e+00          NA
+11  7.093134e-13 1.088850e+00          NA
+12  1.875289e-12 1.020713e+00          NA
+13  1.052772e-12 9.992014e-01          NA
+14  7.125770e-13 9.952742e-01          NA
+15 -1.477477e-13 9.585956e-01          NA
+16 -5.231893e-13 9.153160e-01          NA
+17 -2.282734e-13 8.762529e-01          NA
+18 -6.425575e-13 8.493371e-01          NA
+19  4.950876e-13 8.381762e-01          NA
+20  7.057097e-13 8.140405e-01          NA
+21  1.766136e-12 7.709250e-01          NA
+22 -3.405763e-13 7.345240e-01          NA
+23 -5.724055e-13 7.257016e-01          NA
+24 -9.725862e-13 6.244603e-01          NA
+25  1.464123e-12 6.056471e-01          NA
+26 -6.987098e-13 5.212781e-01          NA
+27 -5.617541e-13 4.822270e-01          NA
+28  3.332080e-12 4.036325e-01          NA
+29 -3.518873e-12 3.300833e-01          NA
+30  8.834962e+01 2.501201e+02          NA
+31  1.727486e-03 4.152719e-02          NA</code></pre>
+<p>The most important issues that we usually check first are missing values and imbalance problem for classification.</p>
+<p>For the missing values, you should know that a value recognized by R as missing value if it is written as <strong>NA</strong> or blank cells. If, otherwise a missing value in imported data written in any other format, for instance, in a string format like <strong>na</strong> or <strong>missing</strong>, we should tell R that these are missing values to be converted to <strong>NA</strong>. Or like in our case when a variable has zero values while it should not have. The <strong>Amount</strong> variable, for instance, we know that any transaction requires some amount of money so that it should not be equal to zero, while in the data it has 1825 zero’s. the same thing apply for the <strong>Time</strong> variable with two zero’s. However, since the data is large then this is not a big issue, and we can comfortably remove these rows.</p>
+<pre class="r"><code>card$Amount &lt;- h2o.ifelse(card$Amount == 0, NA, card$Amount)
+card$Time &lt;- h2o.ifelse(card$Time == 0, NA, card$Time)
+card &lt;- h2o.na_omit(card)</code></pre>
+<p>it is a good practice to check your output after each transformation to make sure your code did what would be expected.</p>
+<pre class="r"><code>h2o.describe(card)</code></pre>
+<pre><code>    Label Type Missing  Zeros PosInf NegInf         Min          Max
+1    Time  int       0      0      0      0    1.000000 1.727920e+05
+2      V1 real       0      0      0      0  -56.407510 2.454930e+00
+3      V2 real       0      0      0      0  -72.715728 2.205773e+01
+4      V3 real       0      0      0      0  -48.325589 9.382558e+00
+5      V4 real       0      0      0      0   -5.683171 1.687534e+01
+6      V5 real       0      0      0      0 -113.743307 3.480167e+01
+7      V6 real       0      0      0      0  -26.160506 7.330163e+01
+8      V7 real       0      0      0      0  -43.557242 1.205895e+02
+9      V8 real       0      0      0      0  -73.216718 2.000721e+01
+10     V9 real       0      0      0      0  -13.320155 1.559499e+01
+11    V10 real       0      0      0      0  -24.588262 2.374514e+01
+12    V11 real       0      0      0      0   -4.797473 1.201891e+01
+13    V12 real       0      0      0      0  -18.683715 7.848392e+00
+14    V13 real       0      0      0      0   -5.791881 7.126883e+00
+15    V14 real       0      0      0      0  -19.214325 1.052677e+01
+16    V15 real       0      0      0      0   -4.498945 8.877742e+00
+17    V16 real       0      0      0      0  -14.129855 1.731511e+01
+18    V17 real       0      0      0      0  -25.162799 9.253526e+00
+19    V18 real       0      0      0      0   -9.498746 5.041069e+00
+20    V19 real       0      0      0      0   -7.213527 5.591971e+00
+21    V20 real       0      0      0      0  -54.497720 3.942090e+01
+22    V21 real       0      0      0      0  -34.830382 2.720284e+01
+23    V22 real       0      0      0      0  -10.933144 1.050309e+01
+24    V23 real       0      0      0      0  -44.807735 2.252841e+01
+25    V24 real       0      0      0      0   -2.836627 4.584549e+00
+26    V25 real       0      0      0      0  -10.295397 7.519589e+00
+27    V26 real       0      0      0      0   -2.604551 3.517346e+00
+28    V27 real       0      0      0      0  -22.565679 3.161220e+01
+29    V28 real       0      0      0      0  -15.430084 3.384781e+01
+30 Amount real       0      0      0      0    0.010000 2.569116e+04
+31  Class  int       0 282515      0      0    0.000000 1.000000e+00
+            Mean        Sigma Cardinality
+1   9.484963e+04 4.748196e+04          NA
+2  -3.483003e-04 1.956753e+00          NA
+3  -2.017854e-03 1.650496e+00          NA
+4  -3.302670e-03 1.514214e+00          NA
+5  -1.199330e-02 1.404852e+00          NA
+6  -2.239576e-03 1.378819e+00          NA
+7  -1.305135e-03 1.331596e+00          NA
+8   2.509043e-03 1.233944e+00          NA
+9   2.694780e-05 1.191177e+00          NA
+10  1.464239e-03 1.099065e+00          NA
+11 -2.278298e-03 1.087587e+00          NA
+12  2.311358e-03 1.018693e+00          NA
+13  8.656482e-04 9.972279e-01          NA
+14  6.992494e-04 9.945502e-01          NA
+15  2.020090e-04 9.555395e-01          NA
+16  3.645617e-03 9.137113e-01          NA
+17 -1.095849e-03 8.760560e-01          NA
+18  1.618984e-03 8.462568e-01          NA
+19  1.306725e-03 8.386969e-01          NA
+20  1.914719e-03 8.119902e-01          NA
+21  9.806997e-04 7.705625e-01          NA
+22 -4.814073e-05 7.326525e-01          NA
+23 -1.607323e-03 7.255767e-01          NA
+24  1.474258e-04 6.230342e-01          NA
+25  2.017716e-04 6.057968e-01          NA
+26 -5.086588e-04 5.209869e-01          NA
+27 -1.364828e-03 4.819297e-01          NA
+28  2.533476e-04 4.029874e-01          NA
+29  1.926961e-04 3.303524e-01          NA
+30  8.891949e+01 2.508252e+02          NA
+31  1.643226e-03 4.050347e-02          NA</code></pre>
+<p>In contrast, we have a very serious imbalance problem since the <strong>class</strong> variable with only two values 1 and 0 has mean equals 0.00173 which means that we have large number of class label 0.</p>
+<pre class="r"><code>h2o.table(card$Class)</code></pre>
+<pre><code>  Class  Count
+1     0 282515
+2     1    465
+
+[2 rows x 2 columns] </code></pre>
+<p>As expected, the majority of cases are of class label 0. Any machine learning model fitted to this data without correcting this problem will be dominated by the label 0, and will hardly correctly predict the fraudulent card (label 1) which is our main interest.</p>
+<p>The h2o package provides a way to correct the imbalance problem. For <strong>glm</strong> models, for instance, we have three arguments for this purpose:</p>
+<ul>
+<li>balance_classes: if it is set to true then it performs subsampling method specified in the next argument.</li>
+<li>class_sampling_factors: The desired sampling ratios per class (over or under sampling).</li>
+<li>max_after_balance_size: The desired relative size of the training data after balancing class counts.</li>
+</ul>
+<p>One of the last two arguments can be used. To reduce thus our data we will set the last argument to 0.1 , to only use 10% of the data.</p>
+<p>Before going ahead we should split the data randomly between training (80% of the data) and testing set (the rest 20%).</p>
+<pre class="r"><code>card$Class &lt;- h2o.asfactor(card$Class)
+
+parts &lt;- h2o.splitFrame(card, 0.8, seed = 1111)
+train &lt;- parts[[1]]
+test &lt;- parts[[2]]</code></pre>
+<pre class="r"><code>h2o.table(train$Class)</code></pre>
+<pre><code>  Class  Count
+1     0 226268
+2     1    372
+
+[2 rows x 2 columns] </code></pre>
+<pre class="r"><code>h2o.table(test$Class)</code></pre>
+<pre><code>  Class Count
+1     0 56247
+2     1    93
+
+[2 rows x 2 columns] </code></pre>
+</div>
+<div id="logistic-regression" class="section level2">
+<h2>Logistic regression</h2>
+<p>For binary classification problems, the first model that comes in mind is the logistic regression model. This model belongs to the <strong>glm</strong> models such that when we set the argument family to <strong>binomial</strong> we get a logistic regression model. The following are the main arguments of **glm* models (besides the arguments discussed above):</p>
+<ul>
+<li>x: should contains the predictor names (not the data) or their indices.</li>
+<li>y: the name of the response variable (again not the whole column).</li>
+<li>training frame: The training data frame.</li>
+<li>model_id: to name the model.</li>
+<li>nfolds: the number of folds to use for cross validation for hyperparameters tuning.</li>
+<li>seed: for reproducibility.</li>
+<li>fold_assignment: the skim of the cross validation: AUTO, Random, Stratified, or Modulo.</li>
+<li>family: many distributions are provided, for binary we have <strong>binomial</strong>, <strong>quasibinomial</strong>.</li>
+<li>solver: the algorithm used, with <strong>AUTO</strong> will decide the best one given the data, but you can choose another one like: IRLSM, L_BFGS, COORDINATE_DESCENT, …etc.</li>
+<li>alpha: ratio to mix the regularization L1 (lasso) and L2(ridge regression). larger values yield more lasso.</li>
+<li>lambda_search: lambda is the strength of the L2 regularization, if TRUE then the model tries different values.</li>
+<li>standardize: to standardize the numeric columns.</li>
+<li>compute_p_value: it does not work with regularization.</li>
+<li>link: the link function.</li>
+<li>interaction: if we want interaction between predictors.</li>
+</ul>
+<p>Now we are ready to train our model with some specified values. But, first let’s try to use the original data without correcting the imbalance problem.</p>
+<pre class="r"><code>model_logit &lt;- h2o.glm(
+  x = 1:30,
+  y = 31,
+  training_frame = train,
+  model_id = &quot;glm_binomial_no_eg&quot;,
+  seed = 123,
+  lambda = 0,
+  family = &quot;binomial&quot;,
+  solver = &quot;IRLSM&quot;,
+  standardize = TRUE,
+  link = &quot;family_default&quot;
+)</code></pre>
+<pre><code>
+  |                                                                            
+  |                                                                      |   0%
+  |                                                                            
+  |=============                                                         |  18%
+  |                                                                            
+  |======================================================================| 100%</code></pre>
+<p>h2o provides a bunch of metrics already computed during the training process along with the confusion matrix. we can get access to them by calling the function <strong>h2O.performance</strong>.</p>
+<pre class="r"><code>h2o.performance(model_logit)</code></pre>
+<pre><code>H2OBinomialMetrics: glm
+** Reported on training data. **
+
+MSE:  0.0006269349
+RMSE:  0.02503867
+LogLoss:  0.003809522
+Mean Per-Class Error:  0.1103587
+AUC:  0.9731273
+AUCPR:  0.7485898
+Gini:  0.9462545
+R^2:  0.6174137
+Residual Deviance:  1726.78
+AIC:  1788.78
+
+Confusion Matrix (vertical: actual; across: predicted) for F1-optimal threshold:
+            0   1    Error         Rate
+0      226203  65 0.000287   =65/226268
+1          82 290 0.220430      =82/372
+Totals 226285 355 0.000649  =147/226640
+
+Maximum Metrics: Maximum metrics at their respective thresholds
+                        metric threshold         value idx
+1                       max f1  0.135889      0.797799 176
+2                       max f2  0.058169      0.808081 200
+3                 max f0point5  0.475561      0.833333 102
+4                 max accuracy  0.135889      0.999351 176
+5                max precision  0.999976      0.909091   0
+6                   max recall  0.000027      1.000000 397
+7              max specificity  0.999976      0.999960   0
+8             max absolute_mcc  0.135889      0.797693 176
+9   max min_per_class_accuracy  0.001118      0.919355 345
+10 max mean_per_class_accuracy  0.002782      0.934336 314
+11                     max tns  0.999976 226259.000000   0
+12                     max fns  0.999976    282.000000   0
+13                     max fps  0.000007 226268.000000 399
+14                     max tps  0.000027    372.000000 397
+15                     max tnr  0.999976      0.999960   0
+16                     max fnr  0.999976      0.758065   0
+17                     max fpr  0.000007      1.000000 399
+18                     max tpr  0.000027      1.000000 397
+
+Gains/Lift Table: Extract with `h2o.gainsLift(&lt;model&gt;, &lt;data&gt;)` or `h2o.gainsLift(&lt;model&gt;, valid=&lt;T/F&gt;, xval=&lt;T/F&gt;)`</code></pre>
+<p>To extract only the confusion matrix we call the function <strong>h2O.confusionMatrix</strong></p>
+<pre class="r"><code>h2o.confusionMatrix(model_logit)</code></pre>
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.135888872638703:
+            0   1    Error         Rate
+0      226203  65 0.000287   =65/226268
+1          82 290 0.220430      =82/372
+Totals 226285 355 0.000649  =147/226640</code></pre>
+<p>by looking at the confusion matrix, we get very low error rate for the major label (0.029%), whereas, the error rate for the minor label is quite high (22.04%). This result is expected since the data is highly dominated by the label “0”.</p>
+<pre class="r"><code>h2o.confusionMatrix(model_logit, test)</code></pre>
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.0767397449673996:
+           0  1    Error       Rate
+0      56223 24 0.000427  =24/56247
+1         19 74 0.204301     =19/93
+Totals 56242 98 0.000763  =43/56340</code></pre>
+<p>Using the testing set, the error rates are not far away from the previous ones. The error rate of the minor class, however, is exactly the same as that of the training data.</p>
+<p>Now let’s correct the imbalance problem by setting the argument <strong>balance_classes</strong> to TRUE, and in order to reduce the data size, we under sample the majority class to 20%, and we over sample the minority class 20 times.</p>
+<pre class="r"><code>model_logit2 &lt;- h2o.glm(
+  x = 1:30,
+  y = 31,
+  training_frame = train,
+  model_id = &quot;glm_binomia_balance&quot;,
+  seed = 123,
+  lambda = 0,
+  family = &quot;binomial&quot;,
+  solver = &quot;IRLSM&quot;,
+  standardize = TRUE,
+  link = &quot;family_default&quot;,
+  balance_classes = TRUE,
+  class_sampling_factors = c(0.2, 20)
+)</code></pre>
+<pre><code>
+  |                                                                            
+  |                                                                      |   0%
+  |                                                                            
+  |======                                                                |   8%
+  |                                                                            
+  |======================================================================| 100%</code></pre>
+<p>What we care more about to evaluate our model is the testing set.</p>
+<pre class="r"><code>h2o.confusionMatrix(model_logit, test)</code></pre>
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.0767397449673996:
+           0  1    Error       Rate
+0      56223 24 0.000427  =24/56247
+1         19 74 0.204301     =19/93
+Totals 56242 98 0.000763  =43/56340</code></pre>
+<p>One strategy to improve our model is to remove the less important variables. h2o provides a function to list the predictors in decreasing order of their importance in predicting the response variable. So we can think to remove the less important variable in order to reduce the error rate of the minor class.</p>
+<pre class="r"><code>h2o.varimp(model_logit)</code></pre>
+<pre><code>   variable relative_importance scaled_importance   percentage
+1        V4         0.994893006       1.000000000 0.1440671995
+2       V10         0.916557351       0.921262231 0.1327236697
+3       V14         0.532427886       0.535160950 0.0770991394
+4       V22         0.481085303       0.483554815 0.0696643880
+5        V9         0.371758112       0.373666424 0.0538330752
+6       V20         0.360902368       0.362754956 0.0522610906
+7       V27         0.340929107       0.342679168 0.0493688281
+8       V13         0.324390153       0.326055315 0.0469738762
+9       V21         0.309050873       0.310637296 0.0447526453
+10      V16         0.230524987       0.231708320 0.0333815688
+11   Amount         0.213887758       0.214985688 0.0309723861
+12       V8         0.211491780       0.212577411 0.0306254323
+13     Time         0.209412404       0.210487362 0.0303243248
+14       V6         0.189761276       0.190735361 0.0274787093
+15       V5         0.176081346       0.176985209 0.0254977634
+16       V1         0.164618852       0.165463875 0.0238379171
+17      V12         0.134542774       0.135233410 0.0194826987
+18      V11         0.129031560       0.129693906 0.0186846379
+19      V28         0.093633317       0.094113956 0.0135587341
+20      V26         0.093283287       0.093762130 0.0135080475
+21      V17         0.081893193       0.082313568 0.0118586852
+22       V7         0.077962451       0.078362649 0.0112894873
+23      V23         0.067840817       0.068189058 0.0098238066
+24      V18         0.065741510       0.066078975 0.0095198129
+25      V25         0.033325258       0.033496323 0.0048257215
+26       V2         0.029047974       0.029197083 0.0042063420
+27      V24         0.025833162       0.025965769 0.0037408156
+28      V19         0.022354254       0.022469003 0.0032370463
+29      V15         0.020189854       0.020293493 0.0029236267
+30       V3         0.003304571       0.003321534 0.0004785241</code></pre>
+<p>Or as plot as follows:</p>
+<pre class="r"><code>h2o.varimp_plot(model_logit)</code></pre>
+<p><img src="/sparklyr/h2o/2020-06-03-predicting-binary-response-variable-with-h2o-framework.en_files/figure-html/unnamed-chunk-18-1.svg" width="576" /></p>
+<p>Another strategy to remove the less important variables, which is more better, is using the lasso regression (L1) that can strip out the less important ones automatically, known also as feature selection method . Lasso , like ridge regression (L2), is a regularization technique to fight over fitting problem, and besides that, it is also known as a reduction technique since it reduces the number of predictors. We enable this method in h2o by setting <code>alpha=1</code>, where <strong>alpha</strong> is a ratio to trade-off between lasso (L1) or ridge regression (L2). alpha closer to zero means more ridge than lasso.</p>
+<pre class="r"><code>model_lasso &lt;- h2o.glm(
+  x = 1:30,
+  y = 31,
+  training_frame = train,
+  model_id = &quot;glm_binomial_lasso&quot;,
+  seed = 123,
+  alpha = 1,
+  family = &quot;binomial&quot;,
+  solver = &quot;IRLSM&quot;,
+  standardize = TRUE,
+  link = &quot;family_default&quot;,
+  balance_classes = TRUE,
+  max_after_balance_size = 0.1
+)</code></pre>
+<pre><code>
+  |                                                                            
+  |                                                                      |   0%
+  |                                                                            
+  |=                                                                     |   2%
+  |                                                                            
+  |========                                                              |  12%
+  |                                                                            
+  |======================================================================| 100%</code></pre>
+<p>Using the testing set, the confusion matrix will be:</p>
+<pre class="r"><code>h2o.confusionMatrix(model_lasso, test)</code></pre>
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.0431528451934093:
+           0   1    Error       Rate
+0      56221  26 0.000462  =26/56247
+1         16  77 0.172043     =16/93
+Totals 56237 103 0.000745  =42/56340</code></pre>
+<p>With the lasso model, the error rate of the minor class has improved from 20.43% to 17.20%.</p>
+<p>The last thing about hyperparameters tuning is that some of which are not supported by <strong>h2o.grid</strong> function like, for instance, the <strong>solver</strong> argument. But this not an issue since we can recycle a loop over the hyperparameters in question. Let’s try to explore the most popular solvers y using the R lapply function.</p>
+<pre class="r"><code>solvers &lt;- c(
+  &quot;IRLSM&quot;,
+  &quot;L_BFGS&quot;,
+  &quot;COORDINATE_DESCENT&quot;
+)
+
+mygrid &lt;- lapply(solvers, function(solver) {
+  grid_id &lt;- paste0(&quot;glm_&quot;, solver)
+  h2o.glm(
+    x = 1:30,
+    y = 31,
+    training_frame = train,
+    seed = 123,
+    alpha = 1,
+    model_id = paste0(&quot;lasso_&quot;, solver),
+    family = &quot;binomial&quot;,
+    solver = solver,
+    standardize = TRUE,
+    link = &quot;family_default&quot;,
+    balance_classes = TRUE
+  )
+   
+})</code></pre>
+<pre><code>
+  |                                                                            
+  |                                                                      |   0%
+  |                                                                            
+  |===                                                                   |   4%
+  |                                                                            
+  |========                                                              |  12%
+  |                                                                            
+  |======================================================================| 100%
+
+  |                                                                            
+  |                                                                      |   0%
+  |                                                                            
+  |========                                                              |  11%
+  |                                                                            
+  |======================================================================| 100%
+
+  |                                                                            
+  |                                                                      |   0%
+  |                                                                            
+  |===                                                                   |   4%
+  |                                                                            
+  |===========                                                           |  16%
+  |                                                                            
+  |======================================================================| 100%</code></pre>
+<pre class="r"><code>df &lt;- cbind(
+  h2o.confusionMatrix(mygrid[[1]])$Error,
+  h2o.confusionMatrix(mygrid[[2]])$Error,
+  h2o.confusionMatrix(mygrid[[3]])$Error
+)
+df &lt;- t(round(df, digits = 6))
+dimnames(df) &lt;- list(
+  list(&quot;IRLSM&quot;, &quot;L_BFGS&quot;,  &quot;COORDINATE_DESCENT&quot;),
+  list(&quot;Error (0)&quot;, &quot;Error (1)&quot;, &quot;Total Error&quot;)
+  
+)
+df</code></pre>
+<pre><code>                   Error (0) Error (1) Total Error
+IRLSM               0.000309  0.212366    0.000657
+L_BFGS              0.000292  0.220430    0.000653
+COORDINATE_DESCENT  0.000283  0.225806    0.000653</code></pre>
+<p>It seems there is no significant difference between these solvers, so we should still with the default one.</p>
+</div>
+<div id="random-forest" class="section level2">
+<h2>Random forest</h2>
+</div>

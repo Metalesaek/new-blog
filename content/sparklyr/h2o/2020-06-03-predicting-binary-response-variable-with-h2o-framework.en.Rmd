@@ -1,0 +1,298 @@
+---
+title: Predicting binary response variable with h2o framework
+author: Metales Abdelkader
+date: '2020-06-03'
+slug: predicting-binary-response-variable-with-h2o-framework
+categories:
+  - R
+tags:
+  - h2o
+  - Big data
+subtitle: ''
+summary: 'H2O is an open source distributed scalable framework used to train machine learning and deep learning models as well as data analysis. It can handle large data sets, with ease of use, by creating...'
+reading_time: true
+output:
+  blogdown::html_page:
+    toc: true
+    fig_width: 6
+    dev: "svg"
+authors: []
+lastmod: '2020-06-22T16:55:32+02:00'
+featured: no
+image:
+  caption: ''
+  focal_point: ''
+  preview_only: no
+projects: []
+---
+
+
+```{r setup, include=FALSE }
+knitr::opts_chunk$set(
+  echo = TRUE,
+  comment = NA
+)
+```
+
+
+## Introduction
+
+H2O is an open source distributed scalable framework used to train machine learning and deep learning models as well as data analysis. It can handle large data sets, with ease of use, by creating a cluster from the available nodes. Fortunately, it provides an API for R users to get the most benefits from it, especially when it comes to large data sets, with which R has its most limitations.
+
+The beauty is that R users are able to load and use this system via the package **h2o** which can be called and used like any other R packages.   
+
+```{r results='hide'}
+# install.packages("h2o") if not already installed
+library(tidyverse)
+library(h2o)
+```
+
+Then to lunch the cluster run the following script
+
+```{r}
+h2o.init(nthreads = -1)
+```
+
+Looking at this output, we see that h2o uses java virtual machine JVM, so you need java already installed. If you notice I have specified the **nthreads** argument to be -1 to tell h20 to create its cluster using all the available cores I have less than 1.   
+
+Since our purpose is understanding how to work with h2o, we are going be using a small data set, in wcich the response will be a binary variable. The data that we will use is **creditcard** whcich is downloaded from [kaggle](https://www.kaggle.com/mlg-ulb/creditcardfraud) website.
+
+## data preparation
+
+To import the data directly into the h2o cluster we use the function **h2O.importFile** as follows.
+
+```{r}
+card <- h2o.importFile("../creditcard.csv")
+```
+
+```{r}
+h2o.dim(card)
+```
+This data has 284807 and 31 columns. According to the description of this data, the response variable is **class** with two values 1 for **fraudulent card** and 0 for **regular card**. The other variables are PCA components derived from the original ones for privacy purposes to protect, for instance, the users identities.  
+So first let's check the summary of this data.
+
+```{r}
+h2o.describe(card)
+```
+
+The most important issues that we usually check first are missing values and imbalance problem for classification. 
+
+For the missing values, you should know that a value recognized by R as missing value if it is written as **NA** or blank cells. If, otherwise a missing value in imported data written in any other format, for instance, in a string format like **na** or **missing**, we should tell R that these are missing values to be converted to **NA**. Or like in our case when a variable has zero values while it should not have. The **Amount** variable, for instance, we know that any transaction requires some amount of money so that it should not be equal to zero, while in the data it has 1825 zero's. the same thing apply for the **Time** variable with two zero's. However, since the data is large then this is not a big issue, and we can comfortably remove these rows.
+
+```{r}
+card$Amount <- h2o.ifelse(card$Amount == 0, NA, card$Amount)
+card$Time <- h2o.ifelse(card$Time == 0, NA, card$Time)
+card <- h2o.na_omit(card)
+```
+
+it is a good practice to check your output after each transformation to make sure your code did what would be expected.
+
+```{r}
+h2o.describe(card)
+```
+
+
+In contrast, we have a very serious imbalance problem since the **class** variable with only two values 1 and 0 has mean equals 0.00173 which means that we have large number of class label 0. 
+
+```{r }
+h2o.table(card$Class)
+```
+
+As expected, the majority of cases are of class label 0. Any machine learning model fitted to this data without correcting this problem will be dominated by the label 0, and will hardly correctly predict the fraudulent card (label 1) which is our main interest.    
+
+The h2o package provides a way to correct the imbalance problem. For **glm** models, for instance, we have three arguments for this purpose:
+
+* balance_classes: if it is set to true then it performs subsampling method specified in the next argument.
+* class_sampling_factors: The desired sampling ratios per class (over or under sampling). 
+* max_after_balance_size: The desired relative size of the training data after balancing class counts.
+
+One of the last two arguments can be used. To reduce thus our data we will set the last argument to 0.1 , to only use 10% of the data.   
+
+Before going ahead we should split the data randomly between training (80% of the data) and testing set (the rest 20%). 
+
+```{r}
+card$Class <- h2o.asfactor(card$Class)
+
+parts <- h2o.splitFrame(card, 0.8, seed = 1111)
+train <- parts[[1]]
+test <- parts[[2]]
+```
+
+```{r}
+h2o.table(train$Class)
+h2o.table(test$Class)
+```
+
+## Logistic regression
+
+For binary classification problems, the first model that comes in mind is the logistic regression model. This model belongs to the **glm** models such that when we set the argument family to **binomial** we get a logistic regression model. The following are the main arguments of **glm* models (besides the arguments discussed above):
+
+* x: should contains the predictor names (not the data) or their indices.
+* y: the name of the response variable (again not the whole column).
+* training frame: The training data frame.
+* model_id: to name the model.
+* nfolds: the number of folds to use for cross validation for hyperparameters tuning.
+* seed: for reproducibility.
+* fold_assignment: the skim of the cross validation: AUTO, Random, Stratified, or Modulo.
+* family: many distributions are provided, for binary we have **binomial**, **quasibinomial**.
+* solver: the algorithm used, with **AUTO** will decide the best one given the data, but you can choose another one like: IRLSM, L_BFGS, COORDINATE_DESCENT, ...etc.
+* alpha: ratio to mix the regularization L1 (lasso) and L2(ridge regression). larger values yield more lasso.
+* lambda_search: lambda is the strength of the L2 regularization, if TRUE then the model tries different values.
+* standardize: to standardize the numeric columns.
+* compute_p_value: it does not work with regularization.
+* link: the link function.
+* interaction: if we want interaction between predictors.
+
+Now we are ready to train our model with some specified values. But, first let's try to use the original data without correcting the imbalance problem. 
+
+
+```{r }
+model_logit <- h2o.glm(
+  x = 1:30,
+  y = 31,
+  training_frame = train,
+  model_id = "glm_binomial_no_eg",
+  seed = 123,
+  lambda = 0,
+  family = "binomial",
+  solver = "IRLSM",
+  standardize = TRUE,
+  link = "family_default"
+)
+
+```
+
+h2o provides a bunch of metrics already computed during the training process along with the confusion matrix. we can get access to them by calling the function **h2O.performance**.  
+
+```{r}
+h2o.performance(model_logit)
+```
+
+To extract only the confusion matrix we call the function **h2O.confusionMatrix**
+
+```{r }
+h2o.confusionMatrix(model_logit)
+```
+
+by looking at the confusion matrix, we get very low error rate for the major label (0.029%), whereas, the error rate for the minor label is quite high (22.04%). This result is expected since the data is highly dominated by the label "0".  
+
+```{r }
+h2o.confusionMatrix(model_logit, test)
+```
+
+Using the testing set, the error rates are not far away from the previous ones. The error rate of the minor class, however, is exactly the same as that of the training data.
+
+Now let's correct the imbalance problem by setting the argument **balance_classes** to TRUE, and in order to reduce the data size, we under sample the majority class to 20%, and we over sample the minority class 20 times. 
+
+
+```{r }
+model_logit2 <- h2o.glm(
+  x = 1:30,
+  y = 31,
+  training_frame = train,
+  model_id = "glm_binomia_balance",
+  seed = 123,
+  lambda = 0,
+  family = "binomial",
+  solver = "IRLSM",
+  standardize = TRUE,
+  link = "family_default",
+  balance_classes = TRUE,
+  class_sampling_factors = c(0.2, 20)
+)
+
+```
+
+What we care more about to evaluate our model is the testing set.
+
+
+```{r }
+h2o.confusionMatrix(model_logit, test)
+```
+  
+
+One strategy to improve our model is to remove the less important variables. h2o provides a function to list the predictors in decreasing order of their importance in predicting the response variable. So we can think to remove the less important variable in order to reduce the error rate of the minor class.
+
+```{r }
+h2o.varimp(model_logit)
+```
+
+Or as plot as follows:
+
+```{r }
+h2o.varimp_plot(model_logit)
+```
+
+Another strategy to remove the less important variables, which is more better, is using the lasso regression (L1) that can strip out the less important ones automatically, known also as feature selection method . Lasso , like ridge regression (L2), is a regularization technique to fight over fitting problem, and besides that, it is also known as a reduction technique since it reduces the number of predictors. We enable this method in h2o by setting `alpha=1`, where **alpha** is a ratio to trade-off between lasso (L1) or ridge regression (L2). alpha closer to zero means more ridge than lasso.           
+
+```{r }
+model_lasso <- h2o.glm(
+  x = 1:30,
+  y = 31,
+  training_frame = train,
+  model_id = "glm_binomial_lasso",
+  seed = 123,
+  alpha = 1,
+  family = "binomial",
+  solver = "IRLSM",
+  standardize = TRUE,
+  link = "family_default",
+  balance_classes = TRUE,
+  max_after_balance_size = 0.1
+)
+```
+
+
+Using the testing set, the confusion matrix will be: 
+
+```{r }
+h2o.confusionMatrix(model_lasso, test)
+```
+
+With the lasso model, the error rate of the minor class has improved from 20.43%  to 17.20%. 
+
+The last thing about hyperparameters tuning is that some of which are not supported by **h2o.grid** function like, for instance, the **solver** argument. But this not an issue since we can recycle a loop over the hyperparameters in question. Let's try to explore the most popular solvers y using the R lapply function.
+
+```{r }
+solvers <- c(
+  "IRLSM",
+  "L_BFGS",
+  "COORDINATE_DESCENT"
+)
+
+mygrid <- lapply(solvers, function(solver) {
+  grid_id <- paste0("glm_", solver)
+  h2o.glm(
+    x = 1:30,
+    y = 31,
+    training_frame = train,
+    seed = 123,
+    alpha = 1,
+    model_id = paste0("lasso_", solver),
+    family = "binomial",
+    solver = solver,
+    standardize = TRUE,
+    link = "family_default",
+    balance_classes = TRUE
+  )
+   
+})
+```
+
+```{r}
+df <- cbind(
+  h2o.confusionMatrix(mygrid[[1]])$Error,
+  h2o.confusionMatrix(mygrid[[2]])$Error,
+  h2o.confusionMatrix(mygrid[[3]])$Error
+)
+df <- t(round(df, digits = 6))
+dimnames(df) <- list(
+  list("IRLSM", "L_BFGS",  "COORDINATE_DESCENT"),
+  list("Error (0)", "Error (1)", "Total Error")
+  
+)
+df
+```
+It seems there is no significant difference between these solvers, so we should still with the default one.   
+
+## Random forest
