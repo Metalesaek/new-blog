@@ -35,3 +35,8 @@
   name = "CV"
   url = "files/CVitae.pdf"
   weight = 80
+
+[[main]]
+  name = "RSS"
+  url = "http://feeds.feedburner.com/ModelingWithR"
+  weight = 90
