@@ -9,7 +9,7 @@ tags:
   - h2o
   - Big data
 subtitle: ''
-summary: 'H2O is an open source distributed scalable framework used to train machine learning and deep learning models as well as data analysis. It can handle large data sets, with ease of use, by creating...'
+summary: 'H2O is an open-source distributed scalable framework used to train machine learning and deep learning models as well as data analysis. It can handle large data sets, with ease of use, by creating...'
 reading_time: true
 output:
   blogdown::html_page:
@@ -33,14 +33,22 @@ projects: []
 <li><a href="#introduction">Introduction</a></li>
 <li><a href="#data-preparation">data preparation</a></li>
 <li><a href="#logistic-regression">Logistic regression</a></li>
-<li><a href="#random-forest">Random forest</a></li>
+<li><a href="#random-forest">Random forest</a>
+<ul>
+<li><a href="#random-forest-with-binomial-double-trees">Random forest with binomial double trees</a></li>
+<li><a href="#random-forest-tuning">Random forest tuning</a></li>
+</ul></li>
+<li><a href="#deep-learning-model">Deep learning model</a></li>
+<li><a href="#conclusion">Conclusion:</a></li>
+<li><a href="#further-reading">Further reading</a></li>
+<li><a href="#session-information">Session information</a></li>
 </ul>
 </div>
 
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
-<p>H2O is an open source distributed scalable framework used to train machine learning and deep learning models as well as data analysis. It can handle large data sets, with ease of use, by creating a cluster from the available nodes. Fortunately, it provides an API for R users to get the most benefits from it, especially when it comes to large data sets, with which R has its most limitations.</p>
-<p>The beauty is that R users are able to load and use this system via the package <strong>h2o</strong> which can be called and used like any other R packages.</p>
+<p>H2O is an open-source distributed scalable framework used to train machine learning and deep learning models as well as data analysis. It can handle large data sets, with ease of use, by creating a cluster from the available nodes. Fortunately, it provides an API for R users to get the most benefits from it, especially when it comes to large data sets, with which R has its most limitations.</p>
+<p>The beauty is that R users can load and use this system via the package <strong>h2o</strong> which can be called and used like any other R packages.</p>
 <pre class="r"><code># install.packages(&quot;h2o&quot;) if not already installed
 library(tidyverse)</code></pre>
 <pre><code>-- Attaching packages -------------------</code></pre>
@@ -77,17 +85,25 @@ Attaching package: &#39;h2o&#39;</code></pre>
     log10, log1p, log2, round, signif, trunc</code></pre>
 <p>Then to lunch the cluster run the following script</p>
 <pre class="r"><code>h2o.init(nthreads = -1)</code></pre>
-<pre><code> Connection successful!
+<pre><code>
+H2O is not running yet, starting it now...
+
+Note:  In case of errors look at the following log files:
+    C:\Users\dell\AppData\Local\Temp\Rtmpe8pNnb\file9c051295f5f/h2o_dell_started_from_r.out
+    C:\Users\dell\AppData\Local\Temp\Rtmpe8pNnb\file9c043027a8/h2o_dell_started_from_r.err
+
+
+Starting H2O JVM and connecting: . Connection successful!
 
 R is connected to the H2O cluster: 
-    H2O cluster uptime:         42 minutes 55 seconds 
+    H2O cluster uptime:         5 seconds 165 milliseconds 
     H2O cluster timezone:       Europe/Paris 
     H2O data parsing timezone:  UTC 
     H2O cluster version:        3.30.0.1 
-    H2O cluster version age:    2 months and 25 days  
-    H2O cluster name:           H2O_started_from_R_dell_uhh542 
+    H2O cluster version age:    3 months  
+    H2O cluster name:           H2O_started_from_R_dell_ybo118 
     H2O cluster total nodes:    1 
-    H2O cluster total memory:   1.69 GB 
+    H2O cluster total memory:   1.99 GB 
     H2O cluster total cores:    4 
     H2O cluster allowed cores:  4 
     H2O cluster healthy:        TRUE 
@@ -98,7 +114,7 @@ R is connected to the H2O cluster:
     H2O API Extensions:         Amazon S3, Algos, AutoML, Core V3, TargetEncoder, Core V4 
     R Version:                  R version 4.0.1 (2020-06-06) </code></pre>
 <p>Looking at this output, we see that h2o uses java virtual machine JVM, so you need java already installed. If you notice I have specified the <strong>nthreads</strong> argument to be -1 to tell h20 to create its cluster using all the available cores I have less than 1.</p>
-<p>Since our purpose is understanding how to work with h2o, we are going be using a small data set, in wcich the response will be a binary variable. The data that we will use is <strong>creditcard</strong> whcich is downloaded from <a href="https://www.kaggle.com/mlg-ulb/creditcardfraud">kaggle</a> website.</p>
+<p>Since our purpose is understanding how to work with h2o, we are going be using a small data set, in which the response will be a binary variable. The data that we will use is <strong>creditcard</strong> which is downloaded from <a href="https://www.kaggle.com/mlg-ulb/creditcardfraud">kaggle</a> website.</p>
 </div>
 <div id="data-preparation" class="section level2">
 <h2>data preparation</h2>
@@ -108,12 +124,13 @@ R is connected to the H2O cluster:
   |                                                                            
   |                                                                      |   0%
   |                                                                            
-  |=============================================================         |  87%
+  |=========================================================             |  81%
   |                                                                            
   |======================================================================| 100%</code></pre>
+<p>The following script gives the dimension of this data.</p>
 <pre class="r"><code>h2o.dim(card)</code></pre>
 <pre><code>[1] 284807     31</code></pre>
-<p>This data has 284807 and 31 columns. According to the description of this data, the response variable is <strong>class</strong> with two values 1 for <strong>fraudulent card</strong> and 0 for <strong>regular card</strong>. The other variables are PCA components derived from the original ones for privacy purposes to protect, for instance, the users identities.<br />
+<p>This data has 284807 and 31 columns. According to the description of this data, the response variable is <strong>class</strong> with two values 1 for <strong>fraudulent card</strong> and 0 for <strong>regular card</strong>. The other variables are PCA components derived from the original ones for privacy purposes to protect, for instance, the users’ identities.<br />
 So first let’s check the summary of this data.</p>
 <pre class="r"><code>h2o.describe(card)</code></pre>
 <pre><code>    Label Type Missing  Zeros PosInf NegInf         Min          Max
@@ -180,8 +197,8 @@ So first let’s check the summary of this data.</p>
 29 -3.518873e-12 3.300833e-01          NA
 30  8.834962e+01 2.501201e+02          NA
 31  1.727486e-03 4.152719e-02          NA</code></pre>
-<p>The most important issues that we usually check first are missing values and imbalance problem for classification.</p>
-<p>For the missing values, you should know that a value recognized by R as missing value if it is written as <strong>NA</strong> or blank cells. If, otherwise a missing value in imported data written in any other format, for instance, in a string format like <strong>na</strong> or <strong>missing</strong>, we should tell R that these are missing values to be converted to <strong>NA</strong>. Or like in our case when a variable has zero values while it should not have. The <strong>Amount</strong> variable, for instance, we know that any transaction requires some amount of money so that it should not be equal to zero, while in the data it has 1825 zero’s. the same thing apply for the <strong>Time</strong> variable with two zero’s. However, since the data is large then this is not a big issue, and we can comfortably remove these rows.</p>
+<p>The most important issues that we usually check first are missing values and imbalance problems for classification.</p>
+<p>For the missing values, you should know that a value recognized by R as a missing value if it is written as <strong>NA</strong> or blank cells. If, otherwise a missing value in imported data written in any other format, for instance, in a string format like <strong>na</strong> or <strong>missing</strong>, we should tell R that these are missing values to be converted to <strong>NA</strong>. Or like in our case when a variable takes zero value while it should not have to take it. The <strong>Amount</strong> variable, for instance, we know that any transaction requires some amount of money so that it should not be equal to zero, while in the data it has 1825 zero’s. the same thing applies for the <strong>Time</strong> variable with two zero’s. However, since the data is large then this is not a big issue, and we can comfortably remove these rows.</p>
 <pre class="r"><code>card$Amount &lt;- h2o.ifelse(card$Amount == 0, NA, card$Amount)
 card$Time &lt;- h2o.ifelse(card$Time == 0, NA, card$Time)
 card &lt;- h2o.na_omit(card)</code></pre>
@@ -251,7 +268,7 @@ card &lt;- h2o.na_omit(card)</code></pre>
 29  1.926961e-04 3.303524e-01          NA
 30  8.891949e+01 2.508252e+02          NA
 31  1.643226e-03 4.050347e-02          NA</code></pre>
-<p>In contrast, we have a very serious imbalance problem since the <strong>class</strong> variable with only two values 1 and 0 has mean equals 0.00173 which means that we have large number of class label 0.</p>
+<p>In contrast, we have a very serious imbalance problem since the <strong>class</strong> variable, with only two values 1 and 0, has its mean equals 0.00173 which means that we have a large number of class label 0.</p>
 <pre class="r"><code>h2o.table(card$Class)</code></pre>
 <pre><code>  Class  Count
 1     0 282515
@@ -261,11 +278,10 @@ card &lt;- h2o.na_omit(card)</code></pre>
 <p>As expected, the majority of cases are of class label 0. Any machine learning model fitted to this data without correcting this problem will be dominated by the label 0, and will hardly correctly predict the fraudulent card (label 1) which is our main interest.</p>
 <p>The h2o package provides a way to correct the imbalance problem. For <strong>glm</strong> models, for instance, we have three arguments for this purpose:</p>
 <ul>
-<li>balance_classes: if it is set to true then it performs subsampling method specified in the next argument.</li>
-<li>class_sampling_factors: The desired sampling ratios per class (over or under sampling).</li>
+<li>balance_classes: if it is set to true then it performs subsampling method by default, or specified in the next argument.</li>
+<li>class_sampling_factors: The desired sampling ratios per class (over or under-sampling).</li>
 <li>max_after_balance_size: The desired relative size of the training data after balancing class counts.</li>
 </ul>
-<p>One of the last two arguments can be used. To reduce thus our data we will set the last argument to 0.1 , to only use 10% of the data.</p>
 <p>Before going ahead we should split the data randomly between training (80% of the data) and testing set (the rest 20%).</p>
 <pre class="r"><code>card$Class &lt;- h2o.asfactor(card$Class)
 
@@ -293,19 +309,19 @@ test &lt;- parts[[2]]</code></pre>
 <li>y: the name of the response variable (again not the whole column).</li>
 <li>training frame: The training data frame.</li>
 <li>model_id: to name the model.</li>
-<li>nfolds: the number of folds to use for cross validation for hyperparameters tuning.</li>
+<li>nfolds: the number of folds to use for cross-validation for hyperparameters tuning.</li>
 <li>seed: for reproducibility.</li>
-<li>fold_assignment: the skim of the cross validation: AUTO, Random, Stratified, or Modulo.</li>
+<li>fold_assignment: the skim of the cross-validation: AUTO, Random, Stratified, or Modulo.</li>
 <li>family: many distributions are provided, for binary we have <strong>binomial</strong>, <strong>quasibinomial</strong>.</li>
-<li>solver: the algorithm used, with <strong>AUTO</strong> will decide the best one given the data, but you can choose another one like: IRLSM, L_BFGS, COORDINATE_DESCENT, …etc.</li>
+<li>solver: the algorithm used, with <strong>AUTO</strong>, will decide the best one given the data, but you can choose another one like IRLSM, L_BFGS, COORDINATE_DESCENT, …etc.</li>
 <li>alpha: ratio to mix the regularization L1 (lasso) and L2(ridge regression). larger values yield more lasso.</li>
-<li>lambda_search: lambda is the strength of the L2 regularization, if TRUE then the model tries different values.</li>
+<li>lambda_search: lambda is the strength of the L2 regularization. If TRUE then the model tries different values.</li>
 <li>standardize: to standardize the numeric columns.</li>
 <li>compute_p_value: it does not work with regularization.</li>
 <li>link: the link function.</li>
 <li>interaction: if we want interaction between predictors.</li>
 </ul>
-<p>Now we are ready to train our model with some specified values. But, first let’s try to use the original data without correcting the imbalance problem.</p>
+<p>Now we are ready to train our model with some specified values. But first, let’s try to use the original data without correcting the imbalance problem.</p>
 <pre class="r"><code>model_logit &lt;- h2o.glm(
   x = 1:30,
   y = 31,
@@ -321,6 +337,8 @@ test &lt;- parts[[2]]</code></pre>
 <pre><code>
   |                                                                            
   |                                                                      |   0%
+  |                                                                            
+  |======                                                                |   8%
   |                                                                            
   |=============                                                         |  18%
   |                                                                            
@@ -376,44 +394,65 @@ Gains/Lift Table: Extract with `h2o.gainsLift(&lt;model&gt;, &lt;data&gt;)` or `
 0      226203  65 0.000287   =65/226268
 1          82 290 0.220430      =82/372
 Totals 226285 355 0.000649  =147/226640</code></pre>
-<p>by looking at the confusion matrix, we get very low error rate for the major label (0.029%), whereas, the error rate for the minor label is quite high (22.04%). This result is expected since the data is highly dominated by the label “0”.</p>
+<p>By looking at the confusion matrix, we get a very low error rate for the major label (0.029%), whereas, the error rate for the minor label is quite high (22.04%). This result is expected since the data is highly dominated by the label “0”.</p>
 <pre class="r"><code>h2o.confusionMatrix(model_logit, test)</code></pre>
 <pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.0767397449673996:
            0  1    Error       Rate
 0      56223 24 0.000427  =24/56247
 1         19 74 0.204301     =19/93
 Totals 56242 98 0.000763  =43/56340</code></pre>
-<p>Using the testing set, the error rates are not far away from the previous ones. The error rate of the minor class, however, is exactly the same as that of the training data.</p>
-<p>Now let’s correct the imbalance problem by setting the argument <strong>balance_classes</strong> to TRUE, and in order to reduce the data size, we under sample the majority class to 20%, and we over sample the minority class 20 times.</p>
+<p>Using the testing set, the error rate of the major class is a little larger than its corresponding one for the training data 0.043%. Whereas, the error rate of the minor class is smaller than its corresponding one 20.43% (22.04%).</p>
+<p>We can correct the imbalance problem by setting the argument <strong>balance_classes</strong> to TRUE. Unfortunately, I trained many times this model but it seemed this argument does not work for some reason. I do not know this problem occurs in this version of h20 for everyone or just for me due to some problems with my laptop. Anyway, I put an issue in <strong>stackoverflow</strong> about it but I do not get yet any answer at the time of writing.</p>
+<p>we can correct the imbalance problem by loading the data as data frame into R, and using <strong>Rose</strong> package then converting back the corrected data to h2o object.</p>
+<p><strong>Note</strong>: This possibility of loading data from h2o to R will not be always possible for a very large dataset. I am using this alternative only to carry on our analysis and do not get stacked.</p>
+<pre class="r"><code>train_R &lt;- as.data.frame(train)
+train_balance &lt;- ROSE::ROSE(Class~., data=train_R, seed=111)$data
+table(train_balance$Class)</code></pre>
+<pre><code>
+     0      1 
+113244 113396 </code></pre>
+<p>Now we feed this corrected data to our model again after converting it back to h2o.</p>
+<pre class="r"><code>train_h &lt;- as.h2o(train_balance)</code></pre>
+<pre><code>
+  |                                                                            
+  |                                                                      |   0%
+  |                                                                            
+  |======================================================================| 100%</code></pre>
 <pre class="r"><code>model_logit2 &lt;- h2o.glm(
   x = 1:30,
   y = 31,
-  training_frame = train,
-  model_id = &quot;glm_binomia_balance&quot;,
+  training_frame = train_h,
+  model_id = &quot;glm_binomial_balance&quot;,
   seed = 123,
   lambda = 0,
   family = &quot;binomial&quot;,
   solver = &quot;IRLSM&quot;,
   standardize = TRUE,
-  link = &quot;family_default&quot;,
-  balance_classes = TRUE,
-  class_sampling_factors = c(0.2, 20)
+  link = &quot;family_default&quot;
 )</code></pre>
 <pre><code>
   |                                                                            
   |                                                                      |   0%
   |                                                                            
-  |======                                                                |   8%
+  |=======                                                               |  10%
   |                                                                            
   |======================================================================| 100%</code></pre>
-<p>What we care more about to evaluate our model is the testing set.</p>
-<pre class="r"><code>h2o.confusionMatrix(model_logit, test)</code></pre>
-<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.0767397449673996:
-           0  1    Error       Rate
-0      56223 24 0.000427  =24/56247
-1         19 74 0.204301     =19/93
-Totals 56242 98 0.000763  =43/56340</code></pre>
-<p>One strategy to improve our model is to remove the less important variables. h2o provides a function to list the predictors in decreasing order of their importance in predicting the response variable. So we can think to remove the less important variable in order to reduce the error rate of the minor class.</p>
+<p>We can check the confusion matrix as follows.</p>
+<pre class="r"><code>h2o.confusionMatrix(model_logit2)</code></pre>
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.448958365921134:
+            0      1    Error           Rate
+0      110591   2653 0.023427   =2653/113244
+1       12594 100802 0.111062  =12594/113396
+Totals 123185 103455 0.067274  =15247/226640</code></pre>
+<p>As the reliable measure of the model performance is the unseen data, so let’s use our testing set.</p>
+<pre class="r"><code>h2o.confusionMatrix(model_logit2, test)</code></pre>
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.9289188100923:
+           0   1    Error       Rate
+0      56200  47 0.000836  =47/56247
+1         16  77 0.172043     =16/93
+Totals 56216 124 0.001118  =63/56340</code></pre>
+<p>Since we are more interested to the minor class so we will consider an improvement if getting lower rate for the minor class. After correcting the class imbalance problem, The minor class rate has reduced from 20.43% to 17.20%.</p>
+<p>One strategy to improve our model is to remove the less important variables by hand using a threshold. h2o provides a function to list the predictors in decreasing order of their importance in predicting the response variable. So we can think to remove the less important variable with the hope to reduce the error rate of the minor class.</p>
 <pre class="r"><code>h2o.varimp(model_logit)</code></pre>
 <pre><code>   variable relative_importance scaled_importance   percentage
 1        V4         0.994893006       1.000000000 0.1440671995
@@ -448,21 +487,19 @@ Totals 56242 98 0.000763  =43/56340</code></pre>
 30       V3         0.003304571       0.003321534 0.0004785241</code></pre>
 <p>Or as plot as follows:</p>
 <pre class="r"><code>h2o.varimp_plot(model_logit)</code></pre>
-<p><img src="/sparklyr/h2o/2020-06-03-predicting-binary-response-variable-with-h2o-framework.en_files/figure-html/unnamed-chunk-18-1.svg" width="576" /></p>
-<p>Another strategy to remove the less important variables, which is more better, is using the lasso regression (L1) that can strip out the less important ones automatically, known also as feature selection method . Lasso , like ridge regression (L2), is a regularization technique to fight over fitting problem, and besides that, it is also known as a reduction technique since it reduces the number of predictors. We enable this method in h2o by setting <code>alpha=1</code>, where <strong>alpha</strong> is a ratio to trade-off between lasso (L1) or ridge regression (L2). alpha closer to zero means more ridge than lasso.</p>
+<p><img src="/sparklyr/h2o/2020-06-03-predicting-binary-response-variable-with-h2o-framework.en_files/figure-html/unnamed-chunk-20-1.svg" width="576" /></p>
+<p>Another strategy to remove the less important variables, which is better, is using the lasso regression (L1) that can strip out the less important ones automatically, known also as a feature selection method. Lasso, like ridge regression (L2), is a regularization technique to fight overfitting problems, and besides that, it is also known as a reduction technique since it reduces the number of predictors. We enable this method in h2o by setting <code>alpha=1</code>, where <strong>alpha</strong> is a ratio to the trade-off between lasso (L1) or ridge regression (L2). alpha closer to zero means more ridge than lasso.</p>
 <pre class="r"><code>model_lasso &lt;- h2o.glm(
   x = 1:30,
   y = 31,
-  training_frame = train,
+  training_frame = train_h,
   model_id = &quot;glm_binomial_lasso&quot;,
   seed = 123,
   alpha = 1,
   family = &quot;binomial&quot;,
   solver = &quot;IRLSM&quot;,
   standardize = TRUE,
-  link = &quot;family_default&quot;,
-  balance_classes = TRUE,
-  max_after_balance_size = 0.1
+  link = &quot;family_default&quot;
 )</code></pre>
 <pre><code>
   |                                                                            
@@ -470,18 +507,24 @@ Totals 56242 98 0.000763  =43/56340</code></pre>
   |                                                                            
   |=                                                                     |   2%
   |                                                                            
-  |========                                                              |  12%
+  |=============                                                         |  18%
   |                                                                            
   |======================================================================| 100%</code></pre>
+<pre class="r"><code>h2o.confusionMatrix(model_lasso)</code></pre>
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.429938956856689:
+            0      1    Error           Rate
+0      110315   2929 0.025865   =2929/113244
+1       12339 101057 0.108813  =12339/113396
+Totals 122654 103986 0.067367  =15268/226640</code></pre>
 <p>Using the testing set, the confusion matrix will be:</p>
 <pre class="r"><code>h2o.confusionMatrix(model_lasso, test)</code></pre>
-<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.0431528451934093:
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.958116537926135:
            0   1    Error       Rate
-0      56221  26 0.000462  =26/56247
-1         16  77 0.172043     =16/93
-Totals 56237 103 0.000745  =42/56340</code></pre>
-<p>With the lasso model, the error rate of the minor class has improved from 20.43% to 17.20%.</p>
-<p>The last thing about hyperparameters tuning is that some of which are not supported by <strong>h2o.grid</strong> function like, for instance, the <strong>solver</strong> argument. But this not an issue since we can recycle a loop over the hyperparameters in question. Let’s try to explore the most popular solvers y using the R lapply function.</p>
+0      56210  37 0.000658  =37/56247
+1         20  73 0.215054     =20/93
+Totals 56230 110 0.001012  =57/56340</code></pre>
+<p>With the lasso model, the error rate of the minor class has increased from 17.20% to 21.50%, which is in contradiction with the improvement recorded in the rate computed from the training data where the rate has decreased from 11.10% to 10.88% with lasso model.</p>
+<p>The last thing about hyperparameters tuning is that some of which are not supported by <strong>h2o.grid</strong> function like, for instance, the <strong>solver</strong> argument. But this not an issue since we can recycle a loop over the hyperparameters in question. Let’s try to explore the most popular solvers by using the R lapply function.</p>
 <pre class="r"><code>solvers &lt;- c(
   &quot;IRLSM&quot;,
   &quot;L_BFGS&quot;,
@@ -493,15 +536,13 @@ mygrid &lt;- lapply(solvers, function(solver) {
   h2o.glm(
     x = 1:30,
     y = 31,
-    training_frame = train,
+    training_frame = train_h,
     seed = 123,
-    alpha = 1,
-    model_id = paste0(&quot;lasso_&quot;, solver),
+    model_id = paste0(&quot;logit_&quot;, solver),
     family = &quot;binomial&quot;,
     solver = solver,
     standardize = TRUE,
-    link = &quot;family_default&quot;,
-    balance_classes = TRUE
+    link = &quot;family_default&quot;
   )
    
 })</code></pre>
@@ -509,25 +550,21 @@ mygrid &lt;- lapply(solvers, function(solver) {
   |                                                                            
   |                                                                      |   0%
   |                                                                            
-  |===                                                                   |   4%
-  |                                                                            
-  |========                                                              |  12%
+  |=                                                                     |   2%
   |                                                                            
   |======================================================================| 100%
 
   |                                                                            
   |                                                                      |   0%
   |                                                                            
-  |========                                                              |  11%
+  |==============================================                        |  65%
   |                                                                            
   |======================================================================| 100%
 
   |                                                                            
   |                                                                      |   0%
   |                                                                            
-  |===                                                                   |   4%
-  |                                                                            
-  |===========                                                           |  16%
+  |====                                                                  |   6%
   |                                                                            
   |======================================================================| 100%</code></pre>
 <pre class="r"><code>df &lt;- cbind(
@@ -543,11 +580,468 @@ dimnames(df) &lt;- list(
 )
 df</code></pre>
 <pre><code>                   Error (0) Error (1) Total Error
-IRLSM               0.000309  0.212366    0.000657
-L_BFGS              0.000292  0.220430    0.000653
-COORDINATE_DESCENT  0.000283  0.225806    0.000653</code></pre>
-<p>It seems there is no significant difference between these solvers, so we should still with the default one.</p>
+IRLSM               0.024169  0.110313    0.067270
+L_BFGS              0.024354  0.110189    0.067301
+COORDINATE_DESCENT  0.025909  0.109051    0.067508</code></pre>
+<p>It seems there is no significant difference between these solvers. If we focus, however, on the error of the minor class, it seems that the <strong>COORDINATE_DESCT</strong> is the best one with the lowest error. But it can be the result of random chances since we did not use cross-validation.</p>
 </div>
 <div id="random-forest" class="section level2">
 <h2>Random forest</h2>
+<p>The random forest model is the most popular machine learning model due to its capability to capture even complex patterns in the data. This is also, however, can be considered at the same time as a downside, since this capability tends to exceedingly memorize everything in the data including the noise, which gives rise to the overfitting problem. That is why this model has a large number of hyperparameters for regularization techniques, among others, to control the training process.
+The main hyperparameters provided by h2O are the following<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> :</p>
+<ul>
+<li>seed: for reproducibility.</li>
+<li>ntrees: The number of trees used (called also iterations). The default is 50.</li>
+<li>max_depth: The maximum level allowed for each tree. The default is 20.</li>
+<li>mtries: The number of the columns chosen randomly for each tree. The default is <span class="math inline">\(\sqrt{p}\)</span> for classification, and <span class="math inline">\(\frac{p}{3}\)</span> for regression (where p is the number of columns).</li>
+<li>sample_rate: the proportion of the training data selected randomly at each tree. The default is 63.2%.</li>
+<li>balance_classes: This the most important hyperparameters for our data, since it is highly imbalanced. The default is false, if set to true then the model will correct this problem by making use of over/under sampling methods.</li>
+<li>min_rows: the minimum number of instances in a node to allow for splitting this node. the default is 1.</li>
+<li>min_split_improvement: The minimum error reduction to make further splitting. The default is 0.</li>
+<li>binomial_double_trees: for binary classification. If true then the model two random forests, one for each output class. this method cn give high accuracy with the cost of doubling the computation time.</li>
+<li>stopping_rounds: The number of iterations required to early stopping the training process if the moving average of the stopping_metric (based on this number of iterations) does not improve. The default is 0, which means the early stopping is disabled.</li>
+<li>stopping_metric: works with the last argument. The default is AUTO, that is the <strong>logloss</strong> for classification, <strong>deviance</strong> for regression, but we have also <strong>MSE</strong>, <strong>RMSE</strong>, <strong>MAE</strong>, <strong>AUC</strong>, <strong>misclasssification</strong>.
+** stopping_tolerance: The threshold under which we consider no improvement. The default is 0.001.</li>
+</ul>
+<p>First let’s try this model with the default values, except for balance_classes that we set to true. Fortunately, unlike glm models, this argument works fine with random forest model.</p>
+<pre class="r"><code>model_rf &lt;- h2o.randomForest(
+  x = 1:30,
+  y = 31,
+  training_frame = train,
+  seed = 123,
+  model_id = &quot;rf_default&quot;,
+  balance_classes = TRUE
+)</code></pre>
+<pre><code>
+  |                                                                            
+  |                                                                      |   0%
+  |                                                                            
+  |=                                                                     |   2%
+  |                                                                            
+  |====                                                                  |   6%
+  |                                                                            
+  |======                                                                |   8%
+  |                                                                            
+  |==========                                                            |  14%
+  |                                                                            
+  |=============                                                         |  18%
+  |                                                                            
+  |===============                                                       |  22%
+  |                                                                            
+  |=================                                                     |  24%
+  |                                                                            
+  |====================                                                  |  28%
+  |                                                                            
+  |======================                                                |  32%
+  |                                                                            
+  |===========================                                           |  38%
+  |                                                                            
+  |=============================                                         |  42%
+  |                                                                            
+  |================================                                      |  46%
+  |                                                                            
+  |===================================                                   |  50%
+  |                                                                            
+  |======================================                                |  54%
+  |                                                                            
+  |=========================================                             |  58%
+  |                                                                            
+  |===========================================                           |  62%
+  |                                                                            
+  |================================================                      |  68%
+  |                                                                            
+  |==================================================                    |  72%
+  |                                                                            
+  |=====================================================                 |  76%
+  |                                                                            
+  |=========================================================             |  82%
+  |                                                                            
+  |============================================================          |  86%
+  |                                                                            
+  |===============================================================       |  90%
+  |                                                                            
+  |==================================================================    |  94%
+  |                                                                            
+  |======================================================================| 100%</code></pre>
+<p>Now we check how this model did with the training data.</p>
+<pre class="r"><code>h2o.performance(model_rf)</code></pre>
+<pre><code>H2OBinomialMetrics: drf
+** Reported on training data. **
+** Metrics reported on Out-Of-Bag training samples **
+
+MSE:  0.03503944
+RMSE:  0.1871882
+LogLoss:  0.1012676
+Mean Per-Class Error:  6.629307e-06
+AUC:  0.999995
+AUCPR:  0.9999938
+Gini:  0.9999901
+R^2:  0.8598422
+
+Confusion Matrix (vertical: actual; across: predicted) for F1-optimal threshold:
+            0      1    Error       Rate
+0      226265      3 0.000013  =3/226268
+1           0 226262 0.000000  =0/226262
+Totals 226265 226265 0.000007  =3/452530
+
+Maximum Metrics: Maximum metrics at their respective thresholds
+                        metric threshold         value idx
+1                       max f1  0.060268      0.999993 397
+2                       max f2  0.060268      0.999997 397
+3                 max f0point5  0.060268      0.999989 397
+4                 max accuracy  0.060268      0.999993 397
+5                max precision  1.000000      1.000000   0
+6                   max recall  0.060268      1.000000 397
+7              max specificity  1.000000      1.000000   0
+8             max absolute_mcc  0.060268      0.999987 397
+9   max min_per_class_accuracy  0.060268      0.999987 397
+10 max mean_per_class_accuracy  0.060268      0.999993 397
+11                     max tns  1.000000 226268.000000   0
+12                     max fns  1.000000 132282.000000   0
+13                     max fps  0.000002 226268.000000 399
+14                     max tps  0.060268 226262.000000 397
+15                     max tnr  1.000000      1.000000   0
+16                     max fnr  1.000000      0.584641   0
+17                     max fpr  0.000002      1.000000 399
+18                     max tpr  0.060268      1.000000 397
+
+Gains/Lift Table: Extract with `h2o.gainsLift(&lt;model&gt;, &lt;data&gt;)` or `h2o.gainsLift(&lt;model&gt;, valid=&lt;T/F&gt;, xval=&lt;T/F&gt;)`</code></pre>
+<p>Surprisingly, the model is almost perfect with 0.0007% overall error rate, which is very suspicious, since this model memorized everything even the noisy patterns. The real challenge for every model is how it generalizes to unseen data, that is why we should always hold out some data as testing data to test the model performance.</p>
+<pre class="r"><code>h2o.confusionMatrix(model_rf, test)</code></pre>
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.00208813635434166:
+           0  1    Error       Rate
+0      56240  7 0.000124   =7/56247
+1         16 77 0.172043     =16/93
+Totals 56256 84 0.000408  =23/56340</code></pre>
+<p>As expected the model overfitted the data. The error rate of the minor class is now very large which is the same as that obtained from the lasso model.</p>
+<div id="random-forest-with-binomial-double-trees" class="section level3">
+<h3>Random forest with binomial double trees</h3>
+<p>Before going ahead with hyperparameters tuning, let’s try the binomial double trees technique discussed above.</p>
+<pre class="r"><code>model_rf_dbl &lt;- h2o.randomForest(
+  x = 1:30,
+  y = 31,
+  training_frame = train,
+  seed = 123,
+  model_id = &quot;rf_default&quot;,
+  binomial_double_trees = TRUE 
+)</code></pre>
+<pre><code>
+  |                                                                            
+  |                                                                      |   0%
+  |                                                                            
+  |=                                                                     |   2%
+  |                                                                            
+  |====                                                                  |   6%
+  |                                                                            
+  |========                                                              |  12%
+  |                                                                            
+  |=============                                                         |  18%
+  |                                                                            
+  |==================                                                    |  26%
+  |                                                                            
+  |======================                                                |  32%
+  |                                                                            
+  |===========================                                           |  38%
+  |                                                                            
+  |===============================                                       |  44%
+  |                                                                            
+  |===================================                                   |  50%
+  |                                                                            
+  |======================================                                |  54%
+  |                                                                            
+  |==========================================                            |  60%
+  |                                                                            
+  |=============================================                         |  64%
+  |                                                                            
+  |=================================================                     |  70%
+  |                                                                            
+  |=====================================================                 |  76%
+  |                                                                            
+  |========================================================              |  80%
+  |                                                                            
+  |============================================================          |  86%
+  |                                                                            
+  |===============================================================       |  90%
+  |                                                                            
+  |===================================================================   |  96%
+  |                                                                            
+  |======================================================================| 100%</code></pre>
+<pre class="r"><code>h2o.confusionMatrix(model_rf_dbl)</code></pre>
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.473692341854698:
+            0   1    Error        Rate
+0      226258  10 0.000044  =10/226268
+1          83 289 0.223118     =83/372
+Totals 226341 299 0.000410  =93/226640</code></pre>
+<pre class="r"><code>h2o.confusionMatrix(model_rf_dbl, test)</code></pre>
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.42:
+           0  1    Error       Rate
+0      56239  8 0.000142   =8/56247
+1         13 80 0.139785     =13/93
+Totals 56252 88 0.000373  =21/56340</code></pre>
+<p>As we see, this model is the best one until now with the lowest rate for the minor class at 13.98%.</p>
+</div>
+<div id="random-forest-tuning" class="section level3">
+<h3>Random forest tuning</h3>
+<p>We can try to tune the hyperparameters related to the regularization techniques to fight the overfitting problem. For instance, we use lower values for max_depth and larger values for min_rows to prune the trees, lower values for sample_rate to let each tree focus on a small part of the training data. We set also some values to early stop the training process if we do not obtain significant improvement. Finally, to avoid the randomness of the results we use cross-validation.</p>
+<pre class="r"><code>#model_rftuned &lt;- h2o.grid(
+#  &quot;randomForest&quot;,
+#  hyper_params = list(
+#    max_depth = c(5, 10),
+#    min_rows = c(10, 20, 30),
+#    sample_rate = c(0.3, 0.5)
+#  ),
+#  stopping_rounds = 5,
+#  stopping_metric = &quot;AUTO&quot;,
+#  stopping_tolerance = 0.001,
+#  balance_classes = TRUE,
+#  nfolds = 5,
+#  fold_assignment = &quot;Stratified&quot;,
+#  x = 1:30,
+#  y = 31,
+#  training_frame = train
+#)</code></pre>
+<p>Since this model took a lot of time I saved the following output in csv file then I loaded it again.</p>
+<pre class="r"><code>#df_output &lt;- model_rftuned@summary_table %&gt;% 
+#  select(max_depth, min_rows, sample_rate, logloss) %&gt;% 
+#  arrange(logloss)
+#write.csv(df_output, &quot;df_output.csv&quot;,  row.names = F)
+df_output &lt;- read.csv(&quot;df_output.csv&quot;)
+df_output</code></pre>
+<pre><code>   max_depth min_rows sample_rate     logloss
+1         10       30         0.3 0.004340259
+2         10       30         0.5 0.004349693
+3         10       20         0.3 0.004410775
+4         10       20         0.5 0.004509070
+5          5       20         0.3 0.004571208
+6          5       30         0.3 0.004596356
+7          5       20         0.5 0.004607659
+8         10       10         0.3 0.004617148
+9          5       30         0.5 0.004690543
+10        10       10         0.5 0.004724862
+11         5       10         0.3 0.004777967
+12         5       10         0.5 0.004792143</code></pre>
+<p>Using the logloss metric, the best model is obtained with 10 for max_depth, 30 for min_rows, and the sample rate is about 0.3. Now let’s run this model with these values.</p>
+<pre class="r"><code>model_rf_best &lt;- h2o.randomForest(
+  x = 1:30,
+  y = 31,
+  training_frame = train,
+  seed = 123,
+  model_id = &quot;rf_best&quot;,
+  max_depth = 10,
+  min_rows = 30,
+  sample_rate = 0.3,
+  stopping_rounds = 5,
+  stopping_metric = &quot;AUTO&quot;,
+  stopping_tolerance = 0.001,
+  balance_classes = TRUE
+)</code></pre>
+<pre><code>
+  |                                                                            
+  |                                                                      |   0%
+  |                                                                            
+  |===                                                                   |   4%
+  |                                                                            
+  |======                                                                |   8%
+  |                                                                            
+  |========                                                              |  12%
+  |                                                                            
+  |=============                                                         |  18%
+  |                                                                            
+  |==================                                                    |  26%
+  |                                                                            
+  |======================                                                |  32%
+  |                                                                            
+  |===========================                                           |  38%
+  |                                                                            
+  |================================                                      |  46%
+  |                                                                            
+  |======================================                                |  54%
+  |                                                                            
+  |==========================================                            |  60%
+  |                                                                            
+  |=============================================                         |  64%
+  |                                                                            
+  |==================================================                    |  72%
+  |                                                                            
+  |========================================================              |  80%
+  |                                                                            
+  |==============================================================        |  88%
+  |                                                                            
+  |================================================================      |  92%
+  |                                                                            
+  |======================================================================| 100%</code></pre>
+<pre class="r"><code>h2o.confusionMatrix(model_rf_best)</code></pre>
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.00180477647421117:
+            0      1    Error          Rate
+0      225985    283 0.001251   =283/226268
+1        2582 223680 0.011412  =2582/226262
+Totals 228567 223963 0.006331  =2865/452530</code></pre>
+<p>The model did well with the training data. But what about the testing set?.</p>
+<pre class="r"><code>h2o.confusionMatrix(model_rf_best, test)</code></pre>
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.00496959295307637:
+           0   1    Error       Rate
+0      56226  21 0.000373  =21/56247
+1         13  80 0.139785     =13/93
+Totals 56239 101 0.000603  =34/56340</code></pre>
+<p>With this model, we get the same error rate for the minor class as the binomial double trees model. But for the overall error rate, the latter is better than the former.</p>
+</div>
+</div>
+<div id="deep-learning-model" class="section level2">
+<h2>Deep learning model</h2>
+<p>Deep learning models are known for their high accuracy at predicting very large and complex datasets. They have a large number of hyperparameters that can be tuned to efficiently handle a wide range of datasets. Tuning a large number of hyperparameters with large datasets, however, requires very large hardware resources and time, which is not always available or very costly (using the cloud providers’ platforms). That is why this type of model requires quite high experience and practice to be able to correctly set the right hyperparameter values.</p>
+<p>There are many frameworks for deep learning models. The most used ones are <strong>tensorflow</strong> and <strong>keras</strong> since they are designed specifically for this type of models and can handle almost all the famous architectures such as: <strong>feedforward neural network</strong>, <strong>convolutional neural network</strong>, <strong>recurrent neural network</strong>,..etc. Besides, they can also provide us with some tools to define our architecture.</p>
+<p>For h2o, it provides only the <strong>feedforward neural network</strong> which is densely connected layers. However, this type of architecture is the most used one in economics.
+We can briefly discuss the main hyperparameters provided by h2O for this type of models (in addition to some of the above hyperparameters):</p>
+<ul>
+<li><strong>hidden</strong>: we specify the number of the hidden layers and the number of nodes in each layer, the default is 2 layers with 200 nodes each. Notice that the number of nodes in the first and the last layers will be specified automatically by h2o given the data.</li>
+<li><strong>autoencoder</strong>: If true then we train <a href="https://towardsdatascience.com/autoencoder-neural-networks-what-and-how-354cba12bf86">autoencoder</a> model, otherwise the model will use supervised learning which is the default.</li>
+<li><strong>activation</strong>: the activation function used. h2o provides three ones with or without dropout: Tanh, Rectifier, Maxout, TanhWithDropout, RecifierWithDropout, MaxoutWithDropout. The default is Rectifier.</li>
+<li><strong>hidden_dropout_ratio</strong>: it is a regularization technique. Drop randomly a fraction of node values from a hidden layer. The default is 0.5.</li>
+<li>missing_values_handling: with two values <strong>MeanImputation</strong> and <strong>Skip</strong>. The default is <strong>MeanImputation</strong>.</li>
+<li><strong>input_dropout_ratio</strong>: The same as the previous argument but for the input layer. The default is 0.</li>
+<li><strong>L1 and L2</strong>: For lasso and ridge regularization. The default is 0 for both.</li>
+<li><strong>max_w2</strong>: It is the upper limit of the sum squared of the weights incoming to each node. This can help to fight the <strong>Exploding gradient problem</strong>.</li>
+<li><strong>train_samples_per_iteration</strong>: The number of samples used before declaring one iteration. At the end of one iteration, the model is scored. The default is -2, which means h2o will decide given the data.</li>
+<li><strong>score_interval</strong>: The alternative of the previous one, where the model will be scored after every 5 seconds with the default settings.</li>
+<li><strong>score_duty_cycle</strong>: It is another alternative to the two previous ones. It is the fraction of time spent in scoring, at the expense of that spent in training. The default is 0.1, which means 10% of the total time will be spent in scoring while the remaining 90% will be spent on training.</li>
+<li><strong>target_ratio_comm_to_comp</strong>: It is related to the cluster management. It controls the fraction of the communication time between nodes (The cluster nodes not the layer nodes). The default is 0.05, which means 5% of the total time will be spent on communication, and 95% in training inside each node.</li>
+<li><strong>replicate_training_data</strong>: The default is true, which means replicate the entire data on every cluster node.</li>
+<li><strong>shuffle_training_data</strong>: shuffle the inputs before feeding them into the network. It is recommended when we set balance_classes to true (like in our case). The default is false.</li>
+<li><strong>score_validation_samples</strong>: The number of samples from the validation set used in scoring. if we set this to 0 (which is the default) then the entire validation data will be used.</li>
+<li><strong>score_training_samples</strong>: The default is 10000, which the number of samples used from the training data to use in scoring. It is used when we do not have validation data.</li>
+<li><strong>score_validation_sampling</strong>: It is used when we use only a fraction of the validation (when the <strong>score_validation_samples</strong> has been specified with other values than the default of 0). The default is <strong>Uniform</strong>, but for our case with imbalance classes we can use instead <strong>Stratified</strong>, which is also provided as another value for this argument.</li>
+</ul>
+<p>Since, in our case the two classes are imbalanced, we convert the <strong>balance_classes</strong> argument to true, then we leave all the other arguments to the default settings.</p>
+<pre class="r"><code>#model_deep &lt;- h2o.deeplearning(
+#  x = 1:30,
+#  y = 31,
+#  training_frame = train,
+#  model_id = &quot;deep_def&quot;,
+#  balance_classes = TRUE
+#)</code></pre>
+<p>As we did earlier, we save the model then we load it again to prevent rerunning the model when rendering this document.</p>
+<pre class="r"><code># h2o.saveModel(model_deep, 
+#              path = &quot;C://Users/dell/Documents/new-blog/content/sparklyr/h2o&quot;,
+#              force = TRUE)
+model_deep &lt;- h2o.loadModel(&quot;C://Users/dell/Documents/new-blog/content/sparklyr/h2o/deep_def&quot;)</code></pre>
+<pre class="r"><code>h2o.confusionMatrix(model_deep)</code></pre>
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.000417836060585278:
+          0    1    Error     Rate
+0      4875    3 0.000615  =3/4878
+1         0 4985 0.000000  =0/4985
+Totals 4875 4988 0.000304  =3/9863</code></pre>
+<p>Like the above models, this model is almost perfect for predicting the training data.</p>
+<pre class="r"><code>h2o.confusionMatrix(model_deep, test)</code></pre>
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.999029626321672:
+           0  1    Error       Rate
+0      56245  2 0.000036   =2/56247
+1         23 70 0.247312     =23/93
+Totals 56268 72 0.000444  =25/56340</code></pre>
+<p>As we see this model fails to predict very well the minor class. This result can be expected since we only used the default values. so let’s try using some custom hyperparameter values now.</p>
+<p><strong>Note</strong>: We will not tune any hyperparameters since we do not have many resources on my laptop.</p>
+<p>As a guideline, since the above default deep learning model fitted almost perfectly the training data and it generalized poorly to the unseen testing data, then we should think to reduce the complexity of the model and some regularization methods. So we will set the following values.
+* hidden: we will use two hidden layers, with 100 each (instead of the default of 200 each).
+* nfolds: we will use 5 folds to properly score the model using validation data (not training data).
+* fold_assignment: set it to “Stratified” to be sure to get the minor class in all the folds. This is crucially important with imbalanced classes.
+* hidden_dropout_ratio: we set this to 0.2 for both layers.
+* activation: with the previous argument, we must provide the appropriate activation function <strong>RectifierWithDropout</strong>
+* L1: we set this argument to 0.0001.
+* variable_importances: By default it is True, so we set it false to reduce computation time since our goal is a prediction, not explanation.
+* shuffle_training_data: since the replicate_training_data is true (by default), we set this to true (the default is false) to shuffle the training data.</p>
+<pre class="r"><code>#model_deep_new &lt;- h2o.deeplearning(
+#  x = 1:30,
+#  y = 31,
+#  training_frame = train,
+#  nfolds = 5,
+#  fold_assignment = &quot;Stratified&quot;,
+#  hidden = c(100,100),
+#  model_id = &quot;deep_new&quot;,
+#  standardize = TRUE,
+#  balance_classes = TRUE,
+#  hidden_dropout_ratios = c(0.2,0.2),
+#  activation = &quot;RectifierWithDropout&quot;,
+#  l1=1e-4,
+#  variable_importances = FALSE,
+#  shuffle_training_data = TRUE
+#)</code></pre>
+<p>To prevent this model to be rerun when rendering our rmarkdown document, we save the model and load it again to further use.</p>
+<pre class="r"><code>#h2o.saveModel(model_deep_new, 
+#              path = &quot;C://Users/dell/Documents/new-blog/content/sparklyr/h2o&quot;,
+#              force = TRUE)
+model_deep_new &lt;- h2o.loadModel(&quot;C://Users/dell/Documents/new-blog/content/sparklyr/h2o/deep_new&quot;)</code></pre>
+<pre class="r"><code>h2o.confusionMatrix(model_deep_new)</code></pre>
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 2.34654254256535e-06:
+          0    1    Error       Rate
+0      4973   57 0.011332   =57/5030
+1        57 4872 0.011564   =57/4929
+Totals 5030 4929 0.011447  =114/9959</code></pre>
+<p>As expected, this model has less accuracy than the default one due to its less flexibility. In other words, it has a larger bias but we hope it has also lower variance, which can be verified by using the testing set.</p>
+<pre class="r"><code>h2o.confusionMatrix(model_deep_new, test)</code></pre>
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.331909579485978:
+           0  1    Error       Rate
+0      56227 20 0.000356  =20/56247
+1         15 78 0.161290     =15/93
+Totals 56242 98 0.000621  =35/56340</code></pre>
+<p>With these new settings, we obtained a large improvement for the error rate of the minor class with 16% (compared to the default model with 24%). But this rate still larger than that of the best random forest model (13.97%). If you have enough time you can improve your model by applying a grid search to some hyperparameters.</p>
+<p>Finally, when you finish your work do not forget to shut down your h2o to free your resources as follows:</p>
+<pre class="r"><code>h2o.shutdown()</code></pre>
+<pre><code>Are you sure you want to shutdown the H2O instance running at http://localhost:54321/ (Y/N)? </code></pre>
+</div>
+<div id="conclusion" class="section level2">
+<h2>Conclusion:</h2>
+<p>Maybe the most important thing learned from this article is how important the hyperparameter values on the model performance. The difference (of performance) can be larger between models of the same type (with different hyperparameter values) than the difference between different types of models. In other words, if you do not have enough time, so exploit your time to fine-tune the hyperparameters of the same model rather than try a different type of models. In practice, for large and complex datasets, the most powerful models are by order: Deep learning, Xgboost, and Random forest.</p>
+</div>
+<div id="further-reading" class="section level2">
+<h2>Further reading</h2>
+<ul>
+<li>Darren Cook, Practical Machine Learning with h2o, O’Reilly, 2017.</li>
+<li><a href="https://docs.h2o.ai" class="uri">https://docs.h2o.ai</a></li>
+</ul>
+</div>
+<div id="session-information" class="section level2">
+<h2>Session information</h2>
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.0.1 (2020-06-06)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 10 x64 (build 18362)
+
+Matrix products: default
+
+locale:
+[1] LC_COLLATE=English_United States.1252 
+[2] LC_CTYPE=English_United States.1252   
+[3] LC_MONETARY=English_United States.1252
+[4] LC_NUMERIC=C                          
+[5] LC_TIME=English_United States.1252    
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] h2o_3.30.0.1    forcats_0.5.0   stringr_1.4.0   dplyr_1.0.0    
+ [5] purrr_0.3.4     readr_1.3.1     tidyr_1.1.0     tibble_3.0.1   
+ [9] ggplot2_3.3.1   tidyverse_1.3.0
+
+loaded via a namespace (and not attached):
+ [1] tidyselect_1.1.0  xfun_0.14         haven_2.3.1       lattice_0.20-41  
+ [5] colorspace_1.4-1  vctrs_0.3.1       generics_0.0.2    htmltools_0.4.0  
+ [9] yaml_2.2.1        blob_1.2.1        rlang_0.4.6       pillar_1.4.4     
+[13] glue_1.4.1        withr_2.2.0       DBI_1.1.0         dbplyr_1.4.4     
+[17] modelr_0.1.8      readxl_1.3.1      lifecycle_0.2.0   munsell_0.5.0    
+[21] blogdown_0.19     gtable_0.3.0      cellranger_1.1.0  rvest_0.3.5      
+[25] evaluate_0.14     knitr_1.28        fansi_0.4.1       broom_0.5.6      
+[29] Rcpp_1.0.4.6      scales_1.1.1      backports_1.1.7   jsonlite_1.6.1   
+[33] fs_1.4.1          hms_0.5.3         digest_0.6.25     stringi_1.4.6    
+[37] bookdown_0.19     grid_4.0.1        bitops_1.0-6      cli_2.0.2        
+[41] tools_4.0.1       ROSE_0.0-3        magrittr_1.5      RCurl_1.98-1.2   
+[45] crayon_1.3.4      pkgconfig_2.0.3   ellipsis_0.3.1    data.table_1.12.8
+[49] xml2_1.3.2        reprex_0.3.0      lubridate_1.7.9   assertthat_0.2.1 
+[53] rmarkdown_2.2     httr_1.4.1        rstudioapi_0.11   R6_2.4.1         
+[57] nlme_3.1-148      compiler_4.0.1   </code></pre>
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>Darren cook, Practical Machine Learning Model With h2o, O’Reilly, 2017, p115<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+</ol>
 </div>
