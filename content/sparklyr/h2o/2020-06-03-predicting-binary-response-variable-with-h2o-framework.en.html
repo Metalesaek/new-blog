@@ -85,25 +85,17 @@ Attaching package: &#39;h2o&#39;</code></pre>
     log10, log1p, log2, round, signif, trunc</code></pre>
 <p>Then to lunch the cluster run the following script</p>
 <pre class="r"><code>h2o.init(nthreads = -1)</code></pre>
-<pre><code>
-H2O is not running yet, starting it now...
-
-Note:  In case of errors look at the following log files:
-    C:\Users\dell\AppData\Local\Temp\Rtmpe8pNnb\file9c051295f5f/h2o_dell_started_from_r.out
-    C:\Users\dell\AppData\Local\Temp\Rtmpe8pNnb\file9c043027a8/h2o_dell_started_from_r.err
-
-
-Starting H2O JVM and connecting: . Connection successful!
+<pre><code> Connection successful!
 
 R is connected to the H2O cluster: 
-    H2O cluster uptime:         5 seconds 165 milliseconds 
+    H2O cluster uptime:         12 minutes 19 seconds 
     H2O cluster timezone:       Europe/Paris 
     H2O data parsing timezone:  UTC 
     H2O cluster version:        3.30.0.1 
     H2O cluster version age:    3 months  
     H2O cluster name:           H2O_started_from_R_dell_ybo118 
     H2O cluster total nodes:    1 
-    H2O cluster total memory:   1.99 GB 
+    H2O cluster total memory:   1.66 GB 
     H2O cluster total cores:    4 
     H2O cluster allowed cores:  4 
     H2O cluster healthy:        TRUE 
@@ -123,8 +115,6 @@ R is connected to the H2O cluster:
 <pre><code>
   |                                                                            
   |                                                                      |   0%
-  |                                                                            
-  |=========================================================             |  81%
   |                                                                            
   |======================================================================| 100%</code></pre>
 <p>The following script gives the dimension of this data.</p>
@@ -338,9 +328,9 @@ test &lt;- parts[[2]]</code></pre>
   |                                                                            
   |                                                                      |   0%
   |                                                                            
-  |======                                                                |   8%
+  |=                                                                     |   2%
   |                                                                            
-  |=============                                                         |  18%
+  |==========                                                            |  14%
   |                                                                            
   |======================================================================| 100%</code></pre>
 <p>h2o provides a bunch of metrics already computed during the training process along with the confusion matrix. we can get access to them by calling the function <strong>h2O.performance</strong>.</p>
@@ -434,7 +424,7 @@ table(train_balance$Class)</code></pre>
   |                                                                            
   |                                                                      |   0%
   |                                                                            
-  |=======                                                               |  10%
+  |===========                                                           |  16%
   |                                                                            
   |======================================================================| 100%</code></pre>
 <p>We can check the confusion matrix as follows.</p>
@@ -505,9 +495,7 @@ Totals 56216 124 0.001118  =63/56340</code></pre>
   |                                                                            
   |                                                                      |   0%
   |                                                                            
-  |=                                                                     |   2%
-  |                                                                            
-  |=============                                                         |  18%
+  |======                                                                |   8%
   |                                                                            
   |======================================================================| 100%</code></pre>
 <pre class="r"><code>h2o.confusionMatrix(model_lasso)</code></pre>
@@ -550,21 +538,19 @@ mygrid &lt;- lapply(solvers, function(solver) {
   |                                                                            
   |                                                                      |   0%
   |                                                                            
-  |=                                                                     |   2%
+  |======                                                                |   8%
   |                                                                            
   |======================================================================| 100%
 
   |                                                                            
   |                                                                      |   0%
   |                                                                            
-  |==============================================                        |  65%
-  |                                                                            
   |======================================================================| 100%
 
   |                                                                            
   |                                                                      |   0%
   |                                                                            
-  |====                                                                  |   6%
+  |========                                                              |  12%
   |                                                                            
   |======================================================================| 100%</code></pre>
 <pre class="r"><code>df &lt;- cbind(
@@ -616,31 +602,27 @@ The main hyperparameters provided by h2O are the following<a href="#fn1" class="
   |                                                                            
   |                                                                      |   0%
   |                                                                            
-  |=                                                                     |   2%
-  |                                                                            
-  |====                                                                  |   6%
+  |===                                                                   |   4%
   |                                                                            
   |======                                                                |   8%
   |                                                                            
-  |==========                                                            |  14%
+  |========                                                              |  12%
   |                                                                            
-  |=============                                                         |  18%
+  |===========                                                           |  16%
   |                                                                            
   |===============                                                       |  22%
   |                                                                            
-  |=================                                                     |  24%
+  |==================                                                    |  26%
   |                                                                            
-  |====================                                                  |  28%
+  |=====================                                                 |  30%
   |                                                                            
-  |======================                                                |  32%
+  |=========================                                             |  36%
   |                                                                            
-  |===========================                                           |  38%
-  |                                                                            
-  |=============================                                         |  42%
+  |============================                                          |  40%
   |                                                                            
   |================================                                      |  46%
   |                                                                            
-  |===================================                                   |  50%
+  |==================================                                    |  48%
   |                                                                            
   |======================================                                |  54%
   |                                                                            
@@ -648,19 +630,23 @@ The main hyperparameters provided by h2O are the following<a href="#fn1" class="
   |                                                                            
   |===========================================                           |  62%
   |                                                                            
+  |=============================================                         |  64%
+  |                                                                            
   |================================================                      |  68%
   |                                                                            
   |==================================================                    |  72%
   |                                                                            
-  |=====================================================                 |  76%
+  |=======================================================               |  78%
   |                                                                            
-  |=========================================================             |  82%
+  |========================================================              |  80%
   |                                                                            
   |============================================================          |  86%
   |                                                                            
   |===============================================================       |  90%
   |                                                                            
   |==================================================================    |  94%
+  |                                                                            
+  |===================================================================== |  98%
   |                                                                            
   |======================================================================| 100%</code></pre>
 <p>Now we check how this model did with the training data.</p>
@@ -729,31 +715,31 @@ Totals 56256 84 0.000408  =23/56340</code></pre>
   |                                                                            
   |                                                                      |   0%
   |                                                                            
-  |=                                                                     |   2%
+  |===                                                                   |   4%
   |                                                                            
-  |====                                                                  |   6%
+  |======                                                                |   8%
   |                                                                            
   |========                                                              |  12%
   |                                                                            
   |=============                                                         |  18%
   |                                                                            
-  |==================                                                    |  26%
+  |===============                                                       |  22%
   |                                                                            
-  |======================                                                |  32%
+  |====================                                                  |  28%
+  |                                                                            
+  |========================                                              |  34%
   |                                                                            
   |===========================                                           |  38%
   |                                                                            
-  |===============================                                       |  44%
+  |================================                                      |  46%
   |                                                                            
-  |===================================                                   |  50%
+  |====================================                                  |  52%
   |                                                                            
-  |======================================                                |  54%
+  |=======================================                               |  56%
   |                                                                            
-  |==========================================                            |  60%
+  |===========================================                           |  62%
   |                                                                            
-  |=============================================                         |  64%
-  |                                                                            
-  |=================================================                     |  70%
+  |================================================                      |  68%
   |                                                                            
   |=====================================================                 |  76%
   |                                                                            
@@ -761,9 +747,9 @@ Totals 56256 84 0.000408  =23/56340</code></pre>
   |                                                                            
   |============================================================          |  86%
   |                                                                            
-  |===============================================================       |  90%
+  |================================================================      |  92%
   |                                                                            
-  |===================================================================   |  96%
+  |===================================================================== |  98%
   |                                                                            
   |======================================================================| 100%</code></pre>
 <pre class="r"><code>h2o.confusionMatrix(model_rf_dbl)</code></pre>
@@ -841,48 +827,46 @@ df_output</code></pre>
   |                                                                            
   |===                                                                   |   4%
   |                                                                            
-  |======                                                                |   8%
+  |=======                                                               |  10%
   |                                                                            
-  |========                                                              |  12%
+  |==========                                                            |  14%
   |                                                                            
   |=============                                                         |  18%
   |                                                                            
   |==================                                                    |  26%
   |                                                                            
-  |======================                                                |  32%
+  |========================                                              |  34%
   |                                                                            
-  |===========================                                           |  38%
+  |=============================                                         |  42%
   |                                                                            
-  |================================                                      |  46%
+  |==================================                                    |  48%
   |                                                                            
-  |======================================                                |  54%
+  |=======================================                               |  56%
   |                                                                            
-  |==========================================                            |  60%
+  |===========================================                           |  62%
   |                                                                            
-  |=============================================                         |  64%
+  |================================================                      |  68%
   |                                                                            
-  |==================================================                    |  72%
+  |=====================================================                 |  76%
   |                                                                            
-  |========================================================              |  80%
-  |                                                                            
-  |==============================================================        |  88%
+  |===========================================================           |  84%
   |                                                                            
   |================================================================      |  92%
   |                                                                            
   |======================================================================| 100%</code></pre>
 <pre class="r"><code>h2o.confusionMatrix(model_rf_best)</code></pre>
-<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.00180477647421117:
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.00183321256638754:
             0      1    Error          Rate
-0      225985    283 0.001251   =283/226268
-1        2582 223680 0.011412  =2582/226262
-Totals 228567 223963 0.006331  =2865/452530</code></pre>
+0      225849    419 0.001852   =419/226268
+1        2724 223538 0.012039  =2724/226262
+Totals 228573 223957 0.006945  =3143/452530</code></pre>
 <p>The model did well with the training data. But what about the testing set?.</p>
 <pre class="r"><code>h2o.confusionMatrix(model_rf_best, test)</code></pre>
-<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.00496959295307637:
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.00512118210853157:
            0   1    Error       Rate
-0      56226  21 0.000373  =21/56247
+0      56227  20 0.000356  =20/56247
 1         13  80 0.139785     =13/93
-Totals 56239 101 0.000603  =34/56340</code></pre>
+Totals 56240 100 0.000586  =33/56340</code></pre>
 <p>With this model, we get the same error rate for the minor class as the binomial double trees model. But for the overall error rate, the latter is better than the former.</p>
 </div>
 </div>
@@ -939,15 +923,17 @@ Totals 4875 4988 0.000304  =3/9863</code></pre>
 Totals 56268 72 0.000444  =25/56340</code></pre>
 <p>As we see this model fails to predict very well the minor class. This result can be expected since we only used the default values. so let’s try using some custom hyperparameter values now.</p>
 <p><strong>Note</strong>: We will not tune any hyperparameters since we do not have many resources on my laptop.</p>
-<p>As a guideline, since the above default deep learning model fitted almost perfectly the training data and it generalized poorly to the unseen testing data, then we should think to reduce the complexity of the model and some regularization methods. So we will set the following values.
-* hidden: we will use two hidden layers, with 100 each (instead of the default of 200 each).
-* nfolds: we will use 5 folds to properly score the model using validation data (not training data).
-* fold_assignment: set it to “Stratified” to be sure to get the minor class in all the folds. This is crucially important with imbalanced classes.
-* hidden_dropout_ratio: we set this to 0.2 for both layers.
-* activation: with the previous argument, we must provide the appropriate activation function <strong>RectifierWithDropout</strong>
-* L1: we set this argument to 0.0001.
-* variable_importances: By default it is True, so we set it false to reduce computation time since our goal is a prediction, not explanation.
-* shuffle_training_data: since the replicate_training_data is true (by default), we set this to true (the default is false) to shuffle the training data.</p>
+<p>As a guideline, since the above default deep learning model fitted almost perfectly the training data and it generalized poorly to the unseen testing data, then we should think to reduce the complexity of the model and some regularization methods. So we will set the following values.</p>
+<ul>
+<li>hidden: we will use two hidden layers, with 100 each (instead of the default of 200 each).</li>
+<li>nfolds: we will use 5 folds to properly score the model using validation data (not training data).</li>
+<li>fold_assignment: set it to “Stratified” to be sure to get the minor class in all the folds. This is crucially important with imbalanced classes.</li>
+<li>hidden_dropout_ratio: we set this to 0.2 for both layers.</li>
+<li>activation: with the previous argument, we must provide the appropriate activation function <strong>RectifierWithDropout</strong>.</li>
+<li>L1: we set this argument to 0.0001.</li>
+<li>variable_importances: By default it is True, so we set it false to reduce computation time since our goal is a prediction, not explanation.</li>
+<li>shuffle_training_data: since the replicate_training_data is true (by default), we set this to true (the default is false) to shuffle the training data.</li>
+</ul>
 <pre class="r"><code>#model_deep_new &lt;- h2o.deeplearning(
 #  x = 1:30,
 #  y = 31,

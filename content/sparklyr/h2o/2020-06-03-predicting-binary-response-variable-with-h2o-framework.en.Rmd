@@ -529,11 +529,12 @@ As we see this model fails to predict very well the minor class. This result can
 **Note**: We will not tune any hyperparameters since we do not have many resources on my laptop. 
 
 As a guideline, since the above default deep learning model fitted almost perfectly the training data and it generalized poorly to the unseen testing data, then we should think to reduce the complexity of the model and some regularization methods. So we will set the following values.
+
 * hidden: we will use two hidden layers, with 100 each (instead of the default of 200 each).
 * nfolds: we will use 5 folds to properly score the model using validation data (not training data).
 * fold_assignment: set it to "Stratified" to be sure to get the minor class in all the folds. This is crucially important with imbalanced classes.
 * hidden_dropout_ratio: we set this to 0.2 for both layers.
-* activation: with the previous argument, we must provide the appropriate activation function **RectifierWithDropout** 
+* activation: with the previous argument, we must provide the appropriate activation function **RectifierWithDropout**.
 * L1: we set this argument to 0.0001.
 * variable_importances: By default it is True, so we set it false to reduce computation time since our goal is a prediction, not explanation.
 * shuffle_training_data: since the replicate_training_data is true (by default), we set this to true (the default is false) to shuffle the training data.
