@@ -12,7 +12,7 @@ tags:
   - Big data
   - R
 subtitle: ''
-summary: ''
+summary: 'Unlike the classical programming languages that are very slow and even sometimes fail to load very large data sets since they  use only a single core, Apache Spark is known as the fastest  distributed system that can handle with ease large datasets...'
 output:
   blogdown::html_page:
     toc: true
