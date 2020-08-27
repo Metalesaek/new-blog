@@ -20,6 +20,12 @@ subtitle = ""
   name = "R"
   description = ""
 
+[[feature]]
+  icon = "python"
+  icon_pack = "fab"
+  name = "Python"
+  description = ""
+
   
 [[feature]]
   icon = "chart-line"
@@ -31,14 +37,14 @@ subtitle = ""
 [[feature]]
   icon = "robot"
   icon_pack = "fas"
-  name = "Machine learning with tidymodels"
+  name = "Machine learning"
   description = ""  
   
   
 [[feature]]
   icon = "brain"
   icon_pack = "fas"
-  name = "Deep learning with keras"
+  name = "Deep learning"
   description = ""  
 
 +++

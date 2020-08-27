@@ -58,7 +58,7 @@ projects: []
 </style>
 <div id="abstract" class="section level2">
 <h2>Abstract</h2>
-<p>Unlike the classical programming languages that are very slow and even sometimes fail to load very large data sets since they use only a single core, Apache Spark is known as the fastest distributed system that can handle with ease large datasets by deploying all the available machines and cores to build cluster, so that the computing time of each task performed on the data will be drastically reduced since each <strong>worker node</strong> in the cluster takes in charge small part of the task in question. Even that the native language of spark is <strong>scala</strong> (but it can also support <strong>java</strong> and <strong>sql</strong>), the good news for R users is that they can benefit from spark without having to learn the above supported languages by making use of the R package <strong>sparklyr</strong>. In this article we trained random forest model using text data which is in practice known as large data set. for illustration purposes and to make things faster however we used a small data set about email messages and also constrained ourselves to use the <strong>local mode</strong> in which spark created a cluster from the available cores in my machine. Notice that the same codes in this paper can be used in the cloud whatever the size of our data, even with billions of data points, except for the connection method to spark which is slightly different. Since the raw data requires some transformation to be consumed by the model, we applied the well-known method called <strong>tokenization</strong> to create the model features, then trained and evaluated a random forest model applied on the design matrix after having been filled using the <strong>TF</strong> method. Lastly, we trained the same model (random forest model with the same hyperparameter values) using another mothed called <strong>TF-IDF</strong> method (Sparck , 1972).</p>
+<p>Unlike the classical programming languages that are very slow and even sometimes fail to load very large data sets since they use only a single core, Apache Spark is known as the fastest distributed system that can handle with ease large datasets by deploying all the available machines and cores to build cluster, so that the computing time of each task performed on the data will be drastically reduced since each <strong>worker node</strong> in the cluster takes in charge small part of the task in question. Even that the native language of spark is <strong>scala</strong> (but it can also support <strong>java</strong> and <strong>sql</strong>), the good news for R users is that they can benefit from spark without having to learn the above supported languages by making use of the R package <strong>sparklyr</strong>. In this article we trained random forest model using text data which is in practice known as large data set. for illustration purposes and to make things faster however we used a small data set about email messages and also constrained ourselves to use the <strong>local mode</strong> in which spark created a cluster from the available cores in my machine. Notice that the same codes in this paper can be used in the cloud whatever the size of our data, even with billions of data points, except for the connection method to spark which is slightly different. Since the raw data requires some transformation to be consumed by the model, we applied the well-known method called <strong>tokenization</strong> to create the model features, then trained and evaluated a random forest model applied on the design matrix after having been filled using the <strong>TF</strong> method. Lastly, we trained the same model (random forest model with the same hyperparameter values) using another method called <strong>TF-IDF</strong> method (Sparck , 1972).</p>
 </div>
 <div id="keywords" class="section level2">
 <h2>Keywords</h2>
@@ -253,13 +253,13 @@ model_rf&lt;-ml_fit(pipline,train)</code></pre>
 <pre class="r"><code>ml_transform(model_rf,train)%&gt;%
   ml_binary_classification_evaluator(label_col = &quot;class&quot;,
                                      metric_name= &quot;areaUnderROC&quot;)</code></pre>
-<pre><code>[1] 0.9724441</code></pre>
+<pre><code>[1] 0.9693865</code></pre>
 <p>Notice that in binary classification model sparklyr provides only two metrics <strong>areaUnderROC</strong> and <strong>areaUnderPR</strong> (Murphy, 2012). Using the former metric we get high score which is about 0.97.
 This rate is ranged between 0 and 1, The higher the rate the best the model. However, since this rate is resulted from the training data, it might be the result of an overfitting (Lantz, 2016) problem, that is why the more reliable one is that that resulted from the testing set, , which is now 0.976.</p>
 <pre class="r"><code>ml_transform(model_rf,test)%&gt;%
   ml_binary_classification_evaluator(label_col = &quot;class&quot;,
                                      metric_name= &quot;areaUnderROC&quot;)</code></pre>
-<pre><code>[1] 0.9765985</code></pre>
+<pre><code>[1] 0.9653819</code></pre>
 <p>Fortunately The two rate values are very close to each other indicating the good generalization of our model.<br />
 To get the prediction we use the <strong>ml_predict</strong> function .</p>
 <pre class="r"><code>pred&lt;-ml_predict(model_rf,test)</code></pre>
@@ -348,7 +348,7 @@ model_rf_new2 &lt;- ml_fit(pipline_tfidf, train1)
 ml_transform(model_rf_new2,test1)%&gt;%
   ml_binary_classification_evaluator(label_col = &quot;class&quot;,
                                      metric_name= &quot;areaUnderROC&quot;)</code></pre>
-<pre><code>## [1] 0.9767454</code></pre>
+<pre><code>## [1] 0.9857918</code></pre>
 <p>Again, as we said before, the use of idf method is not justified, and it would be better to stay with the tf method.</p>
 </div>
 </div>
