@@ -12,6 +12,7 @@ summary: 'This tutorial aims to explore the most popular models used to predict 
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 authors: []
@@ -30,12 +31,23 @@ knitr::opts_chunk$set(echo = TRUE,warning = FALSE,error = FALSE,message = FALSE
                       , comment = "")
 ```
 
+```{css, echo=FALSE}
+strong {
+  color: red;
+}
 
-## Introduction
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+```
+
+
+# Introduction
 
 This tutorial aims to explore the most popular models used to predict an ordered response variable. We will use the **heart disease** data [uploaded from kaggle website](https://www.kaggle.com/johnsmith88/heart-disease-dataset), where our response will be the chest pain **cp** variable instead of the **target** variable used usually.
 
-## Data preparation
+# Data preparation
 
 First, we call the data and the libraries that we need along with this illustration as follows.
 
@@ -134,21 +146,24 @@ test <- testing(parts)
 
 The most popular models that we will use are: ordinal logistic model, cart model, ordinal random forest model, Continuation ratio model.  
 
-## ordered logistic regression (logit)
+# Ordered logistic regression model (logit)
 
 
 Before training this type of model let's show how it works. For simplicity suppose we have data that has an ordered outcome $y$ with three class labels ("1","2","3") and only two features $x_1$ and $x_2$.  
 
 First we define a latent variable as a linear combination of the features:
 
-$$y_i^*=\beta_1 X_{i1}+\beta_2 X_{i2}$$
+\begin{equation}
+y_i^*=\beta_1 X_{i1}+\beta_2 X_{i2}
+\end{equation}
 
 Then since we have three classes we define two thresholds for this latent variable $\alpha_1$ and $\alpha_2$ such that a particular observation $y_i$ will be classified as follows:
 
 
 $$\begin{cases} y_i=1 & \text{if $y_i^* \leq \alpha_1$} \\
                 y_i=2 & \text{if $\alpha_1 < y_i^* \leq \alpha_2$} \\
-                y_i=3 & \text{if $y_i^* > \alpha_2$}\end{cases}$$
+                y_i=3 & \text{if $y_i^* > \alpha_2$}
+\end{cases}$$
 
 
 Now we can obtain the probability of a particular observation to fall into a specific class as follows:
@@ -276,7 +291,7 @@ Surprisingly, the accuracy rate for the testing set is about 65%, which is large
 
 For our case let's try this model with the probit function
 
-## Ordinal logistic rgeression (probit) 
+# Ordinal logistic rgeression model (probit) 
 
 ```{r}
 set.seed(1234)
@@ -305,9 +320,9 @@ This one also is worse than the previous model. So this means that the logistic 
 When we try many things to improve the model performance and we do not gain much, it will be better to think to try different types of models.
 
 
-## CART model
+# CART model
 
-This is a tree-based model. To train this model we make use of **rpartScore** package, and for simplification, we will include only the significant predictors from the previous model. 
+This is a tree-based model used both for classification and regression. To train this model we make use of **rpartScore** package, and for simplification, we will include only the significant predictors from the previous model. 
 
 
 
@@ -345,7 +360,7 @@ predict(model_cart, test) %>%
 
 Now wit this model we get a lower accuracy rate than that of the logistic model. 
 
-## Ordinal Random forst model.
+# Ordinal Random forst model.
 
 This model is a corrected version of random forest model that takes into account the ordinal nature of the response variable. For more detail about this model read this great [paper](https://pdfs.semanticscholar.org/5bb3/5b76774bf0d582eda4ec06e2cb3ce021772c.pdf).  
 
@@ -404,7 +419,7 @@ predict(model_forest, test) %>%
 This is exactly what is called the overfitting problem. The model generalizes poorly to new unseen data. We can go back and tune some other hyperparameters like increasing the minimum size of nodes (default is 5) to fight the overfitting problem. we do not, however, do that here since it is not the purpose of this tutorial.  
 
 
-## Continuation Ratio Model
+# Continuation Ratio Model
 
 This model uses The vector generalized additive models which are available in the **VGAM** package. for more detail about these models click [here](https://cran.r-project.org/web/packages/VGAM/vignettes/categoricalVGAM.pdf).  
 
@@ -445,7 +460,7 @@ predict(model_vgam, test) %>%
 This the best accuracy rate compared to the other models. 
 
 
-## Compare models
+# Compare models
 
 We can compare between the above models using **resample** caret function.
 
@@ -488,11 +503,11 @@ tibble(models=c("logit", "cart", "forest", "vgam"),
 
 Using the testing set, the logistic model with the link **logit** is the best model to predict this data.  
 
-## Conclusion
+# Conclusion
 
 We have seen so far how to model ordinal data by exploring several models, and it happened that the logistic model is the best on for our data. However, in general the best model depends strongly on the data at hand.
 
-## Session information
+# Session information
 
 ```{r}
 sessionInfo()

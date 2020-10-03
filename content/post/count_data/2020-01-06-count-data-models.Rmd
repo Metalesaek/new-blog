@@ -12,6 +12,7 @@ summary: 'When we deal with data that has a response variable of integer type, u
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 authors: []
@@ -30,7 +31,19 @@ knitr::opts_chunk$set(echo = TRUE, comment = NA)
 ```
 
 
-## Introduction:
+```{css, echo=FALSE}
+strong {
+  color: red;
+}
+
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+```
+
+
+# Introduction:
 
 
 When we deal with data that has a response variable of integer type, using a linear regression may violate the normality assumption and hence all the classical statistic tests would fail to evaluate the model. However, as we do with logistic regression models, the generalized linear model [GLM](https://en.wikipedia.org/wiki/Generalized_linear_model) can be used instead here by specifying the suitable distribution.
@@ -39,7 +52,7 @@ The possible distributions for this type of data are the discrete distributions 
   
 There is another alternative if neither the poisson distribution nor the negative binomial are suitable called the [Quasi maximum likelihood](https://en.wikipedia.org/wiki/Quasi-maximum_likelihood_estimate). The advantage of this method is that uses only the relationship between the mean and the variance and does not require any  prespecified distribution. Moreover, its estimators are approximately as efficient as the maximum likelihood estimators.
 
-## Data preparation
+# Data preparation
 
 To well understand how to model the count data we are going be using **Doctorvisits** data from **AER** package, in which the variable **visits** will be our target variable, so let's call this data with the packages that we need along this article.
 
@@ -128,7 +141,7 @@ With this distribution it seems that the empiricall distribution is more closer 
 **Note**: This data has very large number of zeros for the outcome compared to the other values which means that any trained model that does not take into account this anomaly will be biased to predict more likely the **zero** value. However, at the end of this article I will show two famous models to handel this type of count data called **Haurdle** model and **zero_inflated** model.         
 
 
-## Data partition
+# Data partition
 
 In oreder to evaluate our model we held out 20% of the data as testing set. 
 
@@ -141,7 +154,7 @@ test<-doc[index==2,]
 
 
 
-## Poisson model
+# Poisson model
 
 This model belongs to the generalized linear model families, so in the function **glm** we set the argument **family** to poisson. In practice this model is sufficient with a wide range of count data. 
 
@@ -214,7 +227,7 @@ dispersiontest(model1, trafo = 2)
 
 If the relation is in quadratic form then this model is called NB2. And since this p-value **3.939e-14** is smaller than the previous one then NB2 could be more appropriate than NB1.
 
-## Quasi poisson model 
+# Quasi poisson model 
 
 The first test suggested the use of quasi-poisson model, so let's train this model with the same predictors as the previous one. 
 
@@ -291,7 +304,7 @@ maemodelqp
 
 we will not compare this two models until we finish with all the incoming models and we compare all the models at once.
 
-## Negative binomial model 
+# Negative binomial model 
 
 The negative binomial distribution is used as an alternative for the poisson distribution under overdispersion problem. 
 
@@ -325,13 +338,13 @@ maemodelnb
 
 we will use these ouputs further. 
 
-## Hurdle model
+# Hurdle model
 
 Originally proposed by Mullahy (1986) this model can take into account the fact that the data has more zeros and also can handle the overdispersion problem. It has two components (or steps), truncated count component defined by the chosen discrete distribution such as poisson or negative binomial, and a hurdle components models zero vs larger counts (that uses censored count distribution or binomial model). In other words, this models asumes that two population distributions underlying the data, one distribution for zero values, and another different distribution the psotive values. For more detail about hurdle and zero inflated models click [here](https://cran.r-project.org/web/packages/pscl/vignettes/countreg.pdf#cite.countreg%3AZeileis%3A2006) 
 
 To perform this model we make use of the function **hurdle** from the package **pscl**. 
 
-### hurdle model with poisson distribution.
+## hurdle model with poisson distribution.
 
 This model works in two steps. In the first step it uses binary classification to discriminate between the zero values and the positive values, and in the second step uses the traditional (poisson or binomial model, and here we use poisson model) model for positive values.
 
@@ -364,7 +377,7 @@ maemodelhp
 ```
 
 
-### hurdle model with negative binomial distribution.
+## hurdle model with negative binomial distribution.
 
 Now let's try to use the negative binomial instead of poisson distribution.
 
@@ -395,11 +408,11 @@ maemodelhnb
 ```
 
 
-## Zero inflated model
+# Zero inflated model
 
 Such as the previous model type , this model also combines two components but with the difference that this model performs a mixture of binomial distribution (between zero and positive values) and the poisson (or negative binomial) distribution for the rest of the values (with the zero included). 
 
-### Zero inflated model with poisson distribution
+## Zero inflated model with poisson distribution
 
 Here also we fit tow models one with poisson and one with negative binomial
 
@@ -426,7 +439,7 @@ maemodelzp
 ```
 
 
-### Zero inflated model with negative binomial distribution
+## Zero inflated model with negative binomial distribution
 
 Let's this time try the negative binomial distribution. 
 
@@ -462,13 +475,17 @@ data.frame(models,rmse,mae)%>%
 
 Both metrics have chosen the zero inflated negative binomial model as the best model  with minimum rmse value **0.7309579**, and minimum mae value **0.2753623**. this result is in line with the fact that this kind of models take care of the zero inflated data and at the same time the overdispersion problem.
 
-## Conclusion:
+# Conclusion:
 
 
-If the data is truly follows Poisson distribution then all the the other models have extra parameters that, during training process, converges to the optimum parameter values for poisson, this relation is like the linear regression to the Generealized least squares. However, if the data is very skewed towards zero then it should be better to use the last two models to take care of this issue.
+If the data is truly follows Poisson distribution then all the the other models have extra parameters that, during training process, converges to the optimum parameter values for poisson, this relation is like the linear regression to the generalized least squares. However, if the data is very skewed towards zero then it should be better to use the last two models to take care of this issue.
 
-## Furhter reading:
+# Furhter reading:
 
 * Michael J. Crawley, The R book, WILEY, UK, 2013.  http://www.bio.ic.ac.uk/research/mjcraw/therbook/index.htm
 
+
+```{r}
+sessionInfo()
+```
 

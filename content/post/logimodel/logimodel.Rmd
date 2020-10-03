@@ -6,6 +6,7 @@ summary: 'In this paper we will fit a logistic regression model to the **heart d
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 tags:
@@ -19,13 +20,24 @@ options(tinytex.verbose=TRUE)
 ```
 
 
-## Introduction
+```{css, echo=FALSE}
+strong {
+  color: red;
+}
+
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+```
+
+# Introduction
 
 In this paper we will fit a logistic regression model to the **heart disease** data [uploaded from kaggle website](https://www.kaggle.com/johnsmith88/heart-disease-dataset).
 
 For the data preparation we will follow the same steps as we did in my previous paper about **naive bayes model**, for more detail thus click [here](https://github.com/Metalesaek/naive-bayes-model) to get access to that paper.   
 
-## Data preparation
+# Data preparation
 
 First we call our data with the required packages
 
@@ -113,7 +125,7 @@ ggplot(mydata, aes(age,fill=target))+
 ```
 
 
-## Data partition
+# Data partition
 
 
 we take out 80% of the data to use as training set and the rest will be put aside to evaluate the model performance.  
@@ -127,7 +139,7 @@ test<-mydata[-index,]
 ```
 
 
-## train the model 
+# train the model 
 
 We are now ready to train our model.
 
@@ -165,7 +177,7 @@ summary(model)
 
 Notice that we can not remove intercept even it is not significant because it contains the first level of "0" of the factor **cp** which is significant. This is hence our final model.
 
-##  prediction and confusion matrix
+#  prediction and confusion matrix
 
 we will use this model to predict the training set.
 
@@ -193,9 +205,9 @@ confusionMatrix(as.factor(pred),test$target)
  
 With the test set we have lower accuracy rate about 76.67%. 
 
-## altering the link function
+# The link function
 
-By default the link function is **logit** from the sigmoid distribution, we can make use of the link function **probit** instead, which stands for the normal distribution.  
+By default the link function is **logit** from the sigmoid distribution, we can however make use of the link function **probit** instead, which stands for the normal distribution.  
 
 ```{r}
 model1 <- glm(target~.-fbs-slope-exang-age, data=train,

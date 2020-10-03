@@ -7,6 +7,7 @@ bibliography: "bibliography.bib"
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 tags:
@@ -19,12 +20,23 @@ categories: R
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Introduction
+```{css, echo=FALSE}
+strong {
+  color: red;
+}
+
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+```
+
+# Introduction
 
 Decision tree^[Kevin P.Murphy 2012] is a model that recursively splits the input space into regions and defines local model for each resulted region. However, fitting decision tree model to complex data would not yield to accurate prediction in most cases, which can be termed as [weak learner](http://rob.schapire.net/papers/strengthofweak.pdf). But combining multiple decision trees together (called also **ensemble models**) using techniques such as aggregating  and boosting can largely improve the model accuracy. [Xgboost](https://xgboost.readthedocs.io/en/latest/R-package/index.html) (short for Extreme gradient boosting) model is a tree-based algorithm that uses these types of techniques. It can be used for both **classification** and **regression**. 
 In this paper we learn how to implement this model to predict the well known titanic data as we did in the previous papers using different kind of models. 
 
-## Data preparation
+# Data preparation
 
 First we start by calling the packages needed and the titanic data
 
@@ -63,7 +75,7 @@ As we see, we have 177 missing values from age variable and 2 values from Embark
 We will opt for random forest method since in most cases can be the best choice. However, in order to respect the most important rule in machine learning, never touch the test data during the training process , we will apply this imputation after splitting the data.   
 
 
-## Data visualization
+# Data visualization
 
 We have many tools outside modelization to investigate some relationships between variables like visualization tools. So we can visualize the relationship between each predictor and the target variable using the ggplot2 package. 
 
@@ -148,7 +160,7 @@ ggplot(mydata,aes(Sex,Pclass,color=as.factor(Survived)))+
 
 The majority of the survived females (blue points on the left) came from the first and the second class, while the majority of died males (red points on the right) came from the third class.
 
-## Data partition
+# Data partition
 
 we take out 80% of the data as training set and the remaining will be served as testing set. 
 
@@ -172,7 +184,7 @@ summary(train2)
 From this output we see that we do not have missing values any more. 
 
 
-## Model training 
+# Model training 
 
 The xgboost model expects the predictors to be of numeric type, so we convert the factors to dummy variables  by the help of the **Matrix**  package
 
@@ -269,7 +281,7 @@ confusionMatrix(as.factor(pred),as.factor(test_label))
 with the default values we obtain a pretty good accuracy rate. The next step we fine tune the hyperparameters sing **cross validation** with the help of caret package.   
 
 
-## Fine tune the hyperparameters
+# Fine tune the hyperparameters
 
 for the hyperparameters we try different grid values for the above arguments as follows:
 
@@ -426,7 +438,13 @@ write_csv(predtestk,"predxgbkag.csv")
 ```
 
  
-## Conclusion:
+# Conclusion:
 
-Xgboost is the best machine learning algorithm nowadays  due to its powerful capability to predict wide range of data from various domaines. Several win competitions in kaggle and elsewhere are achieved by this model. It can handle large and complex data with ease. The large number of Hyperparameters that has give the modeler a large possibilities to tune the model with respect to the data at their hand as well as to fight other problems such as overfitting, feature selection...ect.
+Xgboost is the best machine learning algorithm nowadays  due to its powerful capability to predict wide range of data from various domains. Several win competitions in **kaggle** and elsewhere are achieved by this model. It can handle large and complex data with ease. The large number of hyperparameters that has give the modeler a large possibilities to tune the model with respect to the data at their hand as well as to fight other problems such as overfitting, feature selection...ect.
+
+# Session information
+
+```{r}
+sessionInfo()
+```
 
