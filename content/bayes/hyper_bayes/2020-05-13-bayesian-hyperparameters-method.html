@@ -13,6 +13,7 @@ summary: 'Machine learning models are called by this name because of their abili
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 authors: []
@@ -29,36 +30,51 @@ projects: []
 
 <div id="TOC">
 <ul>
-<li><a href="#introduction">Introduction</a></li>
-<li><a href="#bayesian-optimization">Bayesian optimization</a>
+<li><a href="#introduction"><span class="toc-section-number">1</span> Introduction</a></li>
+<li><a href="#bayesian-optimization"><span class="toc-section-number">2</span> Bayesian optimization</a>
 <ul>
-<li><a href="#acquisition-functions">Acquisition functions</a></li>
-</ul></li>
-<li><a href="#data-preparation">Data preparation</a></li>
-<li><a href="#random-forest-model">Random forest model</a>
+<li><a href="#acquisition-functions"><span class="toc-section-number">2.1</span> Acquisition functions</a>
 <ul>
-<li><a href="#the-true-distribution-of-the-hyperparameters">The true distribution of the hyperparameters</a></li>
-<li><a href="#random-search">random search</a></li>
-<li><a href="#bayesian-optimization-ucb">bayesian optimization UCB</a></li>
-<li><a href="#bayesian-optimization-pi">bayesian optimization PI</a></li>
-<li><a href="#bayesian-optimization-ei">bayesian optimization EI</a></li>
-<li><a href="#contrast-the-results">Contrast the results</a></li>
+<li><a href="#upper-confidence-bound"><span class="toc-section-number">2.1.1</span> Upper confidence bound</a></li>
+<li><a href="#probability-of-improvement-pi"><span class="toc-section-number">2.1.2</span> Probability of improvement PI</a></li>
+<li><a href="#expected-improvement-ei"><span class="toc-section-number">2.1.3</span> Expected improvement EI</a></li>
 </ul></li>
-<li><a href="#deep-learning-model">deep learning model</a>
+</ul></li>
+<li><a href="#data-preparation"><span class="toc-section-number">3</span> Data preparation</a></li>
+<li><a href="#random-forest-model"><span class="toc-section-number">4</span> Random forest model</a>
 <ul>
-<li><a href="#random-search-1">Random search</a></li>
-<li><a href="#bayesian-optimization-ucb-1">Bayesian optimization UCB</a></li>
-<li><a href="#bayesian-optimization-pi-1">Bayesian optimization PI</a></li>
-<li><a href="#bayesian-optimization-ei-1">Bayesian optimization EI</a></li>
-<li><a href="#contrast-the-results-1">Contrast the results</a></li>
+<li><a href="#the-true-distribution-of-the-hyperparameters"><span class="toc-section-number">4.1</span> The true distribution of the hyperparameters</a></li>
+<li><a href="#random-search"><span class="toc-section-number">4.2</span> random search</a></li>
+<li><a href="#bayesian-optimization-ucb"><span class="toc-section-number">4.3</span> bayesian optimization UCB</a></li>
+<li><a href="#bayesian-optimization-pi"><span class="toc-section-number">4.4</span> bayesian optimization PI</a></li>
+<li><a href="#bayesian-optimization-ei"><span class="toc-section-number">4.5</span> bayesian optimization EI</a></li>
+<li><a href="#contrast-the-results"><span class="toc-section-number">4.6</span> Contrast the results</a></li>
 </ul></li>
-<li><a href="#conclusion">Conclusion</a></li>
-<li><a href="#session-info">Session info</a></li>
+<li><a href="#deep-learning-model"><span class="toc-section-number">5</span> deep learning model</a>
+<ul>
+<li><a href="#random-search-1"><span class="toc-section-number">5.1</span> Random search</a></li>
+<li><a href="#bayesian-optimization-ucb-1"><span class="toc-section-number">5.2</span> Bayesian optimization UCB</a></li>
+<li><a href="#bayesian-optimization-pi-1"><span class="toc-section-number">5.3</span> Bayesian optimization PI</a></li>
+<li><a href="#bayesian-optimization-ei-1"><span class="toc-section-number">5.4</span> Bayesian optimization EI</a></li>
+<li><a href="#contrast-the-results-1"><span class="toc-section-number">5.5</span> Contrast the results</a></li>
+</ul></li>
+<li><a href="#conclusion"><span class="toc-section-number">6</span> Conclusion</a></li>
+<li><a href="#session-info"><span class="toc-section-number">7</span> Session info</a></li>
 </ul>
 </div>
 
-<div id="introduction" class="section level2">
-<h2>Introduction</h2>
+<style type="text/css">
+strong {
+  color: red;
+}
+
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+</style>
+<div id="introduction" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Introduction</h1>
 <p>Machine learning models are called by this name because of their ability to learn the best parameter values that are as closest as possible to the right values of the optimum objective function (or loss function). However, since all models require some assumptions (like linearity in linear regression models), parameters (like the cost C in svm models), and settings (like the number of layers in deep learning models) to be prespecified before training the model (in most cases are set by default ), the name of <strong>machine learning</strong> is not fully justified. Theses prespecified parameters are called <strong>hyperparameters</strong>, and should be defined in such a way that the corresponding model reaches its best performance (conditionally on the data at hand).</p>
 <p>The search of the best hyperparameters called <strong>tuning</strong>, which simply is training the model with each combination of hyperparameter values many times, using some techniques like cross-validation to make sure that the resulted loss functions highly likely depends on this specific combination values (not by random chances), and then pick the best one that gives the optimum value for the objective function. This means that if our model requires long computational time (due to fewer hardware resources, or large dataset) we cannot try a large number of combinations, and hence we will be likely far away from the best result.</p>
 <p>The main problem, however, is how do we define the space of these hyperparameters to choose from. Many methods are available:</p>
@@ -70,42 +86,44 @@ projects: []
 <p>we will focus on the best one which is <strong>Bayesian hyperparameters</strong>, but we first start by briefly introducing the others.</p>
 <p>To well understand these methods we will make use of small dataset with a small number of predictors, and we will use two models, the machine learning model <strong>Random forest</strong> and the deep learning model <strong>feedforward neural network</strong>.</p>
 </div>
-<div id="bayesian-optimization" class="section level2">
-<h2>Bayesian optimization</h2>
+<div id="bayesian-optimization" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> Bayesian optimization</h1>
 <p>The main idea behind this method is very simple, at the first iteration we pick a point at random, then at each iteration, and based on Bayes rule, we make a trade-off between choosing the point that has the highest uncertainty (known as <strong>active learning</strong>) or choosing the point within the region that has already the best result (optimum objective function) until the current iteration. In more detail, let’s say we are dealing with maximization problem such as maximizing the accuracy rate for a classification problem, then, at each iteration, the Bayes optimization method should decide between focusing the search on the region that contains the best point (that resulted in the maximum objective function) until the current iteration (called <strong>exploitation</strong>), or inspecting another region with the highest uncertainty (called <strong>exploration</strong>). The question, however, is how can this method decide between these two options. Well, this method uses what is called <strong>acquisition function</strong>, which is a function that helps to decide what region should we inspect in the next iteration.</p>
-<div id="acquisition-functions" class="section level3">
-<h3>Acquisition functions</h3>
+<div id="acquisition-functions" class="section level2" number="2.1">
+<h2><span class="header-section-number">2.1</span> Acquisition functions</h2>
 <p>Since this problem is always partially random, there exist many forms for this function, and we will discuss briefly the most common ones.</p>
-<div id="upper-confidence-bound" class="section level4">
-<h4>Upper confidence bound</h4>
+<div id="upper-confidence-bound" class="section level3" number="2.1.1">
+<h3><span class="header-section-number">2.1.1</span> Upper confidence bound</h3>
 <p>Using this function, the following located point will be that that has the highest upper confidence bound, and, assuming the Gaussian process, this bound will be computed as follows:</p>
 <p><span class="math display">\[UCB(x)=\mu(x)+\kappa\sigma(x)\]</span></p>
 <p>Where <span class="math inline">\(\mu\)</span> and <span class="math inline">\(\sigma\)</span> are the mean and the standard deviation defined by the Gaussian process, and <span class="math inline">\(\kappa\)</span> is an exploration parameter, the larger the values the more the exploration.</p>
 </div>
-<div id="probability-of-improvement-pi" class="section level4">
-<h4>Probability of improvement PI</h4>
+<div id="probability-of-improvement-pi" class="section level3" number="2.1.2">
+<h3><span class="header-section-number">2.1.2</span> Probability of improvement PI</h3>
 <p>this acquisition function chooses the next point that has the highest probability of improvement over the current maximum objective function <span class="math inline">\(f_{max}\)</span> obtained from the points evaluated previously.</p>
 <p>Assuming the Gaussian process, the new point then will be the one that has the highest following probability:</p>
 <p><span class="math display">\[PI(x)=\Phi\left(\frac{\mu(x)-f{max}-\varepsilon}{\sigma(x)}\right)\]</span>
 Where <span class="math inline">\(\varepsilon\)</span> plays the role for trading off between exploration and exploitation, such that larger values result in more exploration than exploitation</p>
 </div>
-<div id="expected-improvement-ei" class="section level4">
-<h4>Expected improvement EI</h4>
+<div id="expected-improvement-ei" class="section level3" number="2.1.3">
+<h3><span class="header-section-number">2.1.3</span> Expected improvement EI</h3>
 <p>This acquisition function, unlike the previous one, tries to quantify how much improvement we get with the new point, the new point that has the maximum expected value will be chosen.</p>
 <p>Again, by assuming the Gaussian process, this function can be computed as follows:</p>
 <p><span class="math display">\[EI(x) = \left(\mu(x)-f_{max}\right)\Phi\left(\frac{\mu(x)-f{max}-\varepsilon}{\sigma(x)}\right)+\sigma(x)\phi\left(\frac{\mu(x)-f{max}-\varepsilon}{\sigma(x)}\right)\]</span></p>
 </div>
 </div>
 </div>
-<div id="data-preparation" class="section level2">
-<h2>Data preparation</h2>
+<div id="data-preparation" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> Data preparation</h1>
 <p>Let’s first call the packages needed along this article.</p>
-<pre class="r"><code>library(readr)
+<pre class="r"><code>options(warn=-1)
+library(readr)
 library(tidymodels)
 library(themis)
 library(plot3D)</code></pre>
 <p>For our illustration, we will use data downloaded from the link described in the below script. It is already split between a training set and a testing set. The target variable is a highly imbalanced binary variable, and the data has a very large number of missing values. To make our analysis simpler, however, we will reduce the size of this data by first, removing the variables with a large number of missing values, then removing completely the remaining ones, and lastly correcting the imbalance distribution using downsampling method . For more detail about this data check my previous <a href="https://modelingwithr.rbind.io/post/scania/predicting-large-and-imbalanced-data-set-using-the-r-package-tidymodels/">article</a>.</p>
-<pre class="r"><code>train &lt;- read_csv(&quot;https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_training_set.csv&quot;, skip = 20)
+<pre class="r"><code>options(warn=-1)
+train &lt;- read_csv(&quot;https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_training_set.csv&quot;, skip = 20)
 test &lt;- read_csv(&quot;https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_test_set.csv&quot;, skip = 20)</code></pre>
 <p>This data has 171 variables and a total of 76000 instances, 60000 in the training set, and 16000 in the testing sets. Notice that the missing values in the data are represented by lower case <strong>na</strong> values and not <strong>NA</strong> and hence are not recognized by R as missing values, That is why the <strong>read_csv</strong> function converted all the variables that have these values to the character type.</p>
 <pre class="r"><code>map_chr(train, typeof) %&gt;% 
@@ -159,15 +177,15 @@ dim(train1)</code></pre>
 <pre><code>[1] 15728    11</code></pre>
 <p><strong>Note</strong>: The testing set is not needed, since our purpose is the hyperparameter tuning methods, which requires only the training set. But it is included only to show how it is processed with the work flow of tidymodels package.</p>
 </div>
-<div id="random-forest-model" class="section level2">
-<h2>Random forest model</h2>
+<div id="random-forest-model" class="section level1" number="4">
+<h1><span class="header-section-number">4</span> Random forest model</h1>
 <p>Since we are dealing with a classification problem, our objective function will be the area under the ROC curve <strong>roc_area</strong>. And for the model, we will use the most popular one, <strong>Random forest</strong> model with the two hyperparameters to tune:</p>
 <ul>
 <li><strong>mtry</strong>: The number of sampled predictors at each step.</li>
 <li><strong>min_n</strong>: The minimum number of instances in the node to split further.</li>
 </ul>
-<div id="the-true-distribution-of-the-hyperparameters" class="section level3">
-<h3>The true distribution of the hyperparameters</h3>
+<div id="the-true-distribution-of-the-hyperparameters" class="section level2" number="4.1">
+<h2><span class="header-section-number">4.1</span> The true distribution of the hyperparameters</h2>
 <p>With this small data, this model, in the sense of computational time, is not expensive, so we will try a wide range of values for the above hyperparameters, then we can use this as the true distribution to compare the performance of the hyperparameter tuning methods discussed above.</p>
 <p>Using <strong>tidymodels</strong> package we define the model and we leave the <code>mtry</code> and <code>min_n</code> for tuning. To speed up, however, computation process we restrict the number of trees to 100 instead of the default fo 500 trees.</p>
 <pre class="r"><code>model_tune &lt;- rand_forest(mtry = tune(), min_n = tune(), trees = 100L) %&gt;% 
@@ -212,10 +230,10 @@ df &lt;- df %&gt;% arrange(-mean) %&gt;% tibble(rank=seq_len(nrow(df)), .)</code
           ticktype = &quot;detailed&quot;, pch = 19, cex = 0.5, 
           main=&quot;the true distribution&quot;, xlab=&quot;mtry&quot;,
           ylab=&quot;min_n&quot;, zlab=&quot;roc_auc&quot;)</code></pre>
-<p><img src="/bayes/hyper_bayes/2020-05-13-bayesian-hyperparameters-method_files/figure-html/unnamed-chunk-16-1.svg" width="576" /></p>
+<p><img src="/bayes/hyper_bayes/2020-05-13-bayesian-hyperparameters-method_files/figure-html/unnamed-chunk-17-1.svg" width="576" /></p>
 </div>
-<div id="random-search" class="section level3">
-<h3>random search</h3>
+<div id="random-search" class="section level2" number="4.2">
+<h2><span class="header-section-number">4.2</span> random search</h2>
 <p>Now suppose that we are allowed to try only 10 combinations. For random search strategy, we use the <strong>grid_random</strong> function from <strong>dials</strong> package (embedded in tidymodels package).</p>
 <pre class="r"><code>#tuned_random &lt;- tune_wf %&gt;% 
 #  tune_grid(resamples = folds, 
@@ -235,8 +253,8 @@ df_r &lt;- read_csv(&quot;C:/Users/dell/Documents/new-blog/content/bayes/hyper_b
 1    13      3      10 0.983</code></pre>
 <p>The maximum value obtained by this method is 0.9826900, which corresponds to the 13th rank compared to the maximum value of the the true distribution, and the associated hyperparameters values are <code>mtry=3</code>, <code>min_n=10</code></p>
 </div>
-<div id="bayesian-optimization-ucb" class="section level3">
-<h3>bayesian optimization UCB</h3>
+<div id="bayesian-optimization-ucb" class="section level2" number="4.3">
+<h2><span class="header-section-number">4.3</span> bayesian optimization UCB</h2>
 <p>For the Bayesian optimization method, we make use of the <strong>tune_bayes</strong> function from <strong>tune</strong> package that provides all the acquisition functions discussed above. So we start by UCB function, and we set the argument <strong>kappa</strong> equals to 2, which controls the trade-off between exploitation and exploration such that larger values lead to more exploration. Notice that, by default, this function explores 10 combinations, if you want another number change the argument <strong>iter</strong>.</p>
 <pre class="r"><code>#tuned_UCB &lt;- tune_wf %&gt;% 
 #  tune_bayes(resamples = folds,
@@ -257,8 +275,8 @@ df_UCB &lt;- read_csv(&quot;C:/Users/dell/Documents/new-blog/content/bayes/hyper
 1     2      3       6 0.984</code></pre>
 <p>With this acquisition function, we obtained better result than the random search 0.9837529 , which occupies the second position.</p>
 </div>
-<div id="bayesian-optimization-pi" class="section level3">
-<h3>bayesian optimization PI</h3>
+<div id="bayesian-optimization-pi" class="section level2" number="4.4">
+<h2><span class="header-section-number">4.4</span> bayesian optimization PI</h2>
 <p>This time we will explore the acquisition functions PI discussed above. Note that larger values for the argument trade-off lead to more exploration than exploitation.</p>
 <pre class="r"><code>#tuned_PI &lt;- tune_wf %&gt;% 
 #  tune_bayes(resamples = folds,
@@ -279,8 +297,8 @@ df_PI &lt;- read_csv(&quot;C:/Users/dell/Documents/new-blog/content/bayes/hyper_
 1    11      2       9 0.983</code></pre>
 <p>As we see, with this acquisition function, we obtained the 11th position which is more worst than the previous one, but still better than random search.</p>
 </div>
-<div id="bayesian-optimization-ei" class="section level3">
-<h3>bayesian optimization EI</h3>
+<div id="bayesian-optimization-ei" class="section level2" number="4.5">
+<h2><span class="header-section-number">4.5</span> bayesian optimization EI</h2>
 <p>Now we try another acquisition function, the expected improvement function.</p>
 <pre class="r"><code>#tuned_EI &lt;- tune_wf %&gt;% 
 #  tune_bayes(resamples = folds,
@@ -303,8 +321,8 @@ df_EI &lt;- read_csv(&quot;C:/Users/dell/Documents/new-blog/content/bayes/hyper_
 1     2      3       6 0.984</code></pre>
 <p>Here also we get the same result as UCB method.</p>
 </div>
-<div id="contrast-the-results" class="section level3">
-<h3>Contrast the results</h3>
+<div id="contrast-the-results" class="section level2" number="4.6">
+<h2><span class="header-section-number">4.6</span> Contrast the results</h2>
 <pre class="r"><code>df_rf &lt;- tibble(names=c(&quot;true&quot;, &quot;random&quot;, &quot;UCB&quot;, &quot;PI&quot;, &quot;EI&quot;),
                 mtry=c(df[df$mean==max(df$mean),1, drop=TRUE],
                   df_r[df_r$mean==max(df_r$mean),1, drop=TRUE],
@@ -335,8 +353,8 @@ df_rf %&gt;% arrange(-roc_auc) </code></pre>
 <p>As we see, the Bayesian optimization method performs better than random search whatever acquisition function used. However, since the acquisition functions have their own hyperparameters (to trade-off between exploration and exploitation), their performance thus may differ strongly from each other. Moreover, the difference can be larger if we use a larger dataset.</p>
 </div>
 </div>
-<div id="deep-learning-model" class="section level2">
-<h2>deep learning model</h2>
+<div id="deep-learning-model" class="section level1" number="5">
+<h1><span class="header-section-number">5</span> deep learning model</h1>
 <p>As we did with the random forest model we explore a wide range of hyperparameter values assuming that these values represent the true distribution, then we apply all the above tuning methods. For the model architecture, we use a deep learning model with a single layer, and for tuning, we use the two hyperparameters, the number of nodes, and the number of epochs. The last thing we have to do is to save what we need in csv file and load it again since each time we rerun the model we get a different result, and besides, it takes a lot of time.</p>
 <pre class="r"><code>model_tune1 &lt;- mlp(hidden_units = tune(), epochs = tune()) %&gt;% 
   set_engine(&quot;keras&quot;) %&gt;% 
@@ -378,9 +396,9 @@ df1 &lt;- read_csv(&quot;C:/Users/dell/Documents/new-blog/content/bayes/hyper_ba
           ticktype = &quot;detailed&quot;, pch = 19, cex = 0.5, 
           main=&quot;the true distribution&quot;, xlab=&quot;units&quot;,
           ylab=&quot;epochs&quot;, zlab=&quot;roc_auc&quot;)</code></pre>
-<p><img src="/bayes/hyper_bayes/2020-05-13-bayesian-hyperparameters-method_files/figure-html/unnamed-chunk-28-1.svg" width="576" /></p>
-<div id="random-search-1" class="section level3">
-<h3>Random search</h3>
+<p><img src="/bayes/hyper_bayes/2020-05-13-bayesian-hyperparameters-method_files/figure-html/unnamed-chunk-29-1.svg" width="576" /></p>
+<div id="random-search-1" class="section level2" number="5.1">
+<h2><span class="header-section-number">5.1</span> Random search</h2>
 <pre class="r"><code>#tuned_random1 &lt;- tune_wf1 %&gt;% 
 #  tune_grid(resamples = folds, 
 #            grid = grid_random(hidden_units(range = c(5,15)), epochs(range = #c(10,20)), size = 10),
@@ -405,8 +423,8 @@ df_r1 &lt;- read_csv(&quot;C:/Users/dell/Documents/new-blog/content/bayes/hyper_
 10            5     13 roc_auc binary     0.979     5 0.00270</code></pre>
 <p>Since deep learning models strongly depend on an internal random process (like when initializing the weights), and besides, the small difference between results, due to the small size of the data, it is harder to contrast between different methods. To alleviate this problem, however, we use this time the standard errors to highlight the significance differences between the methods.</p>
 </div>
-<div id="bayesian-optimization-ucb-1" class="section level3">
-<h3>Bayesian optimization UCB</h3>
+<div id="bayesian-optimization-ucb-1" class="section level2" number="5.2">
+<h2><span class="header-section-number">5.2</span> Bayesian optimization UCB</h2>
 <pre class="r"><code>#tuned_UCB1 &lt;- tune_wf1 %&gt;% 
 #  tune_bayes(resamples = folds,
 #             param_info=parameters(hidden_units(range = c(5L,15L)), 
@@ -438,8 +456,8 @@ df_UCB1 &lt;- read_csv(&quot;C:/Users/dell/Documents/new-blog/content/bayes/hype
 14            5     11     0 roc_auc binary     0.979     5 0.00233
 15            9     12     0 roc_auc binary     0.979     5 0.00288</code></pre>
 </div>
-<div id="bayesian-optimization-pi-1" class="section level3">
-<h3>Bayesian optimization PI</h3>
+<div id="bayesian-optimization-pi-1" class="section level2" number="5.3">
+<h2><span class="header-section-number">5.3</span> Bayesian optimization PI</h2>
 <pre class="r"><code>#tuned_PI1 &lt;- tune_wf1 %&gt;% 
 #  tune_bayes(resamples = folds,
 #             param_info=parameters(hidden_units(range = c(5L,15L)), 
@@ -471,8 +489,8 @@ df_PI1 &lt;- read_csv(&quot;C:/Users/dell/Documents/new-blog/content/bayes/hyper
 14            5     20     2 roc_auc binary     0.980     5 0.00227
 15            5     12     9 roc_auc binary     0.979     5 0.00234</code></pre>
 </div>
-<div id="bayesian-optimization-ei-1" class="section level3">
-<h3>Bayesian optimization EI</h3>
+<div id="bayesian-optimization-ei-1" class="section level2" number="5.4">
+<h2><span class="header-section-number">5.4</span> Bayesian optimization EI</h2>
 <pre class="r"><code>#tuned_EI1 &lt;- tune_wf1 %&gt;% 
 #  tune_bayes(resamples = folds,
 #             param_info=parameters(hidden_units(range = c(5L,15L)), 
@@ -504,8 +522,8 @@ df_EI1 &lt;- read_csv(&quot;C:/Users/dell/Documents/new-blog/content/bayes/hyper
 14            5     10     2 roc_auc binary     0.980     5 0.00261
 15            9     14     3 roc_auc binary     0.979     5 0.00243</code></pre>
 </div>
-<div id="contrast-the-results-1" class="section level3">
-<h3>Contrast the results</h3>
+<div id="contrast-the-results-1" class="section level2" number="5.5">
+<h2><span class="header-section-number">5.5</span> Contrast the results</h2>
 <pre class="r"><code>df_deep &lt;- tibble(names=c(&quot;true&quot;, &quot;random&quot;, &quot;UCB&quot;, &quot;PI&quot;, &quot;EI&quot;),
                   hidden_units=c(df1[df1$mean==max(df1$mean),1, drop=TRUE],
                     df_r1[df_r1$mean==max(df_r1$mean),1, drop=TRUE],
@@ -539,20 +557,20 @@ df_deep </code></pre>
          geom_hline(yintercept = df_deep[df_deep$names==&quot;true&quot;, 4, drop=TRUE], 
                     color= &quot;blue&quot;, lty=&quot;dashed&quot;)+
          geom_errorbar(aes(ymin=roc_auc-1.92*std_err, ymax=roc_auc+1.92*std_err))</code></pre>
-<p><img src="/bayes/hyper_bayes/2020-05-13-bayesian-hyperparameters-method_files/figure-html/unnamed-chunk-38-1.svg" width="576" /></p>
+<p><img src="/bayes/hyper_bayes/2020-05-13-bayesian-hyperparameters-method_files/figure-html/unnamed-chunk-39-1.svg" width="576" /></p>
 <p>As we see, we do not obtain any significance difference between these methods, which is essentially due to the small size of the data and the small range used for the hyperparameter values. However, with more complex and large data set the difference will be obvious.</p>
 </div>
 </div>
-<div id="conclusion" class="section level2">
-<h2>Conclusion</h2>
+<div id="conclusion" class="section level1" number="6">
+<h1><span class="header-section-number">6</span> Conclusion</h1>
 <p>The main purpose of this article is more to show how implementing these methods in practice rather than highlighting the difference of performance between each other. However, the Bayesian optimization is known as the most efficient method, but with the downside that it also requires defining some hyperparameters like the acquisition function, sometimes arbitrarily. In other words, we cannot waste, say the limited budget, that should be concentrated to search for the optimum, to instead try different acquisition functions.</p>
 </div>
-<div id="session-info" class="section level2">
-<h2>Session info</h2>
+<div id="session-info" class="section level1" number="7">
+<h1><span class="header-section-number">7</span> Session info</h1>
 <pre class="r"><code>sessionInfo()</code></pre>
 <pre><code>R version 4.0.1 (2020-06-06)
 Platform: x86_64-w64-mingw32/x64 (64-bit)
-Running under: Windows 10 x64 (build 18362)
+Running under: Windows 10 x64 (build 19041)
 
 Matrix products: default
 
@@ -584,7 +602,7 @@ loaded via a namespace (and not attached):
  [22] doParallel_1.0.15    globals_0.12.5       gower_0.2.1         
  [25] RcppParallel_5.0.1   matrixStats_0.56.0   xts_0.12-0          
  [28] hardhat_0.1.3        prettyunits_1.1.1    colorspace_1.4-1    
- [31] xfun_0.14            callr_3.4.3          crayon_1.3.4        
+ [31] xfun_0.17            callr_3.4.3          crayon_1.3.4        
  [34] lme4_1.1-23          survival_3.1-12      zoo_1.8-8           
  [37] iterators_1.0.12     glue_1.4.1           gtable_0.3.0        
  [40] ipred_0.9-9          pkgbuild_1.0.8       rstan_2.19.3        
@@ -599,25 +617,25 @@ loaded via a namespace (and not attached):
  [67] later_1.1.0.1        munsell_0.5.0        tools_4.0.1         
  [70] cli_2.0.2            generics_0.0.2       ggridges_0.5.2      
  [73] evaluate_0.14        stringr_1.4.0        fastmap_1.0.1       
- [76] yaml_2.2.1           processx_3.4.2       knitr_1.28          
+ [76] yaml_2.2.1           processx_3.4.2       knitr_1.29          
  [79] RANN_2.6.1           future_1.17.0        nlme_3.1-148        
  [82] mime_0.9             rstanarm_2.19.3      rstudioapi_0.11     
  [85] tokenizers_0.2.1     compiler_4.0.1       bayesplot_1.7.2     
- [88] shinythemes_1.1.2    curl_4.3             tidyposterior_0.0.3 
- [91] lhs_1.0.2            statmod_1.4.34       stringi_1.4.6       
- [94] ps_1.3.3             blogdown_0.19        lattice_0.20-41     
- [97] Matrix_1.2-18        nloptr_1.2.2.1       markdown_1.1        
-[100] shinyjs_1.1          vctrs_0.3.1          pillar_1.4.4        
-[103] lifecycle_0.2.0      furrr_0.1.0          data.table_1.12.8   
-[106] httpuv_1.5.4         R6_2.4.1             bookdown_0.19       
-[109] promises_1.1.1       gridExtra_2.3        janeaustenr_0.1.5   
-[112] codetools_0.2-16     boot_1.3-25          colourpicker_1.0    
-[115] MASS_7.3-51.6        gtools_3.8.2         assertthat_0.2.1    
-[118] ROSE_0.0-3           withr_2.2.0          shinystan_2.5.0     
-[121] parallel_4.0.1       hms_0.5.3            grid_4.0.1          
-[124] rpart_4.1-15         timeDate_3043.102    tidyr_1.1.0         
-[127] class_7.3-17         minqa_1.2.4          misc3d_0.8-4        
-[130] rmarkdown_2.2        parallelMap_1.5.0    pROC_1.16.2         
-[133] tidypredict_0.4.5    shiny_1.4.0.2        lubridate_1.7.9     
-[136] base64enc_0.1-3      dygraphs_1.1.1.6    </code></pre>
+ [88] shinythemes_1.1.2    tidyposterior_0.0.3  lhs_1.0.2           
+ [91] statmod_1.4.34       stringi_1.4.6        ps_1.3.3            
+ [94] blogdown_0.20        lattice_0.20-41      Matrix_1.2-18       
+ [97] nloptr_1.2.2.1       markdown_1.1         shinyjs_1.1         
+[100] vctrs_0.3.1          pillar_1.4.4         lifecycle_0.2.0     
+[103] furrr_0.1.0          data.table_1.12.8    httpuv_1.5.4        
+[106] R6_2.4.1             bookdown_0.19        promises_1.1.1      
+[109] gridExtra_2.3        janeaustenr_0.1.5    codetools_0.2-16    
+[112] boot_1.3-25          colourpicker_1.0     MASS_7.3-51.6       
+[115] gtools_3.8.2         assertthat_0.2.1     ROSE_0.0-3          
+[118] withr_2.2.0          shinystan_2.5.0      parallel_4.0.1      
+[121] hms_0.5.3            grid_4.0.1           rpart_4.1-15        
+[124] timeDate_3043.102    tidyr_1.1.0          class_7.3-17        
+[127] minqa_1.2.4          misc3d_0.8-4         rmarkdown_2.2       
+[130] parallelMap_1.5.0    pROC_1.16.2          tidypredict_0.4.5   
+[133] shiny_1.4.0.2        lubridate_1.7.9      base64enc_0.1-3     
+[136] dygraphs_1.1.1.6    </code></pre>
 </div>

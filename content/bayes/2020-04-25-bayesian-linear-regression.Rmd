@@ -12,6 +12,7 @@ summary: 'For statistical inferences we have tow general approaches or framework
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 authors: []
@@ -29,7 +30,20 @@ projects: []
 knitr::opts_chunk$set(echo = TRUE, tidy = TRUE, tidy.opts = list(comment = FALSE))
 ```
 
-## Introduction
+
+```{css, echo=FALSE}
+strong {
+  color: red;
+}
+
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+```
+
+
+# Introduction
 
 For statistical inferences we have tow general approaches or frameworks:
 
@@ -40,17 +54,19 @@ The main problem, however, is the misunderstanding and misusing of this p-value 
 The **Evidence** is the probability of the data at hand regardless the parameter $\theta$.
 
 
-## Data preparation
+# Data preparation
 
 For simplicity we use the **BostonHousing** data from **mlbench** package, For more detail about this data run this command `?BostonHousing` after calling the package. But first Let's call all the packages that we need throughout this article.
 
-```{r}
-suppressPackageStartupMessages(library(mlbench))
-suppressPackageStartupMessages(library(rstanarm))
-suppressPackageStartupMessages(library(bayestestR))
-suppressPackageStartupMessages(library(bayesplot))
-suppressPackageStartupMessages(library(insight))
-suppressPackageStartupMessages(library(broom))
+```{r , results='hide'}
+
+options(warn=-1)
+library(mlbench)
+library(rstanarm)
+library(bayestestR)
+library(bayesplot)
+library(insight)
+library(broom)
 
 ```
 
@@ -59,7 +75,7 @@ data("BostonHousing")
 str(BostonHousing)
 ```
 
-To well understand how the bayesian regression works we keep only three features, two numeric variables **age**, **dis** and one categorical **chas**, with the target variable **medv** the median value of owner-occupied  homes.
+To well understand how the Bayesian regression works we keep only three features, two numeric variables **age**, **dis** and one categorical **chas**, with the target variable **medv** the median value of owner-occupied  homes.
 
 ```{r}
 bost <- BostonHousing[,c("medv","age","dis","chas")]
@@ -68,7 +84,7 @@ summary(bost)
 
 From the summary we do not have any special issues like missing values for example. 
 
-## Classical linear regression model
+# Classical linear regression model
 
 To highlight the difference between the bayesian regression and the traditional linear regression (frequentist approach), Let's first fit the latter to our data.
 
@@ -80,7 +96,7 @@ tidy(model_freq)
 
 Using the p.value of each regressor, all the regressors ar significant. except for the **dis** variable. Since the variable **chas** is categorical with twolevels The coefficient of **chas1** is the different between the madian price of houses on the bounds charles River and that of the others, so the median price of the former are higher about 7.513.      
 
-## Bayesian regression
+# Bayesian regression
 
 To fit a bayesian regresion we use the function `stan_glm` from the [rstanarm](https://cran.r-project.org/web/packages/rstanarm/rstanarm.pdf
 ) package. This function as the above **lm** function requires providing the **formula** and the data that will be used, and leave all the following arguments with their default values:
@@ -176,7 +192,7 @@ mcmc_dens(model_bayes, pars=c("age"))+
 
 As expected they are approximately on top of each other.
 
-## Bayesian inferences
+# Bayesian inferences
 
 As we do with classical regression (frequentist), we can test the significance of the bayesian regression coefficients by checking whether the corresponding credible interval contains zero or not, if no then this coefficient is significant. Let's go back to our model and check the significance of each coefficient (using credible based on the default `hdi`).
 
@@ -220,7 +236,7 @@ In contrast, almost the quarter of the credible interval of **dis** variable is 
 rope_range(model_bayes)
 ```
 
-## PD and P-value
+# PD and P-value
 
 Sometimes we are only  interested to check the direction of the coefficient (positive or negative). this is the role of **pd** statistic in the above table, high value means that the associated effect is concentrated on the same side as the median. For our model, since pd's equal to 1, almost all the posteriors of the two variables **age** and **chas1** and the intercept are on the same side (if median negative all other values are negatives). However, it should be noted that this statistic does not assess the significance of the effect.
 Something more important to mention is that it exists a strong relation between this probability and the p-value approximated as follows: $p-value=1-pd$. let's check this with our variables.
@@ -233,7 +249,7 @@ df <- cbind(df1,df2)
 df
 ```
  
- ## Conclusion
+ # Conclusion
  
 within the last decade more practitioner , specially in some fields such as medicine and psychology, are turning towards bayesian analysis since almost every thing can be interpreted straightforwardly with a probabilistic manner. However, the bayesian analysis has also some drawback , like the subjective way to define the priors (which play an important role to compute the posterior), or for problems that do not have conjugate prior, not always the mcmc alghoritm converges easily to the right values (specially with complex data).        
  

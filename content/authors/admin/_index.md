@@ -14,7 +14,7 @@ education:
     institution: Oran University
     year: 1996
 email: ""
-interests:
+Interests:
 - Econometrics
 - statistics
 - Machine learning

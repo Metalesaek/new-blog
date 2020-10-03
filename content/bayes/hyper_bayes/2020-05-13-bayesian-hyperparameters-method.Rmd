@@ -13,6 +13,7 @@ summary: 'Machine learning models are called by this name because of their abili
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 authors: []
@@ -30,7 +31,20 @@ knitr::opts_chunk$set(echo = TRUE, comment = NA, warning=FALSE, error=FALSE, mes
 ```
 
 
-## Introduction
+```{css, echo=FALSE}
+strong {
+  color: red;
+}
+
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+```
+
+
+
+# Introduction
  
  Machine learning models are called by this name because of their ability to learn the best parameter values that are as closest as possible to the right values of the optimum objective function (or loss function). However, since all models require some assumptions (like linearity in linear regression models), parameters (like the cost C in svm models), and settings (like the number of layers in deep learning models) to be prespecified before training the model (in most cases are set by default ), the name of **machine learning** is not fully justified. Theses prespecified parameters are called **hyperparameters**, and should be defined in such a way that the corresponding model reaches its best performance (conditionally on the data at hand).
 
@@ -49,16 +63,16 @@ we will focus on the best one which is **Bayesian hyperparameters**, but we firs
 
 To well understand these methods we will make use of small dataset with a small number of predictors, and we will use two models, the machine learning model **Random forest** and the deep learning model **feedforward neural network**. 
 
-## Bayesian optimization
+# Bayesian optimization
  
 
 The main idea behind this method is very simple, at the first iteration we pick a point at random, then at each iteration, and based on Bayes rule, we make a trade-off between choosing the point that has the highest uncertainty (known as **active learning**) or choosing the point within the region that has already the best result (optimum objective function) until the current iteration. In more detail, let's say we are dealing with maximization problem such as maximizing the accuracy rate for a classification problem, then, at each iteration, the Bayes optimization method should decide between focusing the search on the region that contains the best point (that resulted in the maximum objective function) until the current iteration (called **exploitation**), or inspecting another region with the highest uncertainty (called **exploration**). The question, however, is how can this method decide between these two options. Well, this method uses what is called **acquisition function**, which is a function that helps to decide what region should we inspect in the next iteration.     
 
-### Acquisition functions
+## Acquisition functions
 
 Since this problem is always partially random, there exist many forms for this function, and we will discuss briefly the most common ones.
 
-#### Upper confidence bound 
+### Upper confidence bound 
 
 Using this function, the following located point will be that that has the highest upper confidence bound, and, assuming the Gaussian process, this bound will be computed as follows:
 
@@ -66,7 +80,7 @@ $$UCB(x)=\mu(x)+\kappa\sigma(x)$$
 
 Where $\mu$ and $\sigma$ are the mean and the standard deviation defined by the Gaussian process, and $\kappa$ is an exploration parameter, the larger the values the more the exploration.
 
-#### Probability of improvement PI
+### Probability of improvement PI
 
 this acquisition function chooses the next point that has the highest probability of improvement over the current maximum objective function $f_{max}$ obtained from the points evaluated previously. 
 
@@ -75,7 +89,7 @@ Assuming the Gaussian process, the new point then will be the one that has the h
 $$PI(x)=\Phi\left(\frac{\mu(x)-f{max}-\varepsilon}{\sigma(x)}\right)$$
 Where $\varepsilon$ plays the role for trading off between exploration and exploitation, such that larger values result in more exploration than exploitation  
 
-#### Expected improvement EI
+### Expected improvement EI
 
 This acquisition function, unlike the previous one, tries to quantify how much improvement we get with the new point, the new point that has the maximum expected value will be chosen. 
 
@@ -83,11 +97,12 @@ Again, by assuming the Gaussian process, this function can be computed as follow
 
 $$EI(x) = \left(\mu(x)-f_{max}\right)\Phi\left(\frac{\mu(x)-f{max}-\varepsilon}{\sigma(x)}\right)+\sigma(x)\phi\left(\frac{\mu(x)-f{max}-\varepsilon}{\sigma(x)}\right)$$
 
-## Data preparation
+# Data preparation
 
 Let's first call the packages needed along this article. 
 
 ```{r results='hide'}
+options(warn=-1)
 library(readr)
 library(tidymodels)
 library(themis)
@@ -97,7 +112,8 @@ library(plot3D)
 For our illustration, we will use data downloaded from the link described in the below script. It is already split between a training set and a testing set. The target variable is a highly imbalanced binary variable, and the data has a very large number of missing values. To make our analysis simpler, however, we will reduce the size of this data by first, removing the variables with a large number of missing values, then removing completely the remaining ones, and lastly correcting the imbalance distribution using downsampling method . For more detail about this data check my previous [article](https://modelingwithr.rbind.io/post/scania/predicting-large-and-imbalanced-data-set-using-the-r-package-tidymodels/).     
 
 
-```{r results='hide'}
+```{r  results='hide', cache=TRUE}
+options(warn=-1)
 train <- read_csv("https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_training_set.csv", skip = 20)
 test <- read_csv("https://archive.ics.uci.edu/ml/machine-learning-databases/00421/aps_failure_test_set.csv", skip = 20)
 
@@ -105,7 +121,7 @@ test <- read_csv("https://archive.ics.uci.edu/ml/machine-learning-databases/0042
 
 This data has 171 variables and a total of 76000 instances, 60000 in the training set, and 16000 in the testing sets. Notice that the missing values in the data are represented by lower case **na** values and not **NA** and hence are not recognized by R as missing values, That is why the **read_csv** function converted all the variables that have these values to the character type.
 
-```{r}
+```{r }
 map_chr(train, typeof) %>% 
   tibble() %>% 
   table()
@@ -152,7 +168,7 @@ prop.table(table(train1$class))
 
 As we see, the data is highly imbalanced, so we correct this problem by downsamplig using the **themis** package. But first, we create a recipe that defines the formula of our model, normalizes the predictors, and down sample the data. Then we execute the recipe to the data using **prep** function, and lastly we retrieve the transformed data by **juice** function. 
 
-```{r}
+```{r cache=TRUE}
 train2 <- recipe(class~., data=train1) %>%
   step_normalize(all_predictors()) %>% 
   step_downsample(class, seed = 111) %>%
@@ -162,7 +178,7 @@ train2 <- recipe(class~., data=train1) %>%
 
 For the testing set, however, we can transform it by the same recipe, but at the end we make use of the **bake** function instead of **juice** that uses the data defined in the recipe.  
 
-```{r}
+```{r cache=TRUE}
 test2 <- recipe(class~., data=train1) %>%
   step_normalize(all_predictors()) %>%
   themis::step_downsample(class, seed = 111) %>% 
@@ -178,7 +194,7 @@ dim(test1); dim(test2)
 
 **Note**: The testing set is not needed, since our purpose is the hyperparameter tuning methods, which requires only the training set. But it is included only to show how it is processed with the work flow of tidymodels package.     
 
-## Random forest model
+# Random forest model
 
 Since we are dealing with a classification problem, our objective function will be the area under the ROC curve  **roc_area**. And for the model, we will use the most popular one, **Random forest** model with the two hyperparameters to tune:
 
@@ -186,7 +202,7 @@ Since we are dealing with a classification problem, our objective function will 
 * **min_n**: The minimum number of instances in the node to split further.
 
 
-### The true distribution of the hyperparameters 
+## The true distribution of the hyperparameters 
 
 With this small data, this model, in the sense of computational time, is not expensive, so we will try a wide range of values for the above hyperparameters, then we can use this as the true distribution to compare the performance of the hyperparameter tuning methods discussed above.     
 
@@ -201,7 +217,7 @@ model_tune <- rand_forest(mtry = tune(), min_n = tune(), trees = 100L) %>%
 
 To avoid the pitfalls of random samples, we use the cross-validation technique. 
 
-```{r}
+```{r cache=TRUE}
 set.seed(1234)
 folds <- vfold_cv(train2, v=5, strata = class) 
 ```
@@ -242,7 +258,7 @@ We reached the maximum value for the objective function **0.9837565** with the f
 
 We can plot this distribution as follows:
   
-```{r}
+```{r cache=TRUE}
 scatter3D(x=df$mtry, y=df$min_n, z=df$mean, phi = 0, bty = "g",  type = "h", 
           ticktype = "detailed", pch = 19, cex = 0.5, 
           main="the true distribution", xlab="mtry",
@@ -252,7 +268,7 @@ scatter3D(x=df$mtry, y=df$min_n, z=df$mean, phi = 0, bty = "g",  type = "h",
 
 
 
-### random search
+## random search
 
 Now suppose that we are allowed to try only 10 combinations. For random search strategy, we use the **grid_random** function from **dials** package (embedded in tidymodels package).
 
@@ -278,7 +294,7 @@ df_r %>% arrange(-mean) %>%
 The maximum value obtained by this method is 0.9826900,	which corresponds to the 13th rank compared to the maximum value of the the true distribution, and the associated hyperparameters values are `mtry=3`, `min_n=10`   
 
 
-### bayesian optimization UCB
+## bayesian optimization UCB
 
 For the Bayesian optimization method, we make use of the **tune_bayes** function from **tune** package that provides all the acquisition functions discussed above. So we start by UCB function, and we set the argument **kappa** equals to 2, which controls the trade-off between exploitation and exploration such that larger values lead to more exploration. Notice that, by default, this function explores 10 combinations, if you want another number change the argument **iter**.   
 
@@ -303,7 +319,7 @@ df_UCB %>% arrange(-mean) %>%
 
 With this acquisition function, we obtained better result than the random search 0.9837529	, which occupies the second position.   
 
-### bayesian optimization PI
+## bayesian optimization PI
 
 This time we will explore the acquisition functions PI discussed above. Note that larger values for the argument trade-off lead to more exploration than exploitation.  
 
@@ -328,7 +344,7 @@ df_PI %>% arrange(-mean) %>%
 
 As we see, with this acquisition function, we obtained the 11th position which is more worst than the previous one,  but still better than random search. 
 
-### bayesian optimization EI
+## bayesian optimization EI
 
 Now we try another acquisition function, the expected improvement function.
 
@@ -358,7 +374,7 @@ df_EI %>% arrange(-mean) %>%
 Here also we get the same result as UCB method. 
 
 
-### Contrast the results
+## Contrast the results
 
 ```{r}
 df_rf <- tibble(names=c("true", "random", "UCB", "PI", "EI"),
@@ -385,7 +401,7 @@ df_rf %>% arrange(-roc_auc)
 
 As we see, the Bayesian optimization method performs better than random search whatever acquisition function used. However, since the acquisition functions have their own hyperparameters (to trade-off between exploration and exploitation), their performance thus may differ strongly from each other. Moreover, the difference can be larger if we use a larger dataset.  
 
-## deep learning model 
+# deep learning model 
 
 
 As we did with the random forest model we explore a wide range of hyperparameter values assuming that these values represent the true distribution, then we apply all the above tuning methods. For the model architecture, we use a deep learning model with a single layer, and for tuning,  we use the two hyperparameters, the number of nodes, and the number of epochs. The last thing we have to do is to save what we need in csv file and load it again since each time we rerun the model we get a different result, and besides, it takes a lot of time.
@@ -428,7 +444,7 @@ scatter3D(x=df1$hidden_units, y=df1$epochs, z=df1$mean,
 
 ```
 
-### Random search
+## Random search
 
 
 ```{r results='hide'}
@@ -448,7 +464,7 @@ df_r1 %>% arrange(-mean)
 
 Since deep learning models strongly depend on an internal random process (like when initializing the weights), and besides, the small difference between results, due to the small size of the data, it is harder to contrast between different methods. To alleviate this problem, however, we use this time the standard errors to highlight the significance differences between the methods.  
 
-### Bayesian optimization UCB
+## Bayesian optimization UCB
 
 
 ```{r results='hide'}
@@ -469,7 +485,7 @@ df_UCB1 <- read_csv("C:/Users/dell/Documents/new-blog/content/bayes/hyper_bayes/
 df_UCB1 %>% arrange(-mean)
 ```
 
-### Bayesian optimization PI
+## Bayesian optimization PI
 
 
 ```{r results='hide'}
@@ -491,7 +507,7 @@ df_PI1 %>% arrange(-mean)
 ```
 
 
-### Bayesian optimization EI
+## Bayesian optimization EI
 
 
 ```{r results='hide'}
@@ -514,7 +530,7 @@ df_EI1 %>% arrange(-mean)
 
 
 
-### Contrast the results
+## Contrast the results
 
 ```{r}
 df_deep <- tibble(names=c("true", "random", "UCB", "PI", "EI"),
@@ -550,11 +566,11 @@ ggplot(df_deep[-1, ]%>% arrange(-roc_auc), aes(x=names, y=roc_auc))+
 
 As we see, we do not obtain any significance difference between these methods, which is essentially due to  the small size of the data and the small range used for the hyperparameter values. However, with more complex and large data set the difference will be obvious. 
 
-## Conclusion
+# Conclusion
 
 The main purpose of this article is more to show how implementing these methods in practice rather than highlighting the difference of performance between each other. However, the Bayesian optimization is known as the most efficient method, but with the downside that it also requires defining some hyperparameters like the acquisition function, sometimes arbitrarily. In other words, we cannot waste, say the limited budget, that should be concentrated to search for the optimum, to instead try different acquisition functions.           
 
-## Session info
+# Session info
 
 ```{r}
 sessionInfo()
