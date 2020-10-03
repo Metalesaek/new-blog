@@ -11,6 +11,7 @@ summary: 'The imbalanced data is the common feature of some type of data such as
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 authors: []
@@ -27,33 +28,43 @@ projects: []
 
 <div id="TOC">
 <ul>
-<li><a href="#introduction">Introduction</a></li>
-<li><a href="#data-partition">Data partition</a></li>
-<li><a href="#subsampling-the-training-data">Subsampling the training data</a>
+<li><a href="#introduction"><span class="toc-section-number">1</span> Introduction</a></li>
+<li><a href="#data-partition"><span class="toc-section-number">2</span> Data partition</a></li>
+<li><a href="#subsampling-the-training-data"><span class="toc-section-number">3</span> Subsampling the training data</a>
 <ul>
-<li><a href="#upsampling"><strong>Upsampling</strong> :</a></li>
-<li><a href="#downsampling"><strong>downsampling</strong>:</a></li>
-<li><a href="#rose"><strong>ROSE</strong>:</a></li>
-<li><a href="#smote"><strong>SMOTE</strong>:</a></li>
+<li><a href="#upsampling"><span class="toc-section-number">3.1</span> Upsampling</a></li>
+<li><a href="#downsampling"><span class="toc-section-number">3.2</span> downsampling</a></li>
+<li><a href="#rose"><span class="toc-section-number">3.3</span> ROSE</a></li>
+<li><a href="#smote"><span class="toc-section-number">3.4</span> SMOTE</a></li>
 </ul></li>
-<li><a href="#training-logistic-regression-model.">training logistic regression model.</a>
+<li><a href="#training-logistic-regression-model."><span class="toc-section-number">4</span> training logistic regression model.</a>
 <ul>
-<li><a href="#without-subsampling">without subsampling</a></li>
-<li><a href="#upsampling-the-train-set">Upsampling the train set</a></li>
-<li><a href="#down-sampling-the-training-set.">Down sampling the training set.</a></li>
-<li><a href="#subsampline-the-train-set-by-rose-technique">subsampline the train set by ROSE technique</a></li>
-<li><a href="#subsampling-the-train-set-by-smote-technique">Subsampling the train set by SMOTE technique</a></li>
+<li><a href="#without-subsampling"><span class="toc-section-number">4.1</span> without subsampling</a></li>
+<li><a href="#upsampling-the-train-set"><span class="toc-section-number">4.2</span> Upsampling the train set</a></li>
+<li><a href="#down-sampling-the-training-set."><span class="toc-section-number">4.3</span> Down sampling the training set.</a></li>
+<li><a href="#subsampline-the-train-set-by-rose-technique"><span class="toc-section-number">4.4</span> subsampline the train set by ROSE technique</a></li>
+<li><a href="#subsampling-the-train-set-by-smote-technique"><span class="toc-section-number">4.5</span> Subsampling the train set by SMOTE technique</a></li>
 </ul></li>
-<li><a href="#deep-learning-model-without-class-weight.">deep learning model (without class weight).</a>
+<li><a href="#deep-learning-model-without-class-weight."><span class="toc-section-number">5</span> deep learning model (without class weight).</a>
 <ul>
-<li><a href="#deep-learning-model-with-class-weights">deep learning model with class weights</a></li>
+<li><a href="#deep-learning-model-with-class-weights"><span class="toc-section-number">5.1</span> deep learning model with class weights</a></li>
 </ul></li>
-<li><a href="#conclusion">Conclusion</a></li>
+<li><a href="#conclusion"><span class="toc-section-number">6</span> Conclusion</a></li>
 </ul>
 </div>
 
-<div id="introduction" class="section level2">
-<h2>Introduction</h2>
+<style type="text/css">
+strong {
+  color: red;
+}
+
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+</style>
+<div id="introduction" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Introduction</h1>
 <p>The imbalanced data is the common feature of some type of data such as fraudulent credit card where the number of fraudulent cards is usually very small compared to the number of non fraudulent cards. The problem with imbalanced data is that the model being trained would be dominated by the majority class such as <strong>knn</strong> and <strong>svm</strong> models, and hence they would predict the majority class more effectively than the minority class which in turn would result in high value for sensitivity rate and low value for specificity rate (in binary classification).</p>
 <p>The simple technique to reduce the negative impact of this problem is by subsampling the data. the common subsampling methods used in practice are the following.</p>
 <ul>
@@ -66,10 +77,10 @@ projects: []
 <p>In this article we will make use of the <strong>creditcard</strong> data from kaggle website -click <a href="https://www.kaggle.com/arvindratan/creditcard#creditcard.csv">here</a> to upload this data, which is highly imbalanced- and we will train a <strong>logistic regression</strong> model on the raw data and on the transformed data after applying the above methods and comparing the results. Also, we will use a simple deep learning model with and without taking into account the imbalanced problem.</p>
 <p>First we call the data.</p>
 <pre class="r"><code>spsm(library(tidyverse))
-data&lt;-read.csv(&quot;../sparklyr/creditcard.csv&quot;,header=TRUE)</code></pre>
+data &lt;- read.csv(&quot;../sparklyr/creditcard.csv&quot;, header = TRUE)</code></pre>
 <p>For privacy purposes the original features are replaced by the PCA variables from v1 to v28 and only <strong>Time</strong> and <strong>Amount</strong> features that are left from the original features.</p>
 <p>Let’s first check <strong>Class</strong> variable levels frequency (after having been converted to a factor type).</p>
-<pre class="r"><code>data$Class&lt;-as.factor(data$Class)
+<pre class="r"><code>data$Class &lt;- as.factor(data$Class)
 prop.table(table(data$Class))</code></pre>
 <pre><code>## 
 ##           0           1 
@@ -142,66 +153,57 @@ We also need to show the summary of the data to take an overall look at all the 
 ##  Max.   : 33.84781   Max.   :25691.16</code></pre>
 <p>looking at this summary, we do not have any critical issues like missing values for instance.</p>
 </div>
-<div id="data-partition" class="section level2">
-<h2>Data partition</h2>
+<div id="data-partition" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> Data partition</h1>
 <p>Before applying any subsampling method we split the data first between the training set and the testing set and we use only the former to be subsampled.</p>
 <pre class="r"><code>spsm(library(caret))
 set.seed(1234)
-index&lt;-createDataPartition(data$Class,p=0.8,list=FALSE)
-train&lt;-data[index,]
-test&lt;-data[-index,]</code></pre>
+index &lt;- createDataPartition(data$Class, p = 0.8, list = FALSE)
+train &lt;- data[index, ]
+test &lt;- data[-index, ]</code></pre>
 </div>
-<div id="subsampling-the-training-data" class="section level2">
-<h2>Subsampling the training data</h2>
-<div id="upsampling" class="section level3">
-<h3><strong>Upsampling</strong> :</h3>
+<div id="subsampling-the-training-data" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> Subsampling the training data</h1>
+<div id="upsampling" class="section level2" number="3.1">
+<h2><span class="header-section-number">3.1</span> Upsampling</h2>
 <p>The <strong>caret</strong> package provides a function called <strong>upSample</strong> to perform upsampling technique.</p>
 <pre class="r"><code>set.seed(111)
-
-trainup&lt;-upSample(x=train[,-ncol(train)],
-                  y=train$Class)
-
+trainup &lt;- upSample(x = train[, -ncol(train)], y = train$Class)
 table(trainup$Class)</code></pre>
 <pre><code>## 
 ##      0      1 
 ## 227452 227452</code></pre>
 <p>As we see the two classes now have the same size <strong>227452</strong></p>
 </div>
-<div id="downsampling" class="section level3">
-<h3><strong>downsampling</strong>:</h3>
+<div id="downsampling" class="section level2" number="3.2">
+<h2><span class="header-section-number">3.2</span> downsampling</h2>
 <p>By the some way we make use of the caret function <strong>downSample</strong></p>
 <pre class="r"><code>set.seed(111)
-traindown&lt;-downSample(x=train[,-ncol(train)],
-                  y=train$Class)
-
+traindown &lt;- downSample(x = train[, -ncol(train)], y = train$Class)
 table(traindown$Class)</code></pre>
 <pre><code>## 
 ##   0   1 
 ## 394 394</code></pre>
 <p>now the size of each class is <strong>394</strong></p>
 </div>
-<div id="rose" class="section level3">
-<h3><strong>ROSE</strong>:</h3>
+<div id="rose" class="section level2" number="3.3">
+<h2><span class="header-section-number">3.3</span> ROSE</h2>
 <p>To use this technique we have to call the <strong>ROSE</strong> package</p>
 <pre class="r"><code>spsm(library(ROSE))
 set.seed(111)
-
-trainrose&lt;-ROSE(Class~.,data=train)$data
-
+trainrose &lt;- ROSE(Class ~ ., data = train)$data
 table(trainrose$Class)</code></pre>
 <pre><code>## 
 ##      0      1 
 ## 113827 114019</code></pre>
 <p>since this technique add new synthetic data points to the minority class and daownsamples the majority class the size now is about <strong>114019</strong> for minority class and <strong>113827</strong> for the majority class.</p>
 </div>
-<div id="smote" class="section level3">
-<h3><strong>SMOTE</strong>:</h3>
+<div id="smote" class="section level2" number="3.4">
+<h2><span class="header-section-number">3.4</span> SMOTE</h2>
 <p>this technique requires the <strong>DMwR</strong> package.</p>
 <pre class="r"><code>spsm(library(DMwR))
 set.seed(111)
-
-trainsmote &lt;- SMOTE(Class~.,data = train)
-
+trainsmote &lt;- SMOTE(Class ~ ., data = train)
 table(trainsmote$Class)</code></pre>
 <pre><code>## 
 ##    0    1 
@@ -209,14 +211,13 @@ table(trainsmote$Class)</code></pre>
 <p>The size of the majority class is <strong>113827</strong> and for the minority class is <strong>114019</strong> .</p>
 </div>
 </div>
-<div id="training-logistic-regression-model." class="section level2">
-<h2>training logistic regression model.</h2>
+<div id="training-logistic-regression-model." class="section level1" number="4">
+<h1><span class="header-section-number">4</span> training logistic regression model.</h1>
 <p>we are now ready to fit logit model to the original training set without subsampling, and to each of the above subsampled training sets.</p>
-<div id="without-subsampling" class="section level3">
-<h3>without subsampling</h3>
+<div id="without-subsampling" class="section level2" number="4.1">
+<h2><span class="header-section-number">4.1</span> without subsampling</h2>
 <pre class="r"><code>set.seed(123)
-model &lt;- glm(Class~., data=train, family = &quot;binomial&quot;)
-                
+model &lt;- glm(Class ~ ., data = train, family = &quot;binomial&quot;)
 summary(model)</code></pre>
 <pre><code>## 
 ## Call:
@@ -271,8 +272,8 @@ summary(model)</code></pre>
 ## Number of Fisher Scoring iterations: 12</code></pre>
 <p>At this step and to make things more simpler, we remove the insignificant variables (without asterix) and we keep the remaining ones to use in all the following models.</p>
 <pre class="r"><code>set.seed(123)
-model1 &lt;- glm(Class~.-Time-V2-V3-V6-V7-V9-V11-V12-V15-V16-V17-V18-V19-V24-V25-V26, data=train, family = &quot;binomial&quot;)
-                
+model1 &lt;- glm(Class ~ . - Time - V2 - V3 - V6 - V7 - V9 - V11 - V12 - V15 - V16 - 
+    V17 - V18 - V19 - V24 - V25 - V26, data = train, family = &quot;binomial&quot;)
 summary(model1)</code></pre>
 <pre><code>## 
 ## Call:
@@ -313,8 +314,8 @@ summary(model1)</code></pre>
 ## Number of Fisher Scoring iterations: 11</code></pre>
 <p>We have now two predictors that are non significant <strong>V1</strong> and <strong>Amount</strong>, they should be also removed.</p>
 <pre class="r"><code>set.seed(123)
-finalmodel &lt;- glm(Class~.-Time-V1-V2-V3-V6-V7-V9-V11-V12-V15-V16-V17-V18-V19-V24-V25-V26-Amount, data=train, family = &quot;binomial&quot;)
-                
+finalmodel &lt;- glm(Class ~ . - Time - V1 - V2 - V3 - V6 - V7 - V9 - V11 - V12 - V15 - 
+    V16 - V17 - V18 - V19 - V24 - V25 - V26 - Amount, data = train, family = &quot;binomial&quot;)
 summary(finalmodel)</code></pre>
 <pre><code>## 
 ## Call:
@@ -353,9 +354,9 @@ summary(finalmodel)</code></pre>
 ## Number of Fisher Scoring iterations: 11</code></pre>
 <p>For the other training sets we will use only these significant predictors from the above model.</p>
 <p>Now let’s get the final results from the confusion matrix.</p>
-<pre class="r"><code>pred &lt;- predict(finalmodel,test, type=&quot;response&quot;)
-pred &lt;- as.integer(pred&gt;0.5)
-confusionMatrix(as.factor(pred),test$Class)</code></pre>
+<pre class="r"><code>pred &lt;- predict(finalmodel, test, type = &quot;response&quot;)
+pred &lt;- as.integer(pred &gt; 0.5)
+confusionMatrix(as.factor(pred), test$Class)</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
@@ -388,11 +389,12 @@ if we look at the specificity rate. it is about <strong>58.16%</strong> indicati
 Among the available metrics, the best one for imbalanced data is <a href="https://towardsdatascience.com/interpretation-of-kappa-values-2acd1ca7b18f">cohen’s kappa</a> statistic. and according to the scale of kappa value interpretation suggested by Landis &amp; Koch (1977), the kappa value obtained here <strong>0.7033</strong> is a good score.</p>
 <p>But here we stick with accuracy rate for pedagogic purposes to show the effectiveness of the above discussed methods.</p>
 </div>
-<div id="upsampling-the-train-set" class="section level3">
-<h3>Upsampling the train set</h3>
+<div id="upsampling-the-train-set" class="section level2" number="4.2">
+<h2><span class="header-section-number">4.2</span> Upsampling the train set</h2>
 <p>Now let’s use the training data resulted from the upsmpling method.</p>
 <pre class="r"><code>set.seed(123)
-modelup &lt;- glm(Class~V4+V5+V8+V10+V13+V14+V20+V21+V22+V23+V27+V28, data=trainup, family = &quot;binomial&quot;)</code></pre>
+modelup &lt;- glm(Class ~ V4 + V5 + V8 + V10 + V13 + V14 + V20 + V21 + V22 + V23 + V27 + 
+    V28, data = trainup, family = &quot;binomial&quot;)</code></pre>
 <pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
 <pre class="r"><code>summary(modelup)</code></pre>
 <pre><code>## 
@@ -429,9 +431,9 @@ modelup &lt;- glm(Class~V4+V5+V8+V10+V13+V14+V20+V21+V22+V23+V27+V28, data=train
 ## AIC: 136347
 ## 
 ## Number of Fisher Scoring iterations: 9</code></pre>
-<pre class="r"><code>pred &lt;- predict(modelup,test, type=&quot;response&quot;)
-pred &lt;- as.integer(pred&gt;0.5)
-confusionMatrix(as.factor(pred),test$Class)</code></pre>
+<pre class="r"><code>pred &lt;- predict(modelup, test, type = &quot;response&quot;)
+pred &lt;- as.integer(pred &gt; 0.5)
+confusionMatrix(as.factor(pred), test$Class)</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
@@ -461,14 +463,15 @@ confusionMatrix(as.factor(pred),test$Class)</code></pre>
 ## </code></pre>
 <p>Now we have a smaller accuracy rate <strong>97.29%</strong>, but we have a larger specificity rate <strong>87.75%</strong> which increases the power of the model to predict the fraudulent cards.</p>
 </div>
-<div id="down-sampling-the-training-set." class="section level3">
-<h3>Down sampling the training set.</h3>
+<div id="down-sampling-the-training-set." class="section level2" number="4.3">
+<h2><span class="header-section-number">4.3</span> Down sampling the training set.</h2>
 <pre class="r"><code>set.seed(123)
-modeldown &lt;- glm(Class~V4+V5+V8+V10+V13+V14+V20+V21+V22+V23+V27+V28, data=traindown, family = &quot;binomial&quot;)</code></pre>
+modeldown &lt;- glm(Class ~ V4 + V5 + V8 + V10 + V13 + V14 + V20 + V21 + V22 + V23 + 
+    V27 + V28, data = traindown, family = &quot;binomial&quot;)</code></pre>
 <pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
-<pre class="r"><code>pred &lt;- predict(modeldown,test, type=&quot;response&quot;)
-pred &lt;- as.integer(pred&gt;0.5)
-confusionMatrix(as.factor(pred),test$Class)</code></pre>
+<pre class="r"><code>pred &lt;- predict(modeldown, test, type = &quot;response&quot;)
+pred &lt;- as.integer(pred &gt; 0.5)
+confusionMatrix(as.factor(pred), test$Class)</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
@@ -498,13 +501,14 @@ confusionMatrix(as.factor(pred),test$Class)</code></pre>
 ## </code></pre>
 <p>With downsampling method, we get approximately the same specificity rate <strong>87.75%</strong> with a slight decrease of the over all accuracy rate <strong>96.42%</strong>, and the sensitivity rate has decreased to <strong>96.43%</strong> since we have decreased the majority class size by downsampling.</p>
 </div>
-<div id="subsampline-the-train-set-by-rose-technique" class="section level3">
-<h3>subsampline the train set by ROSE technique</h3>
+<div id="subsampline-the-train-set-by-rose-technique" class="section level2" number="4.4">
+<h2><span class="header-section-number">4.4</span> subsampline the train set by ROSE technique</h2>
 <pre class="r"><code>set.seed(123)
-modelrose &lt;- glm(Class~V4+V5+V8+V10+V13+V14+V20+V21+V22+V23+V27+V28, data=trainrose, family = &quot;binomial&quot;)
-pred &lt;- predict(modelrose,test, type=&quot;response&quot;)
-pred &lt;- as.integer(pred&gt;0.5)
-confusionMatrix(as.factor(pred),test$Class)</code></pre>
+modelrose &lt;- glm(Class ~ V4 + V5 + V8 + V10 + V13 + V14 + V20 + V21 + V22 + V23 + 
+    V27 + V28, data = trainrose, family = &quot;binomial&quot;)
+pred &lt;- predict(modelrose, test, type = &quot;response&quot;)
+pred &lt;- as.integer(pred &gt; 0.5)
+confusionMatrix(as.factor(pred), test$Class)</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
@@ -534,14 +538,15 @@ confusionMatrix(as.factor(pred),test$Class)</code></pre>
 ## </code></pre>
 <p>Using this method the sensitivity rate is slightly smaller than the previous ones <strong>85.71%</strong> but still a large improvement in predicting fraudulent cards compared to the model trained with the original imbalanced data.</p>
 </div>
-<div id="subsampling-the-train-set-by-smote-technique" class="section level3">
-<h3>Subsampling the train set by SMOTE technique</h3>
+<div id="subsampling-the-train-set-by-smote-technique" class="section level2" number="4.5">
+<h2><span class="header-section-number">4.5</span> Subsampling the train set by SMOTE technique</h2>
 <pre class="r"><code>set.seed(123)
-modelsmote &lt;- glm(Class~V4+V5+V8+V10+V13+V14+V20+V21+V22+V23+V27+V28, data=trainsmote, family = &quot;binomial&quot;)</code></pre>
+modelsmote &lt;- glm(Class ~ V4 + V5 + V8 + V10 + V13 + V14 + V20 + V21 + V22 + V23 + 
+    V27 + V28, data = trainsmote, family = &quot;binomial&quot;)</code></pre>
 <pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
-<pre class="r"><code>pred &lt;- predict(modelsmote,test, type=&quot;response&quot;)
-pred &lt;- as.integer(pred&gt;0.5)
-confusionMatrix(as.factor(pred),test$Class)</code></pre>
+<pre class="r"><code>pred &lt;- predict(modelsmote, test, type = &quot;response&quot;)
+pred &lt;- as.integer(pred &gt; 0.5)
+confusionMatrix(as.factor(pred), test$Class)</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
@@ -572,43 +577,39 @@ confusionMatrix(as.factor(pred),test$Class)</code></pre>
 <p>With this method we get the same specificity rate <strong>85.71%</strong> such as ROSE method.</p>
 </div>
 </div>
-<div id="deep-learning-model-without-class-weight." class="section level2">
-<h2>deep learning model (without class weight).</h2>
+<div id="deep-learning-model-without-class-weight." class="section level1" number="5">
+<h1><span class="header-section-number">5</span> deep learning model (without class weight).</h1>
 <p>When we use deep learning models via some software we can assign a weight to the labels of the target variables. For us we will make use of <a href="https://keras.rstudio.com">keras</a> package. We will first train the model without weighting the data , Then we retrain the same model after assigning weight to the minority class.<br />
 To train this model we should first convert the data (train and test sets) into numeric matrix and remove the column names (we convert also the <strong>Class</strong> to numeric type). However, in order to be inline with the above models we keep only their features, but this time it would be better to be normalized since this helps the gradient running more faster.</p>
 <pre class="r"><code>spsm(library(keras))
-train1 &lt;-train[,c(&#39;V4&#39;,&#39;V5&#39;,&#39;V8&#39;,&#39;V10&#39;,&#39;V13&#39;,&#39;V14&#39;,&#39;V20&#39;,&#39;V21&#39;,&#39;V22&#39;,&#39;V23&#39;,&#39;V27&#39;,&#39;V28&#39;,&#39;Class&#39;)]
-test1 &lt;-test[,c(&#39;V4&#39;,&#39;V5&#39;,&#39;V8&#39;,&#39;V10&#39;,&#39;V13&#39;,&#39;V14&#39;,&#39;V20&#39;,&#39;V21&#39;,&#39;V22&#39;,&#39;V23&#39;,&#39;V27&#39;,&#39;V28&#39;,&#39;Class&#39;)]
-train1$Class&lt;-as.numeric(train1$Class)
-test1$Class&lt;-as.numeric(test1$Class)
-train1[,&#39;Class&#39;]&lt;-train1[,&#39;Class&#39;]-1
-test1[,&#39;Class&#39;]&lt;-test1[,&#39;Class&#39;]-1
-trainx &lt;- train1[,-ncol(train1)]
-testx &lt;- test1[,-ncol(test1)]
-trained&lt;-as.matrix(trainx)
+train1 &lt;- train[, c(&quot;V4&quot;, &quot;V5&quot;, &quot;V8&quot;, &quot;V10&quot;, &quot;V13&quot;, &quot;V14&quot;, &quot;V20&quot;, &quot;V21&quot;, &quot;V22&quot;, &quot;V23&quot;, 
+    &quot;V27&quot;, &quot;V28&quot;, &quot;Class&quot;)]
+test1 &lt;- test[, c(&quot;V4&quot;, &quot;V5&quot;, &quot;V8&quot;, &quot;V10&quot;, &quot;V13&quot;, &quot;V14&quot;, &quot;V20&quot;, &quot;V21&quot;, &quot;V22&quot;, &quot;V23&quot;, 
+    &quot;V27&quot;, &quot;V28&quot;, &quot;Class&quot;)]
+train1$Class &lt;- as.numeric(train1$Class)
+test1$Class &lt;- as.numeric(test1$Class)
+train1[, &quot;Class&quot;] &lt;- train1[, &quot;Class&quot;] - 1
+test1[, &quot;Class&quot;] &lt;- test1[, &quot;Class&quot;] - 1
+trainx &lt;- train1[, -ncol(train1)]
+testx &lt;- test1[, -ncol(test1)]
+trained &lt;- as.matrix(trainx)
 tested &lt;- as.matrix(testx)
 trainy &lt;- train1$Class
 testy &lt;- test1$Class
-dimnames(trained)&lt;-NULL
-dimnames(tested)&lt;-NULL</code></pre>
+dimnames(trained) &lt;- NULL
+dimnames(tested) &lt;- NULL</code></pre>
 <p>then we apply one hot encoding on the target variable.</p>
-<pre class="r"><code>trainlabel&lt;-to_categorical(trainy)
-testlabel&lt;-to_categorical(testy)</code></pre>
+<pre class="r"><code>trainlabel &lt;- to_categorical(trainy)
+testlabel &lt;- to_categorical(testy)</code></pre>
 <p>The final step now is normalizing the matrices (trained and tested)</p>
-<pre class="r"><code>trained1&lt;-normalize(trained)
-tested1&lt;-normalize(tested)</code></pre>
+<pre class="r"><code>trained1 &lt;- normalize(trained)
+tested1 &lt;- normalize(tested)</code></pre>
 <p>Now we are ready to create the model with two hidden layers followed by <a href="https://keras.rstudio.com/reference/index.html#section-dropout-layers">dropout layers</a>.</p>
 <pre class="r"><code>modeldeep &lt;- keras_model_sequential()
-
-modeldeep %&gt;%
-    layer_dense(units=32, activation = &quot;relu&quot;,
-              kernel_initializer = &quot;he_normal&quot;,input_shape =c(12))%&gt;%
-    layer_dropout(rate=0.2)%&gt;%
-    layer_dense(units=64, activation = &quot;relu&quot;,
-              kernel_initializer = &quot;he_normal&quot;)%&gt;%
-    layer_dropout(rate=0.4)%&gt;%
-        layer_dense(units=2, activation = &quot;sigmoid&quot;)
-
+modeldeep %&gt;% layer_dense(units = 32, activation = &quot;relu&quot;, kernel_initializer = &quot;he_normal&quot;, 
+    input_shape = c(12)) %&gt;% layer_dropout(rate = 0.2) %&gt;% layer_dense(units = 64, 
+    activation = &quot;relu&quot;, kernel_initializer = &quot;he_normal&quot;) %&gt;% layer_dropout(rate = 0.4) %&gt;% 
+    layer_dense(units = 2, activation = &quot;sigmoid&quot;)
 summary(modeldeep)</code></pre>
 <pre><code>## Model: &quot;sequential&quot;
 ## ________________________________________________________________________________
@@ -629,20 +630,13 @@ summary(modeldeep)</code></pre>
 ## Non-trainable params: 0
 ## ________________________________________________________________________________</code></pre>
 <p>we will use the <strong>accuracy</strong> rate as the metric. The loss function will be <strong>binary crossentropy</strong> since we deal with binary classification problem. and for the optimizer we will use <a href="https://arxiv.org/pdf/1412.6980v8.pdf">adam</a> optimizer.</p>
-<pre class="r"><code>modeldeep %&gt;%
-  compile(loss=&quot;binary_crossentropy&quot;,
-          optimizer=&quot;adam&quot;,
-          metric=&quot;accuracy&quot;)</code></pre>
+<pre class="r"><code>modeldeep %&gt;% compile(loss = &quot;binary_crossentropy&quot;, optimizer = &quot;adam&quot;, metric = &quot;accuracy&quot;)</code></pre>
 <p>During training, the model will use 10 epochs (the default), 5 sample as batch size to update the weights, and keep 20% of the inputs (training samples) out to assess the model</p>
-<pre class="r"><code>#history&lt;- modeldeep %&gt;%
-  #fit(trained1,trainlabel,batch_size=5, validation_split=0.2)</code></pre>
 <p>You can run this model many times untill you get satisfied with the results, then it will be better to save it and load it again each time you need it as follows.</p>
-<pre class="r"><code>#save_model_hdf5(modeldeep,&quot;modeldeep.h5&quot;)
-modeldeep&lt;-load_model_hdf5(&quot;modeldeep.h5&quot;)</code></pre>
+<pre class="r"><code>modeldeep &lt;- load_model_hdf5(&quot;modeldeep.h5&quot;)</code></pre>
 <p>All the above metric values are used in the training process, so they are not much reliable. The more reliable ones are those computed from unseen data.</p>
-<pre class="r"><code>pred&lt;-  modeldeep %&gt;%
-  predict_classes(tested1)
-confusionMatrix(as.factor(pred),as.factor(testy))</code></pre>
+<pre class="r"><code>pred &lt;- modeldeep %&gt;% predict_classes(tested1)
+confusionMatrix(as.factor(pred), as.factor(testy))</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
@@ -671,38 +665,25 @@ confusionMatrix(as.factor(pred),as.factor(testy))</code></pre>
 ##        &#39;Positive&#39; Class : 0               
 ## </code></pre>
 <p>The same as the above models, the specificity rate is even worst than the other models <strong>0.3469</strong> which is also caused by the imbalanced data.</p>
-<div id="deep-learning-model-with-class-weights" class="section level3">
-<h3>deep learning model with class weights</h3>
+<div id="deep-learning-model-with-class-weights" class="section level2" number="5.1">
+<h2><span class="header-section-number">5.1</span> deep learning model with class weights</h2>
 <p>Now let’s try the previous model by taking into account the class imbalance</p>
 <pre class="r"><code>modeldeep1 &lt;- keras_model_sequential()
-
-modeldeep1 %&gt;%
-    layer_dense(units=32, activation = &quot;relu&quot;,
-              kernel_initializer = &quot;he_normal&quot;,input_shape =c(12))%&gt;%
-    layer_dropout(rate=0.2)%&gt;%
-    layer_dense(units=64, activation = &quot;relu&quot;,
-              kernel_initializer = &quot;he_normal&quot;)%&gt;%
-    layer_dropout(rate=0.4)%&gt;%
-        layer_dense(units=2, activation = &quot;sigmoid&quot;)
-
-modeldeep1 %&gt;%
-  compile(loss=&quot;binary_crossentropy&quot;,
-          optimizer=&quot;adam&quot;,
-          metric=&quot;accuracy&quot;)</code></pre>
+modeldeep1 %&gt;% layer_dense(units = 32, activation = &quot;relu&quot;, kernel_initializer = &quot;he_normal&quot;, 
+    input_shape = c(12)) %&gt;% layer_dropout(rate = 0.2) %&gt;% layer_dense(units = 64, 
+    activation = &quot;relu&quot;, kernel_initializer = &quot;he_normal&quot;) %&gt;% layer_dropout(rate = 0.4) %&gt;% 
+    layer_dense(units = 2, activation = &quot;sigmoid&quot;)
+modeldeep1 %&gt;% compile(loss = &quot;binary_crossentropy&quot;, optimizer = &quot;adam&quot;, metric = &quot;accuracy&quot;)</code></pre>
 <p>To define the appropriate weight, we divide the fraction of the majority class by the fraction of the minority class to get how many times the former is larger than the latter.</p>
 <pre class="r"><code>prop.table(table(data$Class))[1]/prop.table(table(data$Class))[2]</code></pre>
 <pre><code>##       0 
 ## 577.876</code></pre>
 <p>Now we include this value as weight in the <strong>class_weight</strong> argument.</p>
-<pre class="r"><code>#history1&lt;- modeldeep1 %&gt;%
-  #fit(trained1,trainlabel,batch_size=5,  #validation_split=0.2,class_weight=list(&quot;0&quot;=1,&quot;1&quot;=577))</code></pre>
-<p>Again i should save this model before kniting the document. For you if you want to run the above code just uncomment it.</p>
-<pre class="r"><code>#save_model_hdf5(modeldeep1,&quot;modeldeep1.h5&quot;)
-modeldeep1&lt;-load_model_hdf5(&quot;modeldeep1.h5&quot;)</code></pre>
+<p>Again I should save this model before knitting the document. For you if you want to run the above code just uncomment it.</p>
+<pre class="r"><code>modeldeep1 &lt;- load_model_hdf5(&quot;modeldeep1.h5&quot;)</code></pre>
 <p>Now let’s get the confusion matrix.</p>
-<pre class="r"><code>pred&lt;-  modeldeep1 %&gt;%
-  predict_classes(tested1)
-confusionMatrix(as.factor(pred),as.factor(testy))</code></pre>
+<pre class="r"><code>pred &lt;- modeldeep1 %&gt;% predict_classes(tested1)
+confusionMatrix(as.factor(pred), as.factor(testy))</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
@@ -733,7 +714,7 @@ confusionMatrix(as.factor(pred),as.factor(testy))</code></pre>
 <p>Using this model we get less accuracy rate <strong>0.9724</strong>, but the specificity rate is higher compared to the previous model so that this model can well predict the negative class label as well as the postive class label.</p>
 </div>
 </div>
-<div id="conclusion" class="section level2">
-<h2>Conclusion</h2>
+<div id="conclusion" class="section level1" number="6">
+<h1><span class="header-section-number">6</span> Conclusion</h1>
 <p>With the imbalanced data most machine learning model tend to more efficiently predict the majority class than the minority class. To correct thus this behavior we can use one of the above discussed methods to get more closer accuracy rates between classes. However, deep learning model can easily handle this problem by specifying the class weights.</p>
 </div>
