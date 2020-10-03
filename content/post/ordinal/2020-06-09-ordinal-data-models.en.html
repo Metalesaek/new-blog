@@ -12,6 +12,7 @@ summary: 'This tutorial aims to explore the most popular models used to predict 
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 authors: []
@@ -28,25 +29,35 @@ projects: []
 
 <div id="TOC">
 <ul>
-<li><a href="#introduction">Introduction</a></li>
-<li><a href="#data-preparation">Data preparation</a></li>
-<li><a href="#ordered-logistic-regression-logit">ordered logistic regression (logit)</a></li>
-<li><a href="#ordinal-logistic-rgeression-probit">Ordinal logistic rgeression (probit)</a></li>
-<li><a href="#cart-model">CART model</a></li>
-<li><a href="#ordinal-random-forst-model.">Ordinal Random forst model.</a></li>
-<li><a href="#continuation-ratio-model">Continuation Ratio Model</a></li>
-<li><a href="#compare-models">Compare models</a></li>
-<li><a href="#conclusion">Conclusion</a></li>
-<li><a href="#session-information">Session information</a></li>
+<li><a href="#introduction"><span class="toc-section-number">1</span> Introduction</a></li>
+<li><a href="#data-preparation"><span class="toc-section-number">2</span> Data preparation</a></li>
+<li><a href="#ordered-logistic-regression-model-logit"><span class="toc-section-number">3</span> Ordered logistic regression model (logit)</a></li>
+<li><a href="#ordinal-logistic-rgeression-model-probit"><span class="toc-section-number">4</span> Ordinal logistic rgeression model (probit)</a></li>
+<li><a href="#cart-model"><span class="toc-section-number">5</span> CART model</a></li>
+<li><a href="#ordinal-random-forst-model."><span class="toc-section-number">6</span> Ordinal Random forst model.</a></li>
+<li><a href="#continuation-ratio-model"><span class="toc-section-number">7</span> Continuation Ratio Model</a></li>
+<li><a href="#compare-models"><span class="toc-section-number">8</span> Compare models</a></li>
+<li><a href="#conclusion"><span class="toc-section-number">9</span> Conclusion</a></li>
+<li><a href="#session-information"><span class="toc-section-number">10</span> Session information</a></li>
 </ul>
 </div>
 
-<div id="introduction" class="section level2">
-<h2>Introduction</h2>
+<style type="text/css">
+strong {
+  color: red;
+}
+
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+</style>
+<div id="introduction" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Introduction</h1>
 <p>This tutorial aims to explore the most popular models used to predict an ordered response variable. We will use the <strong>heart disease</strong> data <a href="https://www.kaggle.com/johnsmith88/heart-disease-dataset">uploaded from kaggle website</a>, where our response will be the chest pain <strong>cp</strong> variable instead of the <strong>target</strong> variable used usually.</p>
 </div>
-<div id="data-preparation" class="section level2">
-<h2>Data preparation</h2>
+<div id="data-preparation" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> Data preparation</h1>
 <p>First, we call the data and the libraries that we need along with this illustration as follows.</p>
 <pre class="r"><code>library(tidyverse)
 library(caret)
@@ -73,7 +84,7 @@ names(mydata)[1]&lt;-&quot;age&quot;</code></pre>
 <p>I think the best start to explore the summary of all predictors and missing values is by using the powerful function <strong>skim</strong> from <strong>skimr</strong> package.</p>
 <pre class="r"><code>skimr::skim(mydata)</code></pre>
 <table>
-<caption><span id="tab:unnamed-chunk-2">Table 1: </span>Data summary</caption>
+<caption><span id="tab:unnamed-chunk-3">Table 2.1: </span>Data summary</caption>
 <tbody>
 <tr class="odd">
 <td align="left">Name</td>
@@ -392,15 +403,18 @@ train &lt;- training(parts)
 test &lt;- testing(parts)</code></pre>
 <p>The most popular models that we will use are: ordinal logistic model, cart model, ordinal random forest model, Continuation ratio model.</p>
 </div>
-<div id="ordered-logistic-regression-logit" class="section level2">
-<h2>ordered logistic regression (logit)</h2>
+<div id="ordered-logistic-regression-model-logit" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> Ordered logistic regression model (logit)</h1>
 <p>Before training this type of model let’s show how it works. For simplicity suppose we have data that has an ordered outcome <span class="math inline">\(y\)</span> with three class labels (“1”,“2”,“3”) and only two features <span class="math inline">\(x_1\)</span> and <span class="math inline">\(x_2\)</span>.</p>
 <p>First we define a latent variable as a linear combination of the features:</p>
-<p><span class="math display">\[y_i^*=\beta_1 X_{i1}+\beta_2 X_{i2}\]</span></p>
+<p><span class="math display">\[\begin{equation}
+y_i^*=\beta_1 X_{i1}+\beta_2 X_{i2}
+\end{equation}\]</span></p>
 <p>Then since we have three classes we define two thresholds for this latent variable <span class="math inline">\(\alpha_1\)</span> and <span class="math inline">\(\alpha_2\)</span> such that a particular observation <span class="math inline">\(y_i\)</span> will be classified as follows:</p>
 <p><span class="math display">\[\begin{cases} y_i=1 &amp; \text{if $y_i^* \leq \alpha_1$} \\
                 y_i=2 &amp; \text{if $\alpha_1 &lt; y_i^* \leq \alpha_2$} \\
-                y_i=3 &amp; \text{if $y_i^* &gt; \alpha_2$}\end{cases}\]</span></p>
+                y_i=3 &amp; \text{if $y_i^* &gt; \alpha_2$}
+\end{cases}\]</span></p>
 <p>Now we can obtain the probability of a particular observation to fall into a specific class as follows:</p>
 <p><span class="math display">\[\begin{cases} p(y_i=1)=p(y_i^* \leq \alpha_1)=F(\alpha_1-\beta_1 X_{i1}-\beta_2 X_{i2}) \\
                 p(y_i=2)=p(\alpha_1 &lt; y_i^* \leq \alpha_2)=F(\alpha_2-\beta_1 X_{i1}-\beta_2 X_{i2})-F(\alpha_1-\beta_1 X_{i1}-\beta_2 X_{i2}) \\
@@ -527,8 +541,8 @@ Now let’s compare these probabilities with those obtained from function <stron
 <p>Surprisingly, the accuracy rate for the testing set is about 65%, which is larger than that computed from the training data (61%). This is an indication of an underfitting problem (The opposite effect of overfitting problem). Is there any way to improve the model performance? Maybe yes, by going back and tune some hyperparameters, but since we have an underfitting problem we do not have much hyperparameters for this model except the type of function used which is by default the <strong>logistic</strong> function, but there exist as well other functions like <strong>probit</strong>, <strong>loglog</strong>, …ect.</p>
 <p>For our case let’s try this model with the probit function</p>
 </div>
-<div id="ordinal-logistic-rgeression-probit" class="section level2">
-<h2>Ordinal logistic rgeression (probit)</h2>
+<div id="ordinal-logistic-rgeression-model-probit" class="section level1" number="4">
+<h1><span class="header-section-number">4</span> Ordinal logistic rgeression model (probit)</h1>
 <pre class="r"><code>set.seed(1234)
 model_probit&lt;-train(cp~.-age-trestbps-chol, data=train,                                        method=&quot;polr&quot;,
                     tuneGrid=expand.grid(method=&quot;probit&quot;))
@@ -553,9 +567,9 @@ predict(model_probit, train) %&gt;%
 <p>This one also is worse than the previous model. So this means that the logistic function for this data performs better than the probit one.</p>
 <p>When we try many things to improve the model performance and we do not gain much, it will be better to think to try different types of models.</p>
 </div>
-<div id="cart-model" class="section level2">
-<h2>CART model</h2>
-<p>This is a tree-based model. To train this model we make use of <strong>rpartScore</strong> package, and for simplification, we will include only the significant predictors from the previous model.</p>
+<div id="cart-model" class="section level1" number="5">
+<h1><span class="header-section-number">5</span> CART model</h1>
+<p>This is a tree-based model used both for classification and regression. To train this model we make use of <strong>rpartScore</strong> package, and for simplification, we will include only the significant predictors from the previous model.</p>
 <pre class="r"><code>library(rpartScore)
 set.seed(1234)
 model_cart&lt;-train(cp~.-age-trestbps-chol, data=train,
@@ -611,8 +625,8 @@ The argument <strong>prune</strong> is used to select the performance measure to
 1 accuracy multiclass     0.630</code></pre>
 <p>Now wit this model we get a lower accuracy rate than that of the logistic model.</p>
 </div>
-<div id="ordinal-random-forst-model." class="section level2">
-<h2>Ordinal Random forst model.</h2>
+<div id="ordinal-random-forst-model." class="section level1" number="6">
+<h1><span class="header-section-number">6</span> Ordinal Random forst model.</h1>
 <p>This model is a corrected version of random forest model that takes into account the ordinal nature of the response variable. For more detail about this model read this great <a href="https://pdfs.semanticscholar.org/5bb3/5b76774bf0d582eda4ec06e2cb3ce021772c.pdf">paper</a>.</p>
 <p>To train ordinal random forest model, we need to call the following packages:
 <strong>e1071</strong>, <strong>ranger</strong>, <strong>ordinalForest</strong>.</p>
@@ -674,7 +688,7 @@ The final values used for the model were nsets = 50, ntreeperdiv = 150
  and ntreefinal = 200.</code></pre>
 <p>We can plot the important predictors as follows.</p>
 <pre class="r"><code>plot(varImp(model_forest))</code></pre>
-<p><img src="/post/ordinal/2020-06-09-ordinal-data-models.en_files/figure-html/unnamed-chunk-24-1.svg" width="576" /></p>
+<p><img src="/post/ordinal/2020-06-09-ordinal-data-models.en_files/figure-html/unnamed-chunk-25-1.svg" width="576" /></p>
 <p>Now we can obtain the accuracy rate for the training rate as follows.</p>
 <pre class="r"><code>predict(model_forest, train) %&gt;% 
   bind_cols(train) %&gt;%
@@ -695,8 +709,8 @@ The final values used for the model were nsets = 50, ntreeperdiv = 150
 1 accuracy multiclass     0.519</code></pre>
 <p>This is exactly what is called the overfitting problem. The model generalizes poorly to new unseen data. We can go back and tune some other hyperparameters like increasing the minimum size of nodes (default is 5) to fight the overfitting problem. we do not, however, do that here since it is not the purpose of this tutorial.</p>
 </div>
-<div id="continuation-ratio-model" class="section level2">
-<h2>Continuation Ratio Model</h2>
+<div id="continuation-ratio-model" class="section level1" number="7">
+<h1><span class="header-section-number">7</span> Continuation Ratio Model</h1>
 <p>This model uses The vector generalized additive models which are available in the <strong>VGAM</strong> package. for more detail about these models click <a href="https://cran.r-project.org/web/packages/VGAM/vignettes/categoricalVGAM.pdf">here</a>.</p>
 <pre class="r"><code>library(VGAM)
 set.seed(1234)
@@ -749,8 +763,8 @@ The final values used for the model were parallel = FALSE and link = cloglog.</c
 1 accuracy multiclass     0.630</code></pre>
 <p>This the best accuracy rate compared to the other models.</p>
 </div>
-<div id="compare-models" class="section level2">
-<h2>Compare models</h2>
+<div id="compare-models" class="section level1" number="8">
+<h1><span class="header-section-number">8</span> Compare models</h1>
 <p>We can compare between the above models using <strong>resample</strong> caret function.</p>
 <pre class="r"><code>models_eval&lt;-resamples(list(logit=model_logistic,
                             cart=model_cart,
@@ -810,16 +824,16 @@ vgam    0.144558744 0.2993406 0.3367647 0.3293056 0.3690791 0.4142980    0</code
 4 vgam      0.630</code></pre>
 <p>Using the testing set, the logistic model with the link <strong>logit</strong> is the best model to predict this data.</p>
 </div>
-<div id="conclusion" class="section level2">
-<h2>Conclusion</h2>
+<div id="conclusion" class="section level1" number="9">
+<h1><span class="header-section-number">9</span> Conclusion</h1>
 <p>We have seen so far how to model ordinal data by exploring several models, and it happened that the logistic model is the best on for our data. However, in general the best model depends strongly on the data at hand.</p>
 </div>
-<div id="session-information" class="section level2">
-<h2>Session information</h2>
+<div id="session-information" class="section level1" number="10">
+<h1><span class="header-section-number">10</span> Session information</h1>
 <pre class="r"><code>sessionInfo()</code></pre>
 <pre><code>R version 4.0.1 (2020-06-06)
 Platform: x86_64-w64-mingw32/x64 (64-bit)
-Running under: Windows 10 x64 (build 18362)
+Running under: Windows 10 x64 (build 19041)
 
 Matrix products: default
 
@@ -856,7 +870,7 @@ loaded via a namespace (and not attached):
  [19] modelr_0.1.8         gower_0.2.1          matrixStats_0.56.0  
  [22] RcppParallel_5.0.1   xts_0.12-0           prettyunits_1.1.1   
  [25] colorspace_1.4-1     skimr_2.1.1          blob_1.2.1          
- [28] rvest_0.3.5          haven_2.3.1          xfun_0.14           
+ [28] rvest_0.3.5          haven_2.3.1          xfun_0.17           
  [31] callr_3.4.3          crayon_1.3.4         jsonlite_1.6.1      
  [34] lme4_1.1-23          survival_3.1-12      zoo_1.8-8           
  [37] iterators_1.0.12     glue_1.4.1           gtable_0.3.0        
@@ -872,13 +886,13 @@ loaded via a namespace (and not attached):
  [67] cellranger_1.1.0     tools_4.0.1          cli_2.0.2           
  [70] generics_0.0.2       ggridges_0.5.2       evaluate_0.14       
  [73] fastmap_1.0.1        yaml_2.2.1           ModelMetrics_1.2.2.2
- [76] processx_3.4.2       knitr_1.28           fs_1.4.1            
+ [76] processx_3.4.2       knitr_1.29           fs_1.4.1            
  [79] future_1.17.0        nlme_3.1-148         mime_0.9            
  [82] rstanarm_2.19.3      xml2_1.3.2           tokenizers_0.2.1    
  [85] compiler_4.0.1       bayesplot_1.7.2      shinythemes_1.1.2   
  [88] rstudioapi_0.11      reprex_0.3.0         tidyposterior_0.0.3 
  [91] lhs_1.0.2            statmod_1.4.34       stringi_1.4.6       
- [94] highr_0.8            ps_1.3.3             blogdown_0.19       
+ [94] highr_0.8            ps_1.3.3             blogdown_0.20       
  [97] Matrix_1.2-18        nloptr_1.2.2.1       markdown_1.1        
 [100] shinyjs_1.1          vctrs_0.3.1          pillar_1.4.4        
 [103] lifecycle_0.2.0      furrr_0.1.0          data.table_1.12.8   

@@ -6,6 +6,7 @@ summary: 'In this paper we will fit a logistic regression model to the **heart d
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 tags:
@@ -17,30 +18,40 @@ categories: R
 
 <div id="TOC">
 <ul>
-<li><a href="#introduction">Introduction</a></li>
-<li><a href="#data-preparation">Data preparation</a></li>
-<li><a href="#data-partition">Data partition</a></li>
-<li><a href="#train-the-model">train the model</a></li>
-<li><a href="#prediction-and-confusion-matrix">prediction and confusion matrix</a></li>
-<li><a href="#altering-the-link-function">altering the link function</a></li>
+<li><a href="#introduction"><span class="toc-section-number">1</span> Introduction</a></li>
+<li><a href="#data-preparation"><span class="toc-section-number">2</span> Data preparation</a></li>
+<li><a href="#data-partition"><span class="toc-section-number">3</span> Data partition</a></li>
+<li><a href="#train-the-model"><span class="toc-section-number">4</span> train the model</a></li>
+<li><a href="#prediction-and-confusion-matrix"><span class="toc-section-number">5</span> prediction and confusion matrix</a></li>
+<li><a href="#the-link-function"><span class="toc-section-number">6</span> The link function</a></li>
 </ul>
 </div>
 
-<div id="introduction" class="section level2">
-<h2>Introduction</h2>
+<style type="text/css">
+strong {
+  color: red;
+}
+
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+</style>
+<div id="introduction" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Introduction</h1>
 <p>In this paper we will fit a logistic regression model to the <strong>heart disease</strong> data <a href="https://www.kaggle.com/johnsmith88/heart-disease-dataset">uploaded from kaggle website</a>.</p>
 <p>For the data preparation we will follow the same steps as we did in my previous paper about <strong>naive bayes model</strong>, for more detail thus click <a href="https://github.com/Metalesaek/naive-bayes-model">here</a> to get access to that paper.</p>
 </div>
-<div id="data-preparation" class="section level2">
-<h2>Data preparation</h2>
+<div id="data-preparation" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> Data preparation</h1>
 <p>First we call our data with the required packages</p>
 <pre class="r"><code>library(tidyverse, warn.conflicts = FALSE)
 library(caret, warn.conflicts = FALSE)
 mydata&lt;-read.csv(&quot;heart.csv&quot;,header = TRUE)
 names(mydata)[1]&lt;-&quot;age&quot;
 glimpse(mydata)</code></pre>
-<pre><code>## Observations: 303
-## Variables: 14
+<pre><code>## Rows: 303
+## Columns: 14
 ## $ age      &lt;int&gt; 63, 37, 41, 56, 57, 57, 56, 44, 52, 57, 54, 48, 49, 64, 58...
 ## $ sex      &lt;int&gt; 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0...
 ## $ cp       &lt;int&gt; 3, 2, 1, 1, 0, 0, 1, 1, 2, 2, 0, 2, 1, 3, 3, 2, 2, 3, 0, 3...
@@ -76,8 +87,8 @@ glimpse(mydata)</code></pre>
 <pre class="r"><code>mydata&lt;-mydata %&gt;%
   modify_at(c(2,3,6,7,9,11,12,13,14),as.factor)
 glimpse(mydata)</code></pre>
-<pre><code>## Observations: 303
-## Variables: 14
+<pre><code>## Rows: 303
+## Columns: 14
 ## $ age      &lt;int&gt; 63, 37, 41, 56, 57, 57, 56, 44, 52, 57, 54, 48, 49, 64, 58...
 ## $ sex      &lt;fct&gt; 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0...
 ## $ cp       &lt;fct&gt; 3, 2, 1, 1, 0, 0, 1, 1, 2, 2, 0, 2, 1, 3, 3, 2, 2, 3, 0, 3...
@@ -136,8 +147,8 @@ glimpse(mydata)</code></pre>
 <p>As we see the <strong>restecg</strong>,<strong>ca</strong> and <strong>thal</strong> variables have values less than the threshold of 5 casses required for logistic regression. In addition if we split the data between training set and test set the level <strong>2</strong> of the <strong>restecg</strong> variable will not be found in one of the sets since we have only one case. Therfore we should remove these variables from the model.</p>
 <pre class="r"><code>mydata&lt;-mydata[,-c(7,12,13)]
 glimpse(mydata)</code></pre>
-<pre><code>## Observations: 303
-## Variables: 11
+<pre><code>## Rows: 303
+## Columns: 11
 ## $ age      &lt;int&gt; 63, 37, 41, 56, 57, 57, 56, 44, 52, 57, 54, 48, 49, 64, 58...
 ## $ sex      &lt;fct&gt; 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0...
 ## $ cp       &lt;fct&gt; 3, 2, 1, 1, 0, 0, 1, 1, 2, 2, 0, 2, 1, 3, 3, 2, 2, 3, 0, 3...
@@ -153,26 +164,26 @@ glimpse(mydata)</code></pre>
 <p>Let’s plot the relationships between the target variabl and the other features.</p>
 <pre class="r"><code>ggplot(mydata,aes(sex,target,color=target))+
   geom_jitter()</code></pre>
-<p><img src="/post/logimodel/logimodel_files/figure-html/unnamed-chunk-5-1.svg" width="576" /></p>
+<p><img src="/post/logimodel/logimodel_files/figure-html/unnamed-chunk-6-1.svg" width="576" /></p>
 <p>If we look only at the red points (healthy patients) we can wrongly interpret that females are less healthy than males. This is because we do not take into account that we have imbalanced number of each sex level (96 females , 207 males). in contrast, if we look only at females we can say that a particular female are more likely to have the disease than not.</p>
 <pre class="r"><code>ggplot(mydata,aes(cp, fill = target))+
   geom_bar(stat = &quot;count&quot;, position = &quot;dodge&quot;)</code></pre>
-<p><img src="/post/logimodel/logimodel_files/figure-html/unnamed-chunk-6-1.svg" width="576" /></p>
+<p><img src="/post/logimodel/logimodel_files/figure-html/unnamed-chunk-7-1.svg" width="576" /></p>
 <p>From this plot we can conclude that if the patient does not have any chest pain he/she will be highly unlikely to get the disease, otherwise for any chest type the patient will be more likely to be pathologique by this disease. we can expect therfore that this predictor will have a significant importance on the training model.</p>
 <pre class="r"><code>ggplot(mydata, aes(age,fill=target))+
   geom_density(alpha=.5)</code></pre>
-<p><img src="/post/logimodel/logimodel_files/figure-html/unnamed-chunk-7-1.svg" width="576" /></p>
+<p><img src="/post/logimodel/logimodel_files/figure-html/unnamed-chunk-8-1.svg" width="576" /></p>
 </div>
-<div id="data-partition" class="section level2">
-<h2>Data partition</h2>
+<div id="data-partition" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> Data partition</h1>
 <p>we take out 80% of the data to use as training set and the rest will be put aside to evaluate the model performance.</p>
 <pre class="r"><code>set.seed(1234)
 index&lt;-createDataPartition(mydata$target, p=.8,list=FALSE)
 train&lt;-mydata[index,]
 test&lt;-mydata[-index,]</code></pre>
 </div>
-<div id="train-the-model" class="section level2">
-<h2>train the model</h2>
+<div id="train-the-model" class="section level1" number="4">
+<h1><span class="header-section-number">4</span> train the model</h1>
 <p>We are now ready to train our model.</p>
 <pre class="r"><code>model &lt;- glm(target~., data=train,family = &quot;binomial&quot;)
 summary(model)</code></pre>
@@ -314,8 +325,8 @@ summary(model)</code></pre>
 ## Number of Fisher Scoring iterations: 5</code></pre>
 <p>Notice that we can not remove intercept even it is not significant because it contains the first level of “0” of the factor <strong>cp</strong> which is significant. This is hence our final model.</p>
 </div>
-<div id="prediction-and-confusion-matrix" class="section level2">
-<h2>prediction and confusion matrix</h2>
+<div id="prediction-and-confusion-matrix" class="section level1" number="5">
+<h1><span class="header-section-number">5</span> prediction and confusion matrix</h1>
 <p>we will use this model to predict the training set.</p>
 <pre class="r"><code>pred &lt;- predict(model,train, type=&quot;response&quot;)
 head(pred)</code></pre>
@@ -384,9 +395,9 @@ confusionMatrix(as.factor(pred),test$target)</code></pre>
 ## </code></pre>
 <p>With the test set we have lower accuracy rate about 76.67%.</p>
 </div>
-<div id="altering-the-link-function" class="section level2">
-<h2>altering the link function</h2>
-<p>By default the link function is <strong>logit</strong> from the sigmoid distribution, we can make use of the link function <strong>probit</strong> instead, which stands for the normal distribution.</p>
+<div id="the-link-function" class="section level1" number="6">
+<h1><span class="header-section-number">6</span> The link function</h1>
+<p>By default the link function is <strong>logit</strong> from the sigmoid distribution, we can however make use of the link function <strong>probit</strong> instead, which stands for the normal distribution.</p>
 <pre class="r"><code>model1 &lt;- glm(target~.-fbs-slope-exang-age, data=train,
              family = binomial(link = &quot;probit&quot;))
 summary(model1)</code></pre>

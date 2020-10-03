@@ -96,7 +96,8 @@ doc1 <-modify_if(doc, is.factor, as.integer)
 
 notice that we have stored the result in another object **doc1** to keep save our original data.   
 
-```{r,message=FALSE}
+```{r, message=FALSE}
+
 M <- correlate(doc1, method="spearman")
 rplot(shave(M), colours=c("red", "white", "blue" ))+
    theme(axis.text.x = element_text(angle = 90, hjust = 1))
@@ -104,7 +105,7 @@ rplot(shave(M), colours=c("red", "white", "blue" ))+
 
 
 Looking at this plot all the correlations has low values. however, these correlations assess only the monotonic relations, they say nothing about any other form of relation.  
-First let's compare the empirical distribution of the variable  **visits** and the theoretical poisson distribution with $\lambda$ equals the visits mean `mean(doc$visits)`, and the total number of observations is 5190.
+First let's compare the empirical distribution of the variable  **visits** and the theoretical poisson distribution with $\lambda$ equals the visits mean `r mean(doc$visits)`, and the total number of observations is 5190.
 
 ```{r}
 pos <- dpois(0:9,0.302)*5190
@@ -246,12 +247,11 @@ D1 <- tidy(model1)
 colnames(D1) <- NULL
 D2 <- tidy(model2)
 colnames(D2) <- NULL
-cbind(term=D1[,1], estimate1=D1[,2], std1=D1[,3],estimate2=D2[,2], std2=D2[,3]) %>% 
-  mutate(dispersion= std2/std1)
+tibble(term=D1[[1]], estimate1=D1[[2]], std1=D1[[3]],estimate2=D2[[2]], std2=D2[[3]], dispersion= std2/std1)
 ```
 
 **Note**: The first two columns are for the model1, and the last one are for the model 2.
-Not surprisingly that the result of the last column is constant since this is exactely what the quasi maximum likelihood does, it computes the corrected standard errors from the original ones as follows $std2=dispersion*std1$, with the dispersion value being estimated as **1.15718**. if you want to know where this value came from, the answer is simple. this model computes the sigma of the standardized residuals resulted from the original model. we can thus get this value by specifying the  argument type to **pear** then computing sigma by hand as follows:    
+Not surprisingly that the result of the last column is constant since this is exactly what the quasi maximum likelihood does, it computes the corrected standard errors from the original ones as follows $std2=dispersion*std1$, with the dispersion value being estimated as **1.15718**. if you want to know where this value came from, the answer is simple. this model computes the sigma of the standardized residuals resulted from the original model. we can thus get this value by specifying the  argument type to **pear** then computing sigma by hand as follows:    
 
 ```{r}
 resid <- resid(model1, type = "pear")
@@ -308,7 +308,7 @@ we will not compare this two models until we finish with all the incoming models
 
 The negative binomial distribution is used as an alternative for the poisson distribution under overdispersion problem. 
 
-```{r,message=FALSE}
+```{r,message=FALSE, comment=''}
 set.seed(123)
 model3<-glm.nb(visits~.-income, data=train)
 summary(model3)
@@ -331,8 +331,7 @@ Again this plot also seems to be the same as the previous ones, so to figure out
 prednb<- predict.glm(model3,newdata=test,type = "response")
 rmsemodelnb<-ModelMetrics::rmse(test$visits,round(prednb))
 maemodelnb<-mae(test$visits,round(prednb))
-rmsemodelnb
-maemodelnb
+knitr::kable(tibble(rms=rmsemodelnb,mae=maemodelnb))
 
 ```
 
@@ -372,8 +371,9 @@ As before by only looking at the plot we can not decide which model is the best.
 predhp<- predict(modelhp,newdata=test, type = "response")
 rmsemodelhp<-ModelMetrics::rmse(test$visits,round(predhp))
 maemodelhp<-mae(test$visits,round(predhp))
-rmsemodelhp
-maemodelhp
+knitr::kable(tibble(rmse=rmsemodelhp,mae=
+maemodelhp))
+
 ```
 
 
@@ -403,8 +403,9 @@ And for the metrics.
 predhnb<- predict(modelhnb,newdata=test,type = "response")
 rmsemodelhnb<-ModelMetrics::rmse(test$visits,round(predhnb))
 maemodelhnb<-mae(test$visits,round(predhnb))
-rmsemodelhnb
-maemodelhnb
+knitr::kable(tibble(rmse=rmsemodelhnb,mae=
+maemodelhnb))
+
 ```
 
 
@@ -434,8 +435,9 @@ lines(round(predzp),col="blue")
 predzp<- predict(modelzp,newdata=test,type = "response")
 rmsemodelzp<-ModelMetrics::rmse(test$visits,round(predzp))
 maemodelzp<-mae(test$visits,round(predzp))
-rmsemodelzp
-maemodelzp
+knitr::kable(tibble(rmse=rmsemodelzp,mae=
+maemodelzp))
+
 ```
 
 
@@ -454,8 +456,8 @@ summary(modelznb)
 predznb<- predict(modelznb,newdata=test,type = "response")
 rmsemodelznb<-ModelMetrics::rmse(test$visits,round(predznb))
 maemodelznb<-mae(test$visits,round(predznb))
-rmsemodelznb
-maemodelznb
+knitr::kable(tibble(rmse=rmsemodelznb,mae=maemodelznb))
+
 ```
 
 
@@ -484,6 +486,7 @@ If the data is truly follows Poisson distribution then all the the other models 
 
 * Michael J. Crawley, The R book, WILEY, UK, 2013.  http://www.bio.ic.ac.uk/research/mjcraw/therbook/index.htm
 
+# Session info
 
 ```{r}
 sessionInfo()

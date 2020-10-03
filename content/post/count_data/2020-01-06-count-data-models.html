@@ -12,6 +12,7 @@ summary: 'When we deal with data that has a response variable of integer type, u
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 authors: []
@@ -28,35 +29,46 @@ projects: []
 
 <div id="TOC">
 <ul>
-<li><a href="#introduction">Introduction:</a></li>
-<li><a href="#data-preparation">Data preparation</a></li>
-<li><a href="#data-partition">Data partition</a></li>
-<li><a href="#poisson-model">Poisson model</a></li>
-<li><a href="#quasi-poisson-model">Quasi poisson model</a></li>
-<li><a href="#negative-binomial-model">Negative binomial model</a></li>
-<li><a href="#hurdle-model">Hurdle model</a>
+<li><a href="#introduction"><span class="toc-section-number">1</span> Introduction:</a></li>
+<li><a href="#data-preparation"><span class="toc-section-number">2</span> Data preparation</a></li>
+<li><a href="#data-partition"><span class="toc-section-number">3</span> Data partition</a></li>
+<li><a href="#poisson-model"><span class="toc-section-number">4</span> Poisson model</a></li>
+<li><a href="#quasi-poisson-model"><span class="toc-section-number">5</span> Quasi poisson model</a></li>
+<li><a href="#negative-binomial-model"><span class="toc-section-number">6</span> Negative binomial model</a></li>
+<li><a href="#hurdle-model"><span class="toc-section-number">7</span> Hurdle model</a>
 <ul>
-<li><a href="#hurdle-model-with-poisson-distribution.">hurdle model with poisson distribution.</a></li>
-<li><a href="#hurdle-model-with-negative-binomial-distribution.">hurdle model with negative binomial distribution.</a></li>
+<li><a href="#hurdle-model-with-poisson-distribution."><span class="toc-section-number">7.1</span> hurdle model with poisson distribution.</a></li>
+<li><a href="#hurdle-model-with-negative-binomial-distribution."><span class="toc-section-number">7.2</span> hurdle model with negative binomial distribution.</a></li>
 </ul></li>
-<li><a href="#zero-inflated-model">Zero inflated model</a>
+<li><a href="#zero-inflated-model"><span class="toc-section-number">8</span> Zero inflated model</a>
 <ul>
-<li><a href="#zero-inflated-model-with-poisson-distribution">Zero inflated model with poisson distribution</a></li>
-<li><a href="#zero-inflated-model-with-negative-binomial-distribution">Zero inflated model with negative binomial distribution</a></li>
+<li><a href="#zero-inflated-model-with-poisson-distribution"><span class="toc-section-number">8.1</span> Zero inflated model with poisson distribution</a></li>
+<li><a href="#zero-inflated-model-with-negative-binomial-distribution"><span class="toc-section-number">8.2</span> Zero inflated model with negative binomial distribution</a></li>
 </ul></li>
-<li><a href="#conclusion">Conclusion:</a></li>
-<li><a href="#furhter-reading">Furhter reading:</a></li>
+<li><a href="#conclusion"><span class="toc-section-number">9</span> Conclusion:</a></li>
+<li><a href="#furhter-reading"><span class="toc-section-number">10</span> Furhter reading:</a></li>
+<li><a href="#session-info"><span class="toc-section-number">11</span> Session info</a></li>
 </ul>
 </div>
 
-<div id="introduction" class="section level2">
-<h2>Introduction:</h2>
+<style type="text/css">
+strong {
+  color: red;
+}
+
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+</style>
+<div id="introduction" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Introduction:</h1>
 <p>When we deal with data that has a response variable of integer type, using a linear regression may violate the normality assumption and hence all the classical statistic tests would fail to evaluate the model. However, as we do with logistic regression models, the generalized linear model <a href="https://en.wikipedia.org/wiki/Generalized_linear_model">GLM</a> can be used instead here by specifying the suitable distribution.</p>
 <p>The possible distributions for this type of data are the discrete distributions <a href="https://en.wikipedia.org/wiki/Poisson_distribution">poisson</a> and <a href="https://en.wikipedia.org/wiki/Negative_binomial_distribution">negative binomial</a>. The former is the best choice if the mean and the variance of the response variable are closer to each other, if they are not however and we persist using this distribution we may cause the rise of the <a href="https://en.wikipedia.org/wiki/Overdispersion">overdispersion</a> problem of the residuals. As a solution thus, we can use the latter distribution that does not have this restriction.</p>
 <p>There is another alternative if neither the poisson distribution nor the negative binomial are suitable called the <a href="https://en.wikipedia.org/wiki/Quasi-maximum_likelihood_estimate">Quasi maximum likelihood</a>. The advantage of this method is that uses only the relationship between the mean and the variance and does not require any prespecified distribution. Moreover, its estimators are approximately as efficient as the maximum likelihood estimators.</p>
 </div>
-<div id="data-preparation" class="section level2">
-<h2>Data preparation</h2>
+<div id="data-preparation" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> Data preparation</h1>
 <p>To well understand how to model the count data we are going be using <strong>Doctorvisits</strong> data from <strong>AER</strong> package, in which the variable <strong>visits</strong> will be our target variable, so let’s call this data with the packages that we need along this article.</p>
 <pre class="r"><code>ssh &lt;- suppressPackageStartupMessages
 ssh(library(performance))
@@ -70,8 +82,8 @@ ssh(library(broom))
 data(&quot;DoctorVisits&quot;)
 doc &lt;- DoctorVisits
 glimpse(doc)</code></pre>
-<pre><code>Observations: 5,190
-Variables: 12
+<pre><code>Rows: 5,190
+Columns: 12
 $ visits    &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2, 1, 2, ...
 $ gender    &lt;fct&gt; female, female, male, male, male, female, female, female,...
 $ age       &lt;dbl&gt; 0.19, 0.19, 0.19, 0.19, 0.19, 0.19, 0.19, 0.19, 0.19, 0.1...
@@ -122,9 +134,9 @@ tab</code></pre>
 <pre class="r"><code>M &lt;- correlate(doc1, method=&quot;spearman&quot;)
 rplot(shave(M), colours=c(&quot;red&quot;, &quot;white&quot;, &quot;blue&quot; ))+
    theme(axis.text.x = element_text(angle = 90, hjust = 1))</code></pre>
-<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-5-1.svg" width="576" /></p>
+<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-6-1.svg" width="576" /></p>
 <p>Looking at this plot all the correlations has low values. however, these correlations assess only the monotonic relations, they say nothing about any other form of relation.<br />
-First let’s compare the empirical distribution of the variable <strong>visits</strong> and the theoretical poisson distribution with <span class="math inline">\(\lambda\)</span> equals the visits mean <code>mean(doc$visits)</code>, and the total number of observations is 5190.</p>
+First let’s compare the empirical distribution of the variable <strong>visits</strong> and the theoretical poisson distribution with <span class="math inline">\(\lambda\)</span> equals the visits mean 0.3017341, and the total number of observations is 5190.</p>
 <pre class="r"><code>pos &lt;- dpois(0:9,0.302)*5190
 both &lt;- numeric(20)
 both[1:20 %% 2 != 0] &lt;- tab
@@ -132,7 +144,7 @@ both[1:20 %% 2 == 0] &lt;- pos
 labels&lt;-character(20)
 labels[1:20 %% 2==0]&lt;-as.character(0:9)
 barplot(both,col=rep(c(&quot;red&quot;,&quot;yellow&quot;),10),names=labels)</code></pre>
-<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-6-1.svg" width="576" /></p>
+<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-7-1.svg" width="576" /></p>
 <p>As we see the two distributions are more or less closer to each other.
 Let’s now check the negative binomial distribution by first estimate the <a href="https://influentialpoints.com/Training/negative_binomial_distribution-principles-properties-assumptions.htm">clumping parameter</a> <span class="math inline">\(k=\frac{\bar x^2}{s^2-\bar x}\)</span>.</p>
 <pre class="r"><code>k&lt;-mean(doc$visits)^2/(var(doc$visits)-mean(doc$visits))
@@ -143,20 +155,20 @@ both1[1:20 %% 2 == 0]&lt;-bin
 labels&lt;-character(20)
 labels[1:20 %% 2==0]&lt;-as.character(0:9)
 barplot(both1,col=rep(c(&quot;red&quot;,&quot;yellow&quot;),10),names=labels)</code></pre>
-<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-7-1.svg" width="576" /></p>
+<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-8-1.svg" width="576" /></p>
 <p>With this distribution it seems that the empiricall distribution is more closer to the negative binomial than the poisson distribution.</p>
 <p><strong>Note</strong>: This data has very large number of zeros for the outcome compared to the other values which means that any trained model that does not take into account this anomaly will be biased to predict more likely the <strong>zero</strong> value. However, at the end of this article I will show two famous models to handel this type of count data called <strong>Haurdle</strong> model and <strong>zero_inflated</strong> model.</p>
 </div>
-<div id="data-partition" class="section level2">
-<h2>Data partition</h2>
+<div id="data-partition" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> Data partition</h1>
 <p>In oreder to evaluate our model we held out 20% of the data as testing set.</p>
 <pre class="r"><code>set.seed(123)
 index&lt;-sample(2,nrow(doc),replace = TRUE,p=c(.8,.2))
 train&lt;-doc[index==1,]
 test&lt;-doc[index==2,]</code></pre>
 </div>
-<div id="poisson-model" class="section level2">
-<h2>Poisson model</h2>
+<div id="poisson-model" class="section level1" number="4">
+<h1><span class="header-section-number">4</span> Poisson model</h1>
 <p>This model belongs to the generalized linear model families, so in the function <strong>glm</strong> we set the argument <strong>family</strong> to poisson. In practice this model is sufficient with a wide range of count data.</p>
 <pre class="r"><code>set.seed(123)
 model1&lt;-glm(visits~., data=train, family =&quot;poisson&quot;)
@@ -263,8 +275,8 @@ sample estimates:
 0.95488 </code></pre>
 <p>If the relation is in quadratic form then this model is called NB2. And since this p-value <strong>3.939e-14</strong> is smaller than the previous one then NB2 could be more appropriate than NB1.</p>
 </div>
-<div id="quasi-poisson-model" class="section level2">
-<h2>Quasi poisson model</h2>
+<div id="quasi-poisson-model" class="section level1" number="5">
+<h1><span class="header-section-number">5</span> Quasi poisson model</h1>
 <p>The first test suggested the use of quasi-poisson model, so let’s train this model with the same predictors as the previous one.</p>
 <pre class="r"><code>set.seed(123)
 model2&lt;-glm(visits~.-income, data=train, family =&quot;quasipoisson&quot;)
@@ -294,26 +306,27 @@ To better understand what is going on with quasi-poisson model let’s put the e
 colnames(D1) &lt;- NULL
 D2 &lt;- tidy(model2)
 colnames(D2) &lt;- NULL
-cbind(term=D1[,1], estimate1=D1[,2], std1=D1[,3],estimate2=D2[,2], std2=D2[,3]) %&gt;% 
-  mutate(dispersion= std2/std1)</code></pre>
-<pre><code>           term   estimate1        std1   estimate2        std2 dispersion
-1   (Intercept) -2.82868582 0.121003941 -2.82868582 0.140023371    1.15718
-2  genderfemale  0.21342446 0.060883445  0.21342446 0.070453120    1.15718
-3           age  0.47876624 0.183054884  0.47876624 0.211827495    1.15718
-4      illness1  0.94643852 0.112984298  0.94643852 0.130743198    1.15718
-5      illness2  1.21007304 0.117661029  1.21007304 0.136155018    1.15718
-6      illness3  1.11941845 0.131726935  1.11941845 0.152431807    1.15718
-7      illness4  1.28108306 0.139695671  1.28108306 0.161653071    1.15718
-8      illness5  1.45198517 0.138529459  1.45198517 0.160303554    1.15718
-9       reduced  0.12621548 0.005595111  0.12621548 0.006474552    1.15718
-10       health  0.03497647 0.011228772  0.03497647 0.012993714    1.15718
-11   privateyes  0.10033918 0.079266327  0.10033918 0.091725427    1.15718
-12  freepooryes -0.29008562 0.187570838 -0.29008562 0.217053268    1.15718
-13 freerepatyes  0.06829904 0.102422323  0.06829904 0.118521089    1.15718
-14  nchronicyes  0.01714304 0.073082122  0.01714304 0.084569188    1.15718
-15  lchronicyes  0.02818992 0.091425522  0.02818992 0.105795808    1.15718</code></pre>
+tibble(term=D1[[1]], estimate1=D1[[2]], std1=D1[[3]],estimate2=D2[[2]], std2=D2[[3]], dispersion= std2/std1)</code></pre>
+<pre><code># A tibble: 15 x 6
+   term         estimate1    std1 estimate2    std2 dispersion
+   &lt;chr&gt;            &lt;dbl&gt;   &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;      &lt;dbl&gt;
+ 1 (Intercept)    -2.83   0.121     -2.83   0.140         1.16
+ 2 genderfemale    0.213  0.0609     0.213  0.0705        1.16
+ 3 age             0.479  0.183      0.479  0.212         1.16
+ 4 illness1        0.946  0.113      0.946  0.131         1.16
+ 5 illness2        1.21   0.118      1.21   0.136         1.16
+ 6 illness3        1.12   0.132      1.12   0.152         1.16
+ 7 illness4        1.28   0.140      1.28   0.162         1.16
+ 8 illness5        1.45   0.139      1.45   0.160         1.16
+ 9 reduced         0.126  0.00560    0.126  0.00647       1.16
+10 health          0.0350 0.0112     0.0350 0.0130        1.16
+11 privateyes      0.100  0.0793     0.100  0.0917        1.16
+12 freepooryes    -0.290  0.188     -0.290  0.217         1.16
+13 freerepatyes    0.0683 0.102      0.0683 0.119         1.16
+14 nchronicyes     0.0171 0.0731     0.0171 0.0846        1.16
+15 lchronicyes     0.0282 0.0914     0.0282 0.106         1.16</code></pre>
 <p><strong>Note</strong>: The first two columns are for the model1, and the last one are for the model 2.
-Not surprisingly that the result of the last column is constant since this is exactely what the quasi maximum likelihood does, it computes the corrected standard errors from the original ones as follows <span class="math inline">\(std2=dispersion*std1\)</span>, with the dispersion value being estimated as <strong>1.15718</strong>. if you want to know where this value came from, the answer is simple. this model computes the sigma of the standardized residuals resulted from the original model. we can thus get this value by specifying the argument type to <strong>pear</strong> then computing sigma by hand as follows:</p>
+Not surprisingly that the result of the last column is constant since this is exactly what the quasi maximum likelihood does, it computes the corrected standard errors from the original ones as follows <span class="math inline">\(std2=dispersion*std1\)</span>, with the dispersion value being estimated as <strong>1.15718</strong>. if you want to know where this value came from, the answer is simple. this model computes the sigma of the standardized residuals resulted from the original model. we can thus get this value by specifying the argument type to <strong>pear</strong> then computing sigma by hand as follows:</p>
 <pre class="r"><code>resid &lt;- resid(model1, type = &quot;pear&quot;)
 sqrt(sum(resid^2)/4140)</code></pre>
 <pre><code>[1] 1.15718</code></pre>
@@ -322,7 +335,7 @@ Let’s start by the model1</p>
 <pre class="r"><code>pred&lt;- predict.glm(model1,newdata=test[test$visits!=0,],type = &quot;response&quot;)
 plot(test$visits[test$visits!=0],type = &quot;b&quot;,col=&quot;red&quot;)
 lines(round(pred),col=&quot;blue&quot;)</code></pre>
-<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-18-1.svg" width="576" /></p>
+<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-19-1.svg" width="576" /></p>
 <p>If you noticed, and due to the large number of zero’s of the target variable, i have intentionally removed all theses values in order to get clearer plot.
 From this plot we can say that the model does not fit well the data especially the larger values that are not well captured, however this may due to the fact that the data are very skewed towards zero.</p>
 <p>To compare different models we can use the <strong>root mean-square error</strong> and <strong>mean absolute error</strong> (all the data with zero’s included).
@@ -338,7 +351,7 @@ rmsemodelp</code></pre>
 <pre class="r"><code>predq&lt;- predict.glm(model2,newdata=test[test$visits!=0,],type = &quot;response&quot;)
 plot(test$visits[test$visits!=0],type = &quot;b&quot;,col=&quot;red&quot;)
 lines(round(predq),col=&quot;blue&quot;)</code></pre>
-<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-20-1.svg" width="576" /></p>
+<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-21-1.svg" width="576" /></p>
 <p>This plot does not seem to be very different from the previous plot.
 The rmse and mae for this model are computed as follows.</p>
 <pre class="r"><code>predq &lt;- predict.glm(model2,newdata=test, type = &quot;response&quot;)
@@ -350,8 +363,8 @@ rmsemodelqp</code></pre>
 <pre><code>[1] 0.284058</code></pre>
 <p>we will not compare this two models until we finish with all the incoming models and we compare all the models at once.</p>
 </div>
-<div id="negative-binomial-model" class="section level2">
-<h2>Negative binomial model</h2>
+<div id="negative-binomial-model" class="section level1" number="6">
+<h1><span class="header-section-number">6</span> Negative binomial model</h1>
 <p>The negative binomial distribution is used as an alternative for the poisson distribution under overdispersion problem.</p>
 <pre class="r"><code>set.seed(123)
 model3&lt;-glm.nb(visits~.-income, data=train)
@@ -401,23 +414,34 @@ Number of Fisher Scoring iterations: 1
 <pre class="r"><code>prednb&lt;- predict.glm(model3,newdata=test[test$visits!=0,],type = &quot;response&quot;)
 plot(test$visits[test$visits!=0],type = &quot;b&quot;,col=&quot;red&quot;)
 lines(round(prednb),col=&quot;blue&quot;)</code></pre>
-<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-23-1.svg" width="576" /></p>
+<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-24-1.svg" width="576" /></p>
 <p>Again this plot also seems to be the same as the previous ones, so to figure out which model is best we use statistic metrics.</p>
 <pre class="r"><code>prednb&lt;- predict.glm(model3,newdata=test,type = &quot;response&quot;)
 rmsemodelnb&lt;-ModelMetrics::rmse(test$visits,round(prednb))
 maemodelnb&lt;-mae(test$visits,round(prednb))
-rmsemodelnb</code></pre>
-<pre><code>[1] 0.7808085</code></pre>
-<pre class="r"><code>maemodelnb</code></pre>
-<pre><code>[1] 0.2966184</code></pre>
+knitr::kable(tibble(rms=rmsemodelnb,mae=maemodelnb))</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="right">rms</th>
+<th align="right">mae</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">0.7808085</td>
+<td align="right">0.2966184</td>
+</tr>
+</tbody>
+</table>
 <p>we will use these ouputs further.</p>
 </div>
-<div id="hurdle-model" class="section level2">
-<h2>Hurdle model</h2>
+<div id="hurdle-model" class="section level1" number="7">
+<h1><span class="header-section-number">7</span> Hurdle model</h1>
 <p>Originally proposed by Mullahy (1986) this model can take into account the fact that the data has more zeros and also can handle the overdispersion problem. It has two components (or steps), truncated count component defined by the chosen discrete distribution such as poisson or negative binomial, and a hurdle components models zero vs larger counts (that uses censored count distribution or binomial model). In other words, this models asumes that two population distributions underlying the data, one distribution for zero values, and another different distribution the psotive values. For more detail about hurdle and zero inflated models click <a href="https://cran.r-project.org/web/packages/pscl/vignettes/countreg.pdf#cite.countreg%3AZeileis%3A2006">here</a></p>
 <p>To perform this model we make use of the function <strong>hurdle</strong> from the package <strong>pscl</strong>.</p>
-<div id="hurdle-model-with-poisson-distribution." class="section level3">
-<h3>hurdle model with poisson distribution.</h3>
+<div id="hurdle-model-with-poisson-distribution." class="section level2" number="7.1">
+<h2><span class="header-section-number">7.1</span> hurdle model with poisson distribution.</h2>
 <p>This model works in two steps. In the first step it uses binary classification to discriminate between the zero values and the positive values, and in the second step uses the traditional (poisson or binomial model, and here we use poisson model) model for positive values.</p>
 <pre class="r"><code>library(pscl)
 set.seed(123)
@@ -475,18 +499,30 @@ As we did before we plot the results.</p>
 <pre class="r"><code>predhp&lt;- predict(modelhp,newdata=test[test$visits!=0,],type = &quot;response&quot;)
 plot(test$visits[test$visits!=0],type = &quot;b&quot;,col=&quot;red&quot;)
 lines(round(predhp),col=&quot;blue&quot;)</code></pre>
-<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-26-1.svg" width="576" /></p>
+<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-27-1.svg" width="576" /></p>
 <p>As before by only looking at the plot we can not decide which model is the best. So it is better to use the statistic metrics.</p>
 <pre class="r"><code>predhp&lt;- predict(modelhp,newdata=test, type = &quot;response&quot;)
 rmsemodelhp&lt;-ModelMetrics::rmse(test$visits,round(predhp))
 maemodelhp&lt;-mae(test$visits,round(predhp))
-rmsemodelhp</code></pre>
-<pre><code>[1] 0.7375374</code></pre>
-<pre class="r"><code>maemodelhp</code></pre>
-<pre><code>[1] 0.2850242</code></pre>
+knitr::kable(tibble(rmse=rmsemodelhp,mae=
+maemodelhp))</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="right">rmse</th>
+<th align="right">mae</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">0.7375374</td>
+<td align="right">0.2850242</td>
+</tr>
+</tbody>
+</table>
 </div>
-<div id="hurdle-model-with-negative-binomial-distribution." class="section level3">
-<h3>hurdle model with negative binomial distribution.</h3>
+<div id="hurdle-model-with-negative-binomial-distribution." class="section level2" number="7.2">
+<h2><span class="header-section-number">7.2</span> hurdle model with negative binomial distribution.</h2>
 <p>Now let’s try to use the negative binomial instead of poisson distribution.</p>
 <pre class="r"><code>set.seed(123)
 modelhnb&lt;-hurdle(visits~.-income, data=train,dist = &quot;negbin&quot;)
@@ -544,22 +580,34 @@ Log-likelihood: -2524 on 31 Df</code></pre>
 <pre class="r"><code>predhnb&lt;- predict(modelhnb,newdata=test[test$visits!=0,],type = &quot;response&quot;)
 plot(test$visits[test$visits!=0],type = &quot;b&quot;,col=&quot;red&quot;)
 lines(round(predhnb),col=&quot;blue&quot;)</code></pre>
-<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-29-1.svg" width="576" /></p>
+<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-30-1.svg" width="576" /></p>
 <p>And for the metrics.</p>
 <pre class="r"><code>predhnb&lt;- predict(modelhnb,newdata=test,type = &quot;response&quot;)
 rmsemodelhnb&lt;-ModelMetrics::rmse(test$visits,round(predhnb))
 maemodelhnb&lt;-mae(test$visits,round(predhnb))
-rmsemodelhnb</code></pre>
-<pre><code>[1] 0.7408052</code></pre>
-<pre class="r"><code>maemodelhnb</code></pre>
-<pre><code>[1] 0.2879227</code></pre>
+knitr::kable(tibble(rmse=rmsemodelhnb,mae=
+maemodelhnb))</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="right">rmse</th>
+<th align="right">mae</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">0.7408052</td>
+<td align="right">0.2879227</td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
-<div id="zero-inflated-model" class="section level2">
-<h2>Zero inflated model</h2>
+<div id="zero-inflated-model" class="section level1" number="8">
+<h1><span class="header-section-number">8</span> Zero inflated model</h1>
 <p>Such as the previous model type , this model also combines two components but with the difference that this model performs a mixture of binomial distribution (between zero and positive values) and the poisson (or negative binomial) distribution for the rest of the values (with the zero included).</p>
-<div id="zero-inflated-model-with-poisson-distribution" class="section level3">
-<h3>Zero inflated model with poisson distribution</h3>
+<div id="zero-inflated-model-with-poisson-distribution" class="section level2" number="8.1">
+<h2><span class="header-section-number">8.1</span> Zero inflated model with poisson distribution</h2>
 <p>Here also we fit tow models one with poisson and one with negative binomial</p>
 <pre class="r"><code>set.seed(123)
 modelzp&lt;-zeroinfl(visits~.-income, data=train,dist = &quot;poisson&quot;)
@@ -574,58 +622,70 @@ Pearson residuals:
 
 Count model coefficients (poisson with log link):
              Estimate Std. Error z value Pr(&gt;|z|)    
-(Intercept)  -0.86466    0.23608  -3.663  0.00025 ***
-genderfemale  0.03280    0.09078   0.361  0.71788    
-age           0.13330    0.26922   0.495  0.62050    
-illness1      0.32985    0.21846   1.510  0.13107    
-illness2      0.34799    0.22426   1.552  0.12072    
-illness3      0.20399    0.24152   0.845  0.39833    
-illness4      0.44019    0.24324   1.810  0.07034 .  
-illness5      0.72462    0.23632   3.066  0.00217 ** 
+(Intercept)  -0.86467    0.23608  -3.663  0.00025 ***
+genderfemale  0.03280    0.09078   0.361  0.71789    
+age           0.13331    0.26922   0.495  0.62049    
+illness1      0.32986    0.21846   1.510  0.13105    
+illness2      0.34800    0.22426   1.552  0.12071    
+illness3      0.20400    0.24152   0.845  0.39832    
+illness4      0.44020    0.24324   1.810  0.07034 .  
+illness5      0.72463    0.23632   3.066  0.00217 ** 
 reduced       0.09679    0.00809  11.964  &lt; 2e-16 ***
-health        0.02269    0.01609   1.410  0.15855    
+health        0.02269    0.01609   1.410  0.15860    
 privateyes   -0.26390    0.12796  -2.062  0.03918 *  
-freepooryes   0.04860    0.27675   0.176  0.86060    
-freerepatyes -0.51895    0.17070  -3.040  0.00236 ** 
-nchronicyes   0.08577    0.11489   0.747  0.45536    
-lchronicyes   0.10876    0.12745   0.853  0.39347    
+freepooryes   0.04860    0.27675   0.176  0.86059    
+freerepatyes -0.51894    0.17070  -3.040  0.00237 ** 
+nchronicyes   0.08577    0.11490   0.746  0.45538    
+lchronicyes   0.10876    0.12745   0.853  0.39346    
 
 Zero-inflation model coefficients (binomial with logit link):
              Estimate Std. Error z value Pr(&gt;|z|)    
-(Intercept)   2.44814    0.34932   7.008 2.41e-12 ***
-genderfemale -0.48766    0.19038  -2.561 0.010422 *  
-age          -0.88817    0.59030  -1.505 0.132426    
-illness1     -0.80835    0.31247  -2.587 0.009683 ** 
-illness2     -1.41462    0.35338  -4.003 6.25e-05 ***
-illness3     -1.69205    0.44028  -3.843 0.000121 ***
-illness4     -1.52225    0.46334  -3.285 0.001018 ** 
-illness5     -1.08745    0.46493  -2.339 0.019338 *  
+(Intercept)   2.44812    0.34933   7.008 2.42e-12 ***
+genderfemale -0.48766    0.19038  -2.562 0.010422 *  
+age          -0.88816    0.59030  -1.505 0.132431    
+illness1     -0.80833    0.31248  -2.587 0.009685 ** 
+illness2     -1.41461    0.35338  -4.003 6.25e-05 ***
+illness3     -1.69204    0.44028  -3.843 0.000121 ***
+illness4     -1.52224    0.46334  -3.285 0.001019 ** 
+illness5     -1.08742    0.46493  -2.339 0.019342 *  
 reduced      -0.14462    0.03861  -3.746 0.000180 ***
-health       -0.05795    0.04486  -1.292 0.196418    
+health       -0.05796    0.04486  -1.292 0.196386    
 privateyes   -0.73945    0.22597  -3.272 0.001066 ** 
-freepooryes   0.73370    0.41402   1.772 0.076372 .  
-freerepatyes -1.75457    0.53937  -3.253 0.001142 ** 
-nchronicyes   0.13230    0.22623   0.585 0.558678    
-lchronicyes   0.03646    0.30619   0.119 0.905217    
+freepooryes   0.73371    0.41402   1.772 0.076370 .  
+freerepatyes -1.75454    0.53938  -3.253 0.001142 ** 
+nchronicyes   0.13229    0.22623   0.585 0.558697    
+lchronicyes   0.03647    0.30620   0.119 0.905194    
 ---
 Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1 
 
-Number of iterations in BFGS optimization: 80 
+Number of iterations in BFGS optimization: 42 
 Log-likelihood: -2579 on 30 Df</code></pre>
 <pre class="r"><code>predzp&lt;- predict(modelzp,newdata=test[test$visits!=0,],type = &quot;response&quot;)
 plot(test$visits[test$visits!=0],type = &quot;b&quot;,col=&quot;red&quot;)
 lines(round(predzp),col=&quot;blue&quot;)</code></pre>
-<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-32-1.svg" width="576" /></p>
+<p><img src="/post/count_data/2020-01-06-count-data-models_files/figure-html/unnamed-chunk-33-1.svg" width="576" /></p>
 <pre class="r"><code>predzp&lt;- predict(modelzp,newdata=test,type = &quot;response&quot;)
 rmsemodelzp&lt;-ModelMetrics::rmse(test$visits,round(predzp))
 maemodelzp&lt;-mae(test$visits,round(predzp))
-rmsemodelzp</code></pre>
-<pre><code>[1] 0.7485897</code></pre>
-<pre class="r"><code>maemodelzp</code></pre>
-<pre><code>[1] 0.2898551</code></pre>
+knitr::kable(tibble(rmse=rmsemodelzp,mae=
+maemodelzp))</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="right">rmse</th>
+<th align="right">mae</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">0.7485897</td>
+<td align="right">0.2898551</td>
+</tr>
+</tbody>
+</table>
 </div>
-<div id="zero-inflated-model-with-negative-binomial-distribution" class="section level3">
-<h3>Zero inflated model with negative binomial distribution</h3>
+<div id="zero-inflated-model-with-negative-binomial-distribution" class="section level2" number="8.2">
+<h2><span class="header-section-number">8.2</span> Zero inflated model with negative binomial distribution</h2>
 <p>Let’s this time try the negative binomial distribution.</p>
 <pre class="r"><code>set.seed(123)
 modelznb&lt;-zeroinfl(visits~., data=train,dist = &quot;negbin&quot;)
@@ -640,55 +700,66 @@ Pearson residuals:
 
 Count model coefficients (negbin with log link):
               Estimate Std. Error z value Pr(&gt;|z|)    
-(Intercept)  -1.383088   0.241780  -5.720 1.06e-08 ***
-genderfemale  0.038982   0.090534   0.431 0.666775    
-age           0.028836   0.290843   0.099 0.921022    
-income       -0.196594   0.147560  -1.332 0.182763    
-illness1      0.613261   0.174653   3.511 0.000446 ***
-illness2      0.692295   0.179665   3.853 0.000117 ***
-illness3      0.664614   0.196063   3.390 0.000699 ***
-illness4      0.760167   0.204138   3.724 0.000196 ***
-illness5      0.944761   0.206098   4.584 4.56e-06 ***
+(Intercept)  -1.383100   0.241778  -5.721 1.06e-08 ***
+genderfemale  0.038985   0.090534   0.431 0.666751    
+age           0.028837   0.290843   0.099 0.921019    
+income       -0.196592   0.147560  -1.332 0.182767    
+illness1      0.613258   0.174652   3.511 0.000446 ***
+illness2      0.692297   0.179663   3.853 0.000117 ***
+illness3      0.664613   0.196061   3.390 0.000699 ***
+illness4      0.760162   0.204137   3.724 0.000196 ***
+illness5      0.944756   0.206097   4.584 4.56e-06 ***
 reduced       0.102651   0.008776  11.697  &lt; 2e-16 ***
-health        0.044012   0.015536   2.833 0.004612 ** 
-privateyes   -0.168877   0.138680  -1.218 0.223321    
-freepooryes  -0.422737   0.306654  -1.379 0.168034    
-freerepatyes -0.383568   0.163995  -2.339 0.019341 *  
-nchronicyes   0.033375   0.107881   0.309 0.757040    
-lchronicyes   0.065839   0.128987   0.510 0.609748    
-Log(theta)    0.473940   0.142626   3.323 0.000891 ***
+health        0.044012   0.015536   2.833 0.004611 ** 
+privateyes   -0.168864   0.138680  -1.218 0.223358    
+freepooryes  -0.422748   0.306653  -1.379 0.168022    
+freerepatyes -0.383558   0.163995  -2.339 0.019344 *  
+nchronicyes   0.033374   0.107881   0.309 0.757048    
+lchronicyes   0.065834   0.128987   0.510 0.609775    
+Log(theta)    0.473936   0.142626   3.323 0.000891 ***
 
 Zero-inflation model coefficients (binomial with logit link):
                Estimate Std. Error z value Pr(&gt;|z|)    
-(Intercept)    2.280216   0.532170   4.285 1.83e-05 ***
-genderfemale  -0.726916   0.275312  -2.640  0.00828 ** 
-age           -2.002886   0.920168  -2.177  0.02951 *  
-income        -0.180281   0.393267  -0.458  0.64665    
-illness1      -0.332734   0.347965  -0.956  0.33896    
-illness2      -1.111993   0.449603  -2.473  0.01339 *  
-illness3      -0.953342   0.512702  -1.859  0.06296 .  
-illness4      -1.551433   0.739821  -2.097  0.03599 *  
-illness5      -1.229820   0.859693  -1.431  0.15256    
-reduced       -1.298180   0.457644  -2.837  0.00456 ** 
-health        -0.001444   0.055085  -0.026  0.97909    
-privateyes    -0.817933   0.317762  -2.574  0.01005 *  
-freepooryes    0.239439   0.664835   0.360  0.71874    
-freerepatyes -13.563347 519.415149  -0.026  0.97917    
-nchronicyes    0.045017   0.298234   0.151  0.88002    
-lchronicyes   -0.163689   0.495085  -0.331  0.74093    
+(Intercept)   2.280e+00  5.322e-01   4.285 1.83e-05 ***
+genderfemale -7.269e-01  2.753e-01  -2.640  0.00828 ** 
+age          -2.003e+00  9.202e-01  -2.177  0.02951 *  
+income       -1.803e-01  3.933e-01  -0.458  0.64669    
+illness1     -3.327e-01  3.480e-01  -0.956  0.33894    
+illness2     -1.112e+00  4.496e-01  -2.473  0.01339 *  
+illness3     -9.533e-01  5.127e-01  -1.859  0.06297 .  
+illness4     -1.551e+00  7.398e-01  -2.097  0.03599 *  
+illness5     -1.230e+00  8.597e-01  -1.431  0.15257    
+reduced      -1.298e+00  4.577e-01  -2.836  0.00456 ** 
+health       -1.443e-03  5.509e-02  -0.026  0.97910    
+privateyes   -8.179e-01  3.178e-01  -2.574  0.01005 *  
+freepooryes   2.394e-01  6.648e-01   0.360  0.71878    
+freerepatyes -1.572e+01  1.528e+03  -0.010  0.99179    
+nchronicyes   4.502e-02  2.982e-01   0.151  0.88001    
+lchronicyes  -1.637e-01  4.951e-01  -0.331  0.74085    
 ---
 Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1 
 
 Theta = 1.6063 
-Number of iterations in BFGS optimization: 68 
+Number of iterations in BFGS optimization: 66 
 Log-likelihood: -2512 on 33 Df</code></pre>
 <pre class="r"><code>predznb&lt;- predict(modelznb,newdata=test,type = &quot;response&quot;)
 rmsemodelznb&lt;-ModelMetrics::rmse(test$visits,round(predznb))
 maemodelznb&lt;-mae(test$visits,round(predznb))
-rmsemodelznb</code></pre>
-<pre><code>[1] 0.7309579</code></pre>
-<pre class="r"><code>maemodelznb</code></pre>
-<pre><code>[1] 0.2753623</code></pre>
+knitr::kable(tibble(rmse=rmsemodelznb,mae=maemodelznb))</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="right">rmse</th>
+<th align="right">mae</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">0.7309579</td>
+<td align="right">0.2753623</td>
+</tr>
+</tbody>
+</table>
 <p>Finally let’s compare all the above models.</p>
 <pre class="r"><code>rmse&lt;-c(rmsemodelp,rmsemodelqp,rmsemodelnb,rmsemodelhp,rmsemodelhnb,
            rmsemodelzp,rmsemodelznb)
@@ -709,13 +780,62 @@ data.frame(models,rmse,mae)%&gt;%
 <p>Both metrics have chosen the zero inflated negative binomial model as the best model with minimum rmse value <strong>0.7309579</strong>, and minimum mae value <strong>0.2753623</strong>. this result is in line with the fact that this kind of models take care of the zero inflated data and at the same time the overdispersion problem.</p>
 </div>
 </div>
-<div id="conclusion" class="section level2">
-<h2>Conclusion:</h2>
-<p>If the data is truly follows Poisson distribution then all the the other models have extra parameters that, during training process, converges to the optimum parameter values for poisson, this relation is like the linear regression to the Generealized least squares. However, if the data is very skewed towards zero then it should be better to use the last two models to take care of this issue.</p>
+<div id="conclusion" class="section level1" number="9">
+<h1><span class="header-section-number">9</span> Conclusion:</h1>
+<p>If the data is truly follows Poisson distribution then all the the other models have extra parameters that, during training process, converges to the optimum parameter values for poisson, this relation is like the linear regression to the generalized least squares. However, if the data is very skewed towards zero then it should be better to use the last two models to take care of this issue.</p>
 </div>
-<div id="furhter-reading" class="section level2">
-<h2>Furhter reading:</h2>
+<div id="furhter-reading" class="section level1" number="10">
+<h1><span class="header-section-number">10</span> Furhter reading:</h1>
 <ul>
 <li>Michael J. Crawley, The R book, WILEY, UK, 2013. <a href="http://www.bio.ic.ac.uk/research/mjcraw/therbook/index.htm" class="uri">http://www.bio.ic.ac.uk/research/mjcraw/therbook/index.htm</a></li>
 </ul>
+</div>
+<div id="session-info" class="section level1" number="11">
+<h1><span class="header-section-number">11</span> Session info</h1>
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.0.1 (2020-06-06)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 10 x64 (build 19041)
+
+Matrix products: default
+
+locale:
+[1] LC_COLLATE=English_United States.1252 
+[2] LC_CTYPE=English_United States.1252   
+[3] LC_MONETARY=English_United States.1252
+[4] LC_NUMERIC=C                          
+[5] LC_TIME=English_United States.1252    
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] pscl_1.5.5           broom_0.5.6          AER_1.2-9           
+ [4] survival_3.1-12      sandwich_2.5-1       lmtest_0.9-37       
+ [7] zoo_1.8-8            car_3.0-8            carData_3.0-4       
+[10] forcats_0.5.0        stringr_1.4.0        dplyr_1.0.0         
+[13] readr_1.3.1          tidyr_1.1.0          tibble_3.0.1        
+[16] ggplot2_3.3.1        tidyverse_1.3.0      MASS_7.3-51.6       
+[19] purrr_0.3.4          corrr_0.4.2          ModelMetrics_1.2.2.2
+[22] performance_0.4.7   
+
+loaded via a namespace (and not attached):
+ [1] nlme_3.1-148      fs_1.4.1          lubridate_1.7.9   insight_0.8.5    
+ [5] httr_1.4.1        tools_4.0.1       backports_1.1.7   utf8_1.1.4       
+ [9] R6_2.4.1          DBI_1.1.0         colorspace_1.4-1  withr_2.2.0      
+[13] tidyselect_1.1.0  curl_4.3          compiler_4.0.1    cli_2.0.2        
+[17] rvest_0.3.5       xml2_1.3.2        labeling_0.3      bookdown_0.19    
+[21] bayestestR_0.6.0  scales_1.1.1      digest_0.6.25     foreign_0.8-80   
+[25] rmarkdown_2.2     rio_0.5.16        pkgconfig_2.0.3   htmltools_0.4.0  
+[29] dbplyr_1.4.4      highr_0.8         rlang_0.4.6       readxl_1.3.1     
+[33] rstudioapi_0.11   generics_0.0.2    farver_2.0.3      jsonlite_1.6.1   
+[37] zip_2.0.4         magrittr_1.5      Formula_1.2-3     Matrix_1.2-18    
+[41] Rcpp_1.0.4.6      munsell_0.5.0     fansi_0.4.1       abind_1.4-5      
+[45] lifecycle_0.2.0   stringi_1.4.6     yaml_2.2.1        grid_4.0.1       
+[49] blob_1.2.1        crayon_1.3.4      lattice_0.20-41   haven_2.3.1      
+[53] splines_4.0.1     hms_0.5.3         knitr_1.29        pillar_1.4.4     
+[57] reprex_0.3.0      glue_1.4.1        evaluate_0.14     blogdown_0.20    
+[61] data.table_1.12.8 modelr_0.1.8      vctrs_0.3.1       cellranger_1.1.0 
+[65] gtable_0.3.0      assertthat_0.2.1  xfun_0.17         openxlsx_4.1.5   
+[69] ellipsis_0.3.1   </code></pre>
 </div>
