@@ -6,6 +6,7 @@ summary: '**Naive bayes** model based on a strong assumption that the features a
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 tags:
@@ -18,7 +19,18 @@ knitr::opts_chunk$set(echo = TRUE,warning = FALSE,message=FALSE,error=FALSE)
 ```
 
 
-## Introduction
+```{css, echo=FALSE}
+strong {
+  color: red;
+}
+
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+```
+
+# Introduction
 
 **Naive bayes** model based on a strong assumption that the features are **conditionally  independent** given the class label. Since this assumption is rarely when it is true, this model termed as **naive**. However, even this assumption is not satisfied the model still works very well (Kevin.P murphy  2012). Using this assumption we can define the class conditionall density as the product of one dimensional densities.
 
@@ -41,7 +53,7 @@ $$p(X|y=c,\theta)=\prod_{j=1}^DCat(x_j|\mu_{jc})$$
 
 For data that has features of different types we can use a mixture product of the above distributions, and this is what we will do in this paper.  
 
-## Data preparation
+# Data preparation
 
 The data that we will use here is [uploaded from kaggle website](https://www.kaggle.com/johnsmith88/heart-disease-dataset), which is about heart disease.
 let us start by calling the packages needed and the data, then we give an appropriate name to the first column 
@@ -166,7 +178,7 @@ pairs.panels(mydata[,-11])
 AS we see all the correlations are less than 50% so we can go ahead and train our model.
 
 
-## Data partition
+# Data partition
 
 
 we take out 80% of the data to use as training set and the rest will be put aside to evaluate the model performance.  
@@ -180,7 +192,7 @@ test<-mydata[-index,]
 ```
 
 
-## train the model 
+# Model training 
 
 Note: for this model we do not need to set seed because this model uses known densities for the predictors and does not use any random method.
 
@@ -209,7 +221,7 @@ plot(modelnv)
 
 
 
-## Evaluate the model
+# Model evaluation
 
 We can check the accuracy of the training data of this model using the confusion matrix.
 
@@ -237,7 +249,7 @@ confusionMatrix(pred,test$target)
 
 The accuracy rate of the test set now is about 75%, may be due to overfitting problem, or this kind of model is not suitable for this data. 
 
-## Fine tune the model:
+# Model fine-tuning:
 
 In order to increase the model performance we can try another set of hyperparameters. Naive bayes model has different kernels and by default the usekernel argument  is set to be **FALSE** which allows the use of the gaussion distriburtion for the numeric variables,if **TRUE** the kernel density estimation applies instead. Let's turn it to be **TRUE**  and see what will happen for the test accuracy rate.
 
@@ -275,7 +287,7 @@ confusionMatrix(pred,test$target)
 
  We have another slight improvment with accuracy rate **78.33** after scaling the data. 
  
-## Conclusion
+# Conclusion
  
- Naive bayes model is the most widely used model in the classical machine learning models, sepecially with features that are originally normally distributed or after transformation. However, compared to the bagged or boosted models like random forest exgboost models, or compared to deep learning models it is quite less attractive.   
+Naive Bayes model is the most widely used model in the classical machine learning models, especially with features that are originally normally distributed or after transformation. However, compared to the bagged or boosted models like random forest exgboost models, or compared to deep learning models it is quite less attractive.   
  

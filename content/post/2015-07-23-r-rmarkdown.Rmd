@@ -6,6 +6,7 @@ summary: 'In this paper we will explore the **k nearest neighbors** model using 
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 tags:
@@ -20,15 +21,28 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-### Introduction
+
+```{css, echo=FALSE}
+strong {
+  color: red;
+}
+
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+```
+
+
+# Introduction
 
 In this paper we will explore the **k nearest neighbors** model using two data sets, the first is **Tiatanic** data to which we will fit this model for  classification, and the second data is **BostonHousing** data (from **mlbench** package) that will be used to fit a regression model.
 
-### Classification
+# Classification
 
 We do not repeat the whole process for data preparation and missing values imputation. you can click [here](https://github.com/Metalesaek/svm-model) to see all the detail in my paper about **support vector machine** model.
 
-### Data partition
+# Data partition
 
 All the codes for the first steps are grouped in one chunk. If you notice we are using the same specified parameter values and seed numbers to be able to compare the results of the tow models **svm** and **knn** for **classification** (Using titanic data) and for regression (using BostonHousing data)     
 
@@ -84,7 +98,7 @@ test1$Survived <- fct_recode(test1$Survived,died="0",surv="1")
 ```
 
 
-### Train the model
+# Train the model
 
 The big advantage of the **k nearest neighbors** model is that it has one single parameters which make the tuning process very fast. Here also we will make use of the same seed as we did with **svm** model. for the resampling process we will stick with the default bootstrapped method with 25 resampling iterations. 
 
@@ -112,7 +126,7 @@ For the contributions of the predictors, the measure of importance scaled from 0
 varImp(modelknn)
 ```
 
-### Prediction and confusion matrix
+# Prediction and confusion matrix
 
 Let's now use the test set to evaluate the model performance.
 
@@ -125,7 +139,7 @@ confusionMatrix(as.factor(pred),as.factor(test1$Survived))
 
 We see that the accuracy has slightly decreased from 81.47% to 79.66. the closeness of this rates is a good sign that we do not face the **overfitting** problem.
 
-### Fine tuning the model
+# Fine tuning the model
 
 to seek improvements we can alter the metric. the best function that gives three importante metrics, **sensitivity**, **specivicity** and area under the **ROC** curve for each resampling iteration is **twoClassSummary**. Also we expand the grid search for the neighbors number to 30. 
 
@@ -153,7 +167,7 @@ confusionMatrix(pred,test1$Survived)
 
 Using the **ROC** metric we get worse result for the accuracy rate which has decreased from 79.66% to 77.97%.
 
-### Comparison between knn and svm model
+# Comparison between knn and svm model
 
 Now let's train svm model with the same resamling method and we compare between them.
 
@@ -198,7 +212,7 @@ dotplot(comp,metric="ROC")
 
 
 
-## Regression
+# Regression
 
 First we call the **BostonHousing** data.     
 
@@ -255,7 +269,7 @@ RMSE(pred,test$medv)
 ```
  
  The RMSE using the test set is about **4.4163** which is slightly greater than that of the training set **4.3757** .
- Finally we can plot the predictted values vs the observed values to get  insight about their relationship.
+ Finally we can plot the predicted values vs the observed values to get insight about their relationship.
  
 ```{r}
 ggplot(data.frame(predicted=pred,observed=test$medv),aes(pred,test$medv))+

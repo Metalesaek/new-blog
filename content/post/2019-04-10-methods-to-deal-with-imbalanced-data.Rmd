@@ -11,6 +11,7 @@ summary: 'The imbalanced data is the common feature of some type of data such as
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 authors: []
@@ -30,8 +31,18 @@ spsm <- suppressPackageStartupMessages
 ```
 
 
+```{css, echo=FALSE}
+strong {
+  color: red;
+}
 
-## Introduction
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+```
+
+# Introduction
 
 The imbalanced data is the common feature of some type of data such as fraudulent credit card where the number of fraudulent cards is usually very small compared to the number of non fraudulent cards. The problem with imbalanced data is that the model being trained would be dominated by the majority class such as **knn** and **svm** models, and hence they would predict the majority class more effectively than the minority class which in turn would result in high value for sensitivity rate and low value for specificity rate (in binary classification).
 
@@ -77,7 +88,7 @@ summary(data)
 
 looking at this summary, we do not have any critical issues like missing values for instance.
 
-## Data partition
+# Data partition
 
 Before applying any subsampling method we split the data first between the training set and the testing set and we use only the former to be subsampled.
 
@@ -91,10 +102,10 @@ test<-data[-index,]
 ```
 
 
-## Subsampling the training data
+# Subsampling the training data
 
 
-### **Upsampling** : 
+## Upsampling
 
 The **caret** package provides a function called **upSample** to perform upsampling technique.
 
@@ -110,7 +121,7 @@ table(trainup$Class)
 
 As we see the two classes now have the same size **227452**
 
-### **downsampling**: 
+## downsampling 
 
 By the some way we make use of the caret function **downSample**
 
@@ -126,7 +137,7 @@ table(traindown$Class)
 now the size of each class is **394**
 
 
-### **ROSE**: 
+## ROSE 
 
 To use this technique we have to call the **ROSE** package
 
@@ -141,7 +152,7 @@ table(trainrose$Class)
 
 since this technique add new synthetic data points to the minority class and daownsamples the majority class the size now is about **114019** for minority class and **113827** for the majority class.
 
-### **SMOTE**: 
+## SMOTE 
 
 this technique requires the **DMwR** package.
 
@@ -158,11 +169,11 @@ table(trainsmote$Class)
 The size of the majority class is **113827** and for the minority class is **114019** .
 
 
-## training logistic regression model.
+# training logistic regression model.
 
 we are now ready to fit logit model to the original training set without subsampling, and to each of the above subsampled training sets.
 
-### without subsampling
+## without subsampling
 
 
 ```{r}
@@ -210,7 +221,7 @@ Among the available metrics, the best one for imbalanced data is [cohen's kappa]
 But here we stick with accuracy rate for pedagogic purposes to show the  effectiveness of the above discussed methods. 
 
 
-### Upsampling the train set 
+## Upsampling the train set 
 
 Now let's use the training data resulted from the upsmpling method. 
 
@@ -236,9 +247,7 @@ confusionMatrix(as.factor(pred),test$Class)
 Now we have a smaller accuracy rate **97.29%**, but we have a larger  specificity rate **87.75%** which increases the power of the model to predict the fraudulent cards.
 
 
-### Down sampling the training set.
-
-
+## Down sampling the training set.
 
 ```{r}
 set.seed(123)
@@ -251,7 +260,7 @@ confusionMatrix(as.factor(pred),test$Class)
 
 With downsampling method, we get  approximately the same specificity rate **87.75%** with a slight decrease of the over all accuracy rate **96.42%**, and the sensitivity rate has decreased to **96.43%** since we have decreased the majority class size by downsampling.
 
-### subsampline the train set by ROSE technique
+## subsampline the train set by ROSE technique
 
 
 ```{r}
@@ -266,7 +275,7 @@ confusionMatrix(as.factor(pred),test$Class)
 Using this method the sensitivity rate is slightly smaller than the previous ones **85.71%** but still a large improvement in predicting fraudulent cards compared to the model trained with the original imbalanced data.
 
 
-### Subsampling the train set by SMOTE technique
+## Subsampling the train set by SMOTE technique
 
 
 ```{r}
@@ -281,7 +290,7 @@ confusionMatrix(as.factor(pred),test$Class)
 With this method we get the same specificity rate **85.71%** such as ROSE method.
 
 
-## deep learning model (without class weight).
+# deep learning model (without class weight).
 
 When we use deep learning models via some software we can assign a weight to the labels of the target variables. For us we will make use of [keras](https://keras.rstudio.com) package. We will first train the model without weighting the data , Then we retrain the same model after assigning weight to the minority class.   
 To train this model we should first convert the data (train and test sets) into numeric matrix and remove the column names (we convert also the **Class** to numeric type). However, in order to be inline with the above models we keep only their features, but this time it would be better to be normalized since this helps the gradient running more faster. 
@@ -369,8 +378,6 @@ modeldeep<-load_model_hdf5("modeldeep.h5")
 
 All the above metric values are used in the training process, so they are not much reliable. The more reliable ones are those computed from unseen data.
 
-
-
 ```{r}
 pred<-  modeldeep %>%
   predict_classes(tested1)
@@ -381,7 +388,7 @@ confusionMatrix(as.factor(pred),as.factor(testy))
 The same as the above models, the specificity rate is even worst than the other models **0.3469** which is also caused  by the imbalanced data.
  
 
-### deep learning model with class weights
+## deep learning model with class weights
 
 Now let's try the previous model by taking into account the class imbalance
 
@@ -422,7 +429,7 @@ Now we include this value as weight in the **class_weight** argument.
 
 ```
 
-Again i should save this model before kniting the document. For you if you want to run the above code just uncomment it.
+Again I should save this model before knitting the document. For you if you want to run the above code just uncomment it.
 
 ```{r}
 #save_model_hdf5(modeldeep1,"modeldeep1.h5")
@@ -444,7 +451,7 @@ confusionMatrix(as.factor(pred),as.factor(testy))
 
 Using this model we get less accuracy rate **0.9724**, but the specificity rate is higher compared to the previous model so that this model can well predict the negative class label as well as the postive class label.
 
-## Conclusion
+# Conclusion
 
 With the imbalanced data most machine learning model tend to more  efficiently predict the majority class than the minority class. To correct thus this  behavior we can use one of the above discussed methods to get more closer accuracy rates between classes. However, deep learning model can easily handle this problem by specifying the class weights. 
 

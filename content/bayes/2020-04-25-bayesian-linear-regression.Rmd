@@ -251,6 +251,6 @@ df
  
  # Conclusion
  
-within the last decade more practitioner , specially in some fields such as medicine and psychology, are turning towards bayesian analysis since almost every thing can be interpreted straightforwardly with a probabilistic manner. However, the bayesian analysis has also some drawback , like the subjective way to define the priors (which play an important role to compute the posterior), or for problems that do not have conjugate prior, not always the mcmc alghoritm converges easily to the right values (specially with complex data).        
+within the last decade more practitioner , specially in some fields such as medicine and psychology, are turning towards bayesian analysis since almost every thing can be interpreted straightforwardly with a probabilistic manner. However, the Bayesian analysis has also some drawback , like the subjective way to define the priors (which play an important role to compute the posterior), or for problems that do not have conjugate prior, not always the mcmc alghorithm converges easily to the right values (specially with complex data).        
  
 
