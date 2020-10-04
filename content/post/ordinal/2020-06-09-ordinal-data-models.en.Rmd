@@ -33,7 +33,7 @@ knitr::opts_chunk$set(echo = TRUE,warning = FALSE,error = FALSE,message = FALSE
 
 ```{css, echo=FALSE}
 strong {
-  color: red;
+  color: Navy;
 }
 
 h1,h2, h3, h4 {
