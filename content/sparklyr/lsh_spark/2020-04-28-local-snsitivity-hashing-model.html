@@ -11,6 +11,7 @@ subtitle: ''
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 summary: 'This model is an approximate version of knn model which is  difficult to be implemented with large data set...'
@@ -28,36 +29,52 @@ projects: []
 
 <div id="TOC">
 <ul>
-<li><a href="#introduction">Introduction</a></li>
-<li><a href="#data-preparation">Data Preparation</a></li>
-<li><a href="#prediction">Prediction</a>
+<li><a href="#introduction"><span class="toc-section-number">1</span> Introduction</a></li>
+<li><a href="#data-preparation"><span class="toc-section-number">2</span> Data Preparation</a></li>
+<li><a href="#prediction"><span class="toc-section-number">3</span> Prediction</a>
 <ul>
-<li><a href="#similarity-based-on-distance">Similarity based on distance</a></li>
-<li><a href="#the-similarity-based-on-the-number-of-nearest-neighbours">The similarity based on the number of nearest neighbours</a></li>
+<li><a href="#similarity-based-on-distance"><span class="toc-section-number">3.1</span> Similarity based on distance</a></li>
+<li><a href="#similarity-based-on-the-number-of-nearest-neighbours"><span class="toc-section-number">3.2</span> Similarity based on the number of nearest neighbours</a></li>
 </ul></li>
-<li><a href="#conclusion">Conclusion</a></li>
-<li><a href="#further-reading">Further reading</a></li>
+<li><a href="#conclusion"><span class="toc-section-number">4</span> Conclusion</a></li>
+<li><a href="#further-reading"><span class="toc-section-number">5</span> Further reading</a></li>
+<li><a href="#session-information"><span class="toc-section-number">6</span> Session information</a></li>
 </ul>
 </div>
 
-<div id="introduction" class="section level2">
-<h2>Introduction</h2>
+<style type="text/css">
+strong {
+  color: Navy;
+}
+
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+</style>
+<div id="introduction" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Introduction</h1>
 <p>This model is an approximate version of knn model which is difficult to be implemented with large data set. In contrast to knn model that looks for the exact number of nearest neighbours, this model looks for neighbours with high probabilities. Spark provides two methods to find out the approximate neighbours that depend on the data type at hand, <strong>Bucketed random projection</strong> and <strong>Minhash for jaccard distance</strong>.</p>
 <p>The first method projects the data in lower dimension hash in which similar hashes indicate that the associated points (or observations) are close to each other. The mathematical basis of this technique is the following formula.</p>
 <p><span class="math display">\[h^{x,b}(\vec\upsilon)=\lfloor \frac{\vec\upsilon.\vec x}{w}\rfloor\]</span></p>
 <p>Where <span class="math inline">\(h\)</span> is the hashing function, <span class="math inline">\(\vec\upsilon\)</span> is the feature vector, <span class="math inline">\(x\)</span> is standard normal vector that has the same length, and <span class="math inline">\(w\)</span> is the bin width of the hashing bins, and the symbol <span class="math inline">\(\lfloor \rfloor\)</span> to coerce the result to be integer value. The idea is simple, we take the dot product of each feature vector with noisy vector, then the resulted projections (which are random) will be grouped into buckets, these buckets are supposed to include similar points. This process can be repeated many times with different noisy vector at each time to fine the similarity. For more detail about this technique click <a href="https://spark.apache.org/docs/latest/ml-features.html#locality-sensitive-hashing">here</a></p>
 </div>
-<div id="data-preparation" class="section level2">
-<h2>Data Preparation</h2>
+<div id="data-preparation" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> Data Preparation</h1>
 <p>For those who do not know much about sparklyr check my article <a href="https://modelingwithr.rbind.io/sparklyr/sparklyr/">introduction to sparklyr</a></p>
 <p>First let’s call sparklyr and tidyverse packages, then we set the connection to spark and call the titanic data.</p>
-<pre class="r"><code>library(sparklyr, warn.conflicts = FALSE)
-library(tidyverse, warn.conflicts = FALSE)
-sc&lt;-spark_connect(master=&quot;local&quot;)
-mydata&lt;-spark_read_csv(sc,&quot;titanic&quot;,path = &quot;C://Users/dell/Documents/new-blog/content/post/train.csv&quot;)
+<pre class="r"><code>library(sparklyr, warn.conflicts = FALSE)</code></pre>
+<pre><code>Warning: package &#39;sparklyr&#39; was built under R version 4.0.2</code></pre>
+<pre class="r"><code>library(tidyverse, warn.conflicts = FALSE)</code></pre>
+<pre><code>Warning: package &#39;ggplot2&#39; was built under R version 4.0.2</code></pre>
+<pre><code>Warning: package &#39;tibble&#39; was built under R version 4.0.2</code></pre>
+<pre><code>Warning: package &#39;tidyr&#39; was built under R version 4.0.2</code></pre>
+<pre><code>Warning: package &#39;dplyr&#39; was built under R version 4.0.2</code></pre>
+<pre class="r"><code>sc &lt;- spark_connect(master = &quot;local&quot;)
+mydata &lt;- spark_read_csv(sc, &quot;titanic&quot;, path = &quot;C://Users/dell/Documents/new-blog/content/post/train.csv&quot;)
 glimpse(mydata)</code></pre>
-<pre><code>Observations: ??
-Variables: 12
+<pre><code>Rows: ??
+Columns: 12
 Database: spark_connection
 $ PassengerId &lt;int&gt; 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, ...
 $ Survived    &lt;int&gt; 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0...
@@ -73,12 +90,10 @@ $ Cabin       &lt;chr&gt; NA, &quot;C85&quot;, NA, &quot;C123&quot;, NA, NA, &qu
 $ Embarked    &lt;chr&gt; &quot;S&quot;, &quot;C&quot;, &quot;S&quot;, &quot;S&quot;, &quot;S&quot;, &quot;Q&quot;, &quot;S&quot;, &quot;S&quot;, &quot;S&quot;, &quot;C&quot;, &quot;S&quot;, ...</code></pre>
 <p>If wou notice this data is not large, but we intentially choose this data due to its familiarity and simplicity which make understanding the implementation of this model super easy. In other words, when we want to implement this model with very large data sets we repeat the same general basic steps.</p>
 <p>Then we remove some varaibles that we think they are not much relevant for out puptose except for the <strong>PassengerId</strong> variable because we need it later (but we give it a shorter name).</p>
-<pre class="r"><code>newdata&lt;- mydata%&gt;%
-  select(c(1,2,3,5,6,7,8,10,12))%&gt;%
-  rename(id=PassengerId) %&gt;% 
-  glimpse()</code></pre>
-<pre><code>Observations: ??
-Variables: 9
+<pre class="r"><code>newdata &lt;- mydata %&gt;% select(c(1, 2, 3, 5, 6, 7, 8, 10, 12)) %&gt;% rename(id = PassengerId) %&gt;% 
+    glimpse()</code></pre>
+<pre><code>Rows: ??
+Columns: 9
 Database: spark_connection
 $ id       &lt;int&gt; 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,...
 $ Survived &lt;int&gt; 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1...
@@ -90,79 +105,50 @@ $ Parch    &lt;int&gt; 0, 0, 0, 0, 0, 0, 0, 1, 2, 0, 1, 0, 0, 5, 0, 0, 1, 0, 0, 
 $ Fare     &lt;dbl&gt; 7.2500, 71.2833, 7.9250, 53.1000, 8.0500, 8.4583, 51.8625,...
 $ Embarked &lt;chr&gt; &quot;S&quot;, &quot;C&quot;, &quot;S&quot;, &quot;S&quot;, &quot;S&quot;, &quot;Q&quot;, &quot;S&quot;, &quot;S&quot;, &quot;S&quot;, &quot;C&quot;, &quot;S&quot;, &quot;S&quot;...</code></pre>
 <p>May be the first thing we do in explaratory analysis is to check the missing values.</p>
-<pre class="r"><code>newdata%&gt;%
-  mutate_all(is.na)%&gt;%
-  mutate_all(as.numeric)%&gt;%
-  summarise_all(sum)</code></pre>
+<pre class="r"><code>newdata %&gt;% mutate_all(is.na) %&gt;% mutate_all(as.numeric) %&gt;% summarise_all(sum)</code></pre>
 <pre><code># Source: spark&lt;?&gt; [?? x 9]
      id Survived Pclass   Sex   Age SibSp Parch  Fare Embarked
   &lt;dbl&gt;    &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;
 1     0        0      0     0   177     0     0     0        2</code></pre>
 <p>Since we have a large number of missing values it would be better to imput thes values rather than removing them. For the numeric variable <strong>Age</strong> we replace them by the median using the sparklyr function <strong>ft_imputer</strong>, and for categorical variable <strong>Embarked</strong> we use the most frequantly level which is here <strong>S</strong> port. But before this we should split the data first into training and testing sets to make sure that the testing set is completely isolated from the training set, then we impute each separately.</p>
 <p>Since the data are a little bit imbalanced we randomly split the data separately with respect to the target variable <strong>Survived</strong> in order to preserve the same proportions of the Survived varaible levels as the original data, then we rebind the corresponding sets again.</p>
-<pre class="r"><code>data_surv&lt;-newdata%&gt;%
-  filter(Survived==1)
-data_not&lt;-newdata%&gt;%
-  filter(Survived==0)
-partition_surv&lt;-data_surv%&gt;%
-  sdf_random_split(training=0.8,test=0.2,seed = 123)
-partition_not&lt;-data_not%&gt;%
-  sdf_random_split(training=0.8,test=0.2,seed = 123)
-
-train&lt;-sdf_bind_rows(partition_surv$training,partition_not$training)%&gt;%
-  ft_imputer(input_cols = &quot;Age&quot;,output_cols=&quot;Age&quot;,strategy=&quot;median&quot;)%&gt;%
-  na.replace(Embarked=&quot;S&quot;)%&gt;%
-  compute(&quot;train&quot;)
-  
-test&lt;-sdf_bind_rows(partition_surv$test,partition_not$test)%&gt;%
-  ft_imputer(input_cols = &quot;Age&quot;,output_cols=&quot;Age&quot;,strategy=&quot;median&quot;)%&gt;%
-  na.replace(Embarked=&quot;S&quot;)%&gt;%
-  compute(&quot;test&quot;)</code></pre>
+<pre class="r"><code>data_surv &lt;- newdata %&gt;% filter(Survived == 1)
+data_not &lt;- newdata %&gt;% filter(Survived == 0)
+partition_surv &lt;- data_surv %&gt;% sdf_random_split(training = 0.8, test = 0.2, seed = 123)
+partition_not &lt;- data_not %&gt;% sdf_random_split(training = 0.8, test = 0.2, seed = 123)
+train &lt;- sdf_bind_rows(partition_surv$training, partition_not$training) %&gt;% ft_imputer(input_cols = &quot;Age&quot;, 
+    output_cols = &quot;Age&quot;, strategy = &quot;median&quot;) %&gt;% na.replace(Embarked = &quot;S&quot;) %&gt;% 
+    compute(&quot;train&quot;)
+test &lt;- sdf_bind_rows(partition_surv$test, partition_not$test) %&gt;% ft_imputer(input_cols = &quot;Age&quot;, 
+    output_cols = &quot;Age&quot;, strategy = &quot;median&quot;) %&gt;% na.replace(Embarked = &quot;S&quot;) %&gt;% 
+    compute(&quot;test&quot;)</code></pre>
 <p>Not that we use <strong>compute</strong> function to cache the output into spark memory.</p>
 <p>Before fitting any model the data must be processed in a way that can be consumed by the model. For our model, such as the most machine learning models, requires numeric features, we convert thus categorical variables to integers using the function <strong>ft_string_indexer</strong>, after that we convert them to dumy variables using the function <strong>ft_one hot_encoder_estimator</strong>, because the last function expects the inputs to be numeric.</p>
 <p>For models build in sparklyr, the input variables should be stacked into one column vector on each other, this can be easily done by using the function <strong>ft_vector_assembler</strong>. However, this step does not prevent us to apply some other transformation even the features are in one column. For instance, to run efficiently our model we can transform the variables to be of the same scale, to do so we can either use standardization (sa we do here) or normalization method.</p>
 <p>It is a good practice to save this preocessed set into the spark memory under an object name using the function <strong>compute</strong></p>
-<pre class="r"><code>trained&lt;- train%&gt;%
-  ft_string_indexer(input_col = &quot;Sex&quot;,output_col=&quot;Sex_indexed&quot;)%&gt;%
-  ft_string_indexer(input_col = &quot;Embarked&quot;,output_col=&quot;Embarked_indexed&quot;)%&gt;%
-  ft_one_hot_encoder_estimator(
-    input_cols = c(&quot;Pclass&quot;,&quot;Sex_indexed&quot;,&quot;Embarked_indexed&quot;),
-    output_cols=c(&quot;Pc_encod&quot;,&quot;Sex_encod&quot;,&quot;Emb_encod&quot;)
-  )%&gt;%
-  ft_vector_assembler(input_cols = c(&quot;Pc_encod&quot;,&quot;Sex_encod&quot;,&quot;Age&quot;,&quot;SibSp&quot;,
-                                     &quot;Parch&quot;,&quot;Fare&quot;,&quot;Emb_encod&quot;),
-                      output_col=&quot;features&quot;)%&gt;%
-  ft_standard_scaler(input_col = &quot;features&quot;,output_col=&quot;scaled&quot;,
-                     with_mean=TRUE)%&gt;%
-  select(id,Survived,scaled)%&gt;%
-  compute(&quot;trained&quot;)</code></pre>
+<pre class="r"><code>trained &lt;- train %&gt;% ft_string_indexer(input_col = &quot;Sex&quot;, output_col = &quot;Sex_indexed&quot;) %&gt;% 
+    ft_string_indexer(input_col = &quot;Embarked&quot;, output_col = &quot;Embarked_indexed&quot;) %&gt;% 
+    ft_one_hot_encoder_estimator(input_cols = c(&quot;Pclass&quot;, &quot;Sex_indexed&quot;, &quot;Embarked_indexed&quot;), 
+        output_cols = c(&quot;Pc_encod&quot;, &quot;Sex_encod&quot;, &quot;Emb_encod&quot;)) %&gt;% ft_vector_assembler(input_cols = c(&quot;Pc_encod&quot;, 
+    &quot;Sex_encod&quot;, &quot;Age&quot;, &quot;SibSp&quot;, &quot;Parch&quot;, &quot;Fare&quot;, &quot;Emb_encod&quot;), output_col = &quot;features&quot;) %&gt;% 
+    ft_standard_scaler(input_col = &quot;features&quot;, output_col = &quot;scaled&quot;, with_mean = TRUE) %&gt;% 
+    select(id, Survived, scaled) %&gt;% compute(&quot;trained&quot;)</code></pre>
 <p>The same transformations above will be applied to the testing set <strong>test</strong> as follows.</p>
-<pre class="r"><code>tested&lt;-test%&gt;%
-  ft_string_indexer(input_col = &quot;Sex&quot;,output_col=&quot;Sex_indexed&quot;)%&gt;%
-  ft_string_indexer(input_col = &quot;Embarked&quot;,output_col=&quot;Embarked_indexed&quot;)%&gt;%
-  ft_one_hot_encoder_estimator(
-    input_cols = c(&quot;Pclass&quot;,&quot;Sex_indexed&quot;,&quot;Embarked_indexed&quot;),
-    output_cols=c(&quot;Pc_encod&quot;,&quot;Sex_encod&quot;,&quot;Emb_encod&quot;)
-  )%&gt;%
-  ft_vector_assembler(input_cols = c(&quot;Pc_encod&quot;,&quot;Sex_encod&quot;,&quot;Age&quot;,&quot;SibSp&quot;,
-                                     &quot;Parch&quot;,&quot;Fare&quot;,&quot;Emb_encod&quot;),
-                      output_col=&quot;features&quot;)%&gt;%
-  ft_standard_scaler(input_col = &quot;features&quot;,output_col=&quot;scaled&quot;,
-                     with_mean=TRUE)%&gt;%
-  select(id,Survived,scaled)%&gt;%
-  compute(&quot;tested&quot;)</code></pre>
+<pre class="r"><code>tested &lt;- test %&gt;% ft_string_indexer(input_col = &quot;Sex&quot;, output_col = &quot;Sex_indexed&quot;) %&gt;% 
+    ft_string_indexer(input_col = &quot;Embarked&quot;, output_col = &quot;Embarked_indexed&quot;) %&gt;% 
+    ft_one_hot_encoder_estimator(input_cols = c(&quot;Pclass&quot;, &quot;Sex_indexed&quot;, &quot;Embarked_indexed&quot;), 
+        output_cols = c(&quot;Pc_encod&quot;, &quot;Sex_encod&quot;, &quot;Emb_encod&quot;)) %&gt;% ft_vector_assembler(input_cols = c(&quot;Pc_encod&quot;, 
+    &quot;Sex_encod&quot;, &quot;Age&quot;, &quot;SibSp&quot;, &quot;Parch&quot;, &quot;Fare&quot;, &quot;Emb_encod&quot;), output_col = &quot;features&quot;) %&gt;% 
+    ft_standard_scaler(input_col = &quot;features&quot;, output_col = &quot;scaled&quot;, with_mean = TRUE) %&gt;% 
+    select(id, Survived, scaled) %&gt;% compute(&quot;tested&quot;)</code></pre>
 <p>Now we are ready to project the data on the lower dimension hash using the function <strong>ft_bucketed_random_projection_lsh</strong> with buckets of length 3 and 5 hash tables.</p>
-<pre class="r"><code>lsh_vector&lt;-ft_bucketed_random_projection_lsh(sc,
-                                             input_col = &quot;scaled&quot;,
-                                             output_col = &quot;hash&quot;,
-                                             bucket_length = 3,
-                                             num_hash_tables = 5,
-                                             seed=444)</code></pre>
+<pre class="r"><code>lsh_vector &lt;- ft_bucketed_random_projection_lsh(sc, input_col = &quot;scaled&quot;, output_col = &quot;hash&quot;, 
+    bucket_length = 3, num_hash_tables = 5, seed = 444)</code></pre>
 <p>To fit this model we feed the function <strong>ml_fit</strong> by the training data <strong>trained</strong>.</p>
-<pre class="r"><code>model_lsh&lt;-ml_fit(lsh_vector,trained)</code></pre>
+<pre class="r"><code>model_lsh &lt;- ml_fit(lsh_vector, trained)</code></pre>
 </div>
-<div id="prediction" class="section level2">
-<h2>Prediction</h2>
+<div id="prediction" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> Prediction</h1>
 <p>At the prediction stage this model of classification gives us two alternatives for how we define the nearest neighbours:</p>
 <ul>
 <li><p>define a threshold value from which we decide if two observations are considered as nearest neighbours or not, small value leads to take small number of neighbours. in sparklyr we can achive that using the function <strong>ml_approx_similarity_join</strong> and we specify the the threshold value for the minimum distance. the distance used by this function is the classical euclidien distance.</p></li>
@@ -171,34 +157,35 @@ test&lt;-sdf_bind_rows(partition_surv$test,partition_not$test)%&gt;%
 <p>Each of which has its advantages and drawbacks depending on the problem at hand. for instance in medecine if you are more interested to check the similarities among patients at some level then the first option would be your choice but you may not be able to predict new cases that are not similar to any of the training cases constrained by this threshold value. In contrast, if your goal is to predict all your new cases then you would opt for the second option, but with the cost of including neighbours that are far a way constrained by the fixed number of neighbours.
 To better understand what hppens with each option, let’s use the following data.</p>
 <pre class="r"><code>suppressPackageStartupMessages(library(plotrix))
-X&lt;-c(55,31,35,34,15,28,8,38,35,19,27,40,39,19,66,28,42,21,18,14,40,27,3,19,21,32,13,18,7,21,49)
-Y&lt;-c(16,18,26,13,8.0292,35.5,21.075,31.3875,7.225,263,7.8958,27.7208,146.5208,7.75,10.5,82.1708,52,8.05,18,11.2417,9.475,21,41.5792,7.8792,8.05,15.5,7.75,17.8,39.6875,7.8,76.7292)
-Z&lt;-factor(c(1,0,0,1,1,1,0,1,0,0,0,0,1,1,0,0,0,0,0,1,0,0,1,1,0,0,1,0,0,0,1))
-plot(X,Y,col=Z,ylim = c(0,55),pch=16)
-points(x=32,y=20,col=&quot;blue&quot;,pch=8)
-draw.circle(x=32,y=20,nv=1000,radius = 6,lty=2)
-points(x=55,y=42,col=&quot;green&quot;,pch=8)
-draw.circle(x=55,y=42,nv=1000,radius = 6,lty=2)</code></pre>
-<p><img src="/sparklyr/lsh_spark/2020-04-28-local-snsitivity-hashing-model_files/figure-html/unnamed-chunk-9-1.svg" width="576" /></p>
+X &lt;- c(55, 31, 35, 34, 15, 28, 8, 38, 35, 19, 27, 40, 39, 19, 66, 28, 42, 21, 18, 
+    14, 40, 27, 3, 19, 21, 32, 13, 18, 7, 21, 49)
+Y &lt;- c(16, 18, 26, 13, 8.0292, 35.5, 21.075, 31.3875, 7.225, 263, 7.8958, 27.7208, 
+    146.5208, 7.75, 10.5, 82.1708, 52, 8.05, 18, 11.2417, 9.475, 21, 41.5792, 7.8792, 
+    8.05, 15.5, 7.75, 17.8, 39.6875, 7.8, 76.7292)
+Z &lt;- factor(c(1, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 
+    1, 0, 0, 1, 0, 0, 0, 1))
+plot(X, Y, col = Z, ylim = c(0, 55), pch = 16)
+points(x = 32, y = 20, col = &quot;blue&quot;, pch = 8)
+draw.circle(x = 32, y = 20, nv = 1000, radius = 6, lty = 2)
+points(x = 55, y = 42, col = &quot;green&quot;, pch = 8)
+draw.circle(x = 55, y = 42, nv = 1000, radius = 6, lty = 2)</code></pre>
+<p><img src="/sparklyr/lsh_spark/2020-04-28-local-snsitivity-hashing-model_files/figure-html/unnamed-chunk-10-1.svg" width="576" /></p>
 <p>Using the fake data above to illustrate the difference between the two methods.
 Setting the threshold at 6 for the first option, we see the blue dot has 5 neighbours and this dot would be predicted as black using the majority vote. However, with this threshold the green dot does not have any neighbour around and hence it will be left without prediction.</p>
-<pre class="r"><code>plot(X,Y,pch=16,col=Z,ylim = c(0,55))
-points(x=32,y=20,col=&quot;blue&quot;,pch=8)
-points(x=55,y=42,col=&quot;green&quot;,pch=8)
-draw.circle(x=55,y=42,nv=1000,radius = 21.8,lty=2)
-draw.circle(x=32,y=20,nv=1000,radius = 6,lty=2)</code></pre>
-<p><img src="/sparklyr/lsh_spark/2020-04-28-local-snsitivity-hashing-model_files/figure-html/unnamed-chunk-10-1.svg" width="576" /></p>
+<pre class="r"><code>plot(X, Y, pch = 16, col = Z, ylim = c(0, 55))
+points(x = 32, y = 20, col = &quot;blue&quot;, pch = 8)
+points(x = 55, y = 42, col = &quot;green&quot;, pch = 8)
+draw.circle(x = 55, y = 42, nv = 1000, radius = 21.8, lty = 2)
+draw.circle(x = 32, y = 20, nv = 1000, radius = 6, lty = 2)</code></pre>
+<p><img src="/sparklyr/lsh_spark/2020-04-28-local-snsitivity-hashing-model_files/figure-html/unnamed-chunk-11-1.svg" width="576" /></p>
 <p>In contrast to the above plot, using the second option, the green dot can be predicted as black since it has 5 neighbours in whcih 3 are block, but this prediction casts doubt about its quality since all the neighbours are far a way from the dot of interest, and this is the major drawback of this method.</p>
 <p><strong>Note</strong>: In fact we can overcome the drawbacks of each method by tuning the hyperparameters. To get predictions of all the new cases we can increase the distance threshold using the first method so that all the cases will be predicted (but we may lose accuracy if we have any single outlier). And we can reduce the number for the nearest neighbours number to get meaningful similarities (but we may lose accuracy with dots spread out from each other).</p>
-<div id="similarity-based-on-distance" class="section level3">
-<h3>Similarity based on distance</h3>
+<div id="similarity-based-on-distance" class="section level2" number="3.1">
+<h2><span class="header-section-number">3.1</span> Similarity based on distance</h2>
 <p>To show the neighbours of each point we use the function
 <strong>ml_approx_similarity_join</strong> provided that the data has an <strong>id</strong> column, this is thus the reason why we have created this id before.</p>
-<pre class="r"><code>approx_join&lt;-ml_approx_similarity_join(model_lsh,
-                                       trained,
-                                       trained,
-                                       threshold=1,
-                                     dist_col=&quot;dist&quot;)
+<pre class="r"><code>approx_join &lt;- ml_approx_similarity_join(model_lsh, trained, trained, threshold = 1, 
+    dist_col = &quot;dist&quot;)
 approx_join</code></pre>
 <pre><code># Source: spark&lt;?&gt; [?? x 3]
     id_a  id_b      dist
@@ -215,8 +202,7 @@ approx_join</code></pre>
 10    24    84 0.224    
 # ... with more rows</code></pre>
 <p>This function joined the data <strong>trained</strong> with itself to get the similar observations. The threshold determines the value from which we consider two observations as similar. In othe words, cases that has dist value less than 1 will be similar. let’s for instance pick up some similar observations and check out how they are similar.</p>
-<pre class="r"><code>train%&gt;%
-  filter(id %in% c(29,654,275,199,45))</code></pre>
+<pre class="r"><code>train %&gt;% filter(id %in% c(29, 654, 275, 199, 45))</code></pre>
 <pre><code># Source: spark&lt;?&gt; [?? x 9]
      id Survived Pclass Sex      Age SibSp Parch  Fare Embarked
   &lt;int&gt;    &lt;int&gt;  &lt;int&gt; &lt;chr&gt;  &lt;dbl&gt; &lt;int&gt; &lt;int&gt; &lt;dbl&gt; &lt;chr&gt;   
@@ -227,12 +213,8 @@ approx_join</code></pre>
 5   654        1      3 female    28     0     0  7.83 Q       </code></pre>
 <p>As we see all these passengers are all survived females in the same class (third class) without children or parents or siblings embarked from the same port, approximately paied the same ticket price, have the same age (except for 45 with age 19), so they are higly likely to be friends traveling togather.
 To predict the test set <strong>tested</strong> we use the function <strong>ml_predict</strong>, then we extrat the similarities with the fuction <strong>ml_approx_similarity_join</strong>.</p>
-<pre class="r"><code>hashed&lt;-ml_predict(model_lsh,tested)%&gt;%
-  ml_approx_similarity_join(model_lsh,
-                            trained,
-                            .,
-                            threshold=1,
-                            dist_col=&quot;dist&quot;)
+<pre class="r"><code>hashed &lt;- ml_predict(model_lsh, tested) %&gt;% ml_approx_similarity_join(model_lsh, 
+    trained, ., threshold = 1, dist_col = &quot;dist&quot;)
 hashed</code></pre>
 <pre><code># Source: spark&lt;?&gt; [?? x 3]
     id_a  id_b  dist
@@ -249,15 +231,11 @@ hashed</code></pre>
 10    54   519 0.564
 # ... with more rows</code></pre>
 <p>we can now shoose a particular person, say id_b=33, and then find his/her similar persons in the training set. By using the majority vote we decide if that person is survived or not.</p>
-<pre class="r"><code>m&lt;-33
-ids_train&lt;-hashed%&gt;%
-  filter(id_b==m)%&gt;%
-  pull(id_a)
-df1&lt;-train%&gt;% 
-  filter(id %in% ids_train)  
-df2&lt;-test%&gt;%
-  filter(id==m)
-df&lt;-sdf_bind_rows(df1,df2)
+<pre class="r"><code>m &lt;- 33
+ids_train &lt;- hashed %&gt;% filter(id_b == m) %&gt;% pull(id_a)
+df1 &lt;- train %&gt;% filter(id %in% ids_train)
+df2 &lt;- test %&gt;% filter(id == m)
+df &lt;- sdf_bind_rows(df1, df2)
 df</code></pre>
 <pre><code># Source: spark&lt;?&gt; [?? x 9]
       id Survived Pclass Sex      Age SibSp Parch  Fare Embarked
@@ -274,35 +252,23 @@ df</code></pre>
 10   574        1      3 female    28     0     0  7.75 Q       
 # ... with more rows</code></pre>
 <p>The last row in this table contains our test instance 33, and it has 17 neighbours from the training data with mixture of died and survived persons.</p>
-<pre class="r"><code>df%&gt;%
-  filter(id!=m)%&gt;%
-  select(Survived)%&gt;%
-  collect()%&gt;%
-  table()</code></pre>
+<pre class="r"><code>df %&gt;% filter(id != m) %&gt;% select(Survived) %&gt;% collect() %&gt;% table()</code></pre>
 <pre><code>## .
 ##  0  1 
 ##  5 12</code></pre>
 <p>Using the majority vote this person will be classified as survived since the non survived persons number (5) is less than survived persons number (12), and hence this person is correctly classified.</p>
 </div>
-<div id="the-similarity-based-on-the-number-of-nearest-neighbours" class="section level3">
-<h3>The similarity based on the number of nearest neighbours</h3>
+<div id="similarity-based-on-the-number-of-nearest-neighbours" class="section level2" number="3.2">
+<h2><span class="header-section-number">3.2</span> Similarity based on the number of nearest neighbours</h2>
 <p>Using the same above steps but here with the function</p>
 <p><strong>ml_approx_nearest_neighbors</strong> we can predict any point. for example let’s take our previous passenger 120 in the testing set. But first we have to extract the values related to this person from the transformed testing set <strong>tested</strong>.</p>
-<pre class="r"><code>id_input &lt;- tested %&gt;%
-  filter(id==m)%&gt;%
-    pull(scaled) %&gt;%
-  unlist()
+<pre class="r"><code>id_input &lt;- tested %&gt;% filter(id == m) %&gt;% pull(scaled) %&gt;% unlist()
 id_input</code></pre>
 <pre><code>##  [1]  0.00000000 -0.56054485 -0.50652969 -1.42132034 -0.07744921 -0.49874843
 ##  [7] -0.47508853 -0.54740838 -1.79973402 -0.41903250</code></pre>
 <p>These are the values of all the standardized vectors in the column <strong>scaled</strong> that will be used to get its closest neighbours in the training data, and here we specify the number of neighbours to be 7.</p>
-<pre class="r"><code>knn&lt;-ml_approx_nearest_neighbors(
-  model_lsh,
-  trained,
-  key = id_input,
-  dist_col = &#39;dist&#39;,
-  num_nearest_neighbors = 7
-)
+<pre class="r"><code>knn &lt;- ml_approx_nearest_neighbors(model_lsh, trained, key = id_input, dist_col = &quot;dist&quot;, 
+    num_nearest_neighbors = 7)
 knn</code></pre>
 <pre><code># Source: spark&lt;?&gt; [?? x 5]
      id Survived scaled     hash        dist
@@ -315,10 +281,8 @@ knn</code></pre>
 6   574        1 &lt;dbl [10]&gt; &lt;list [5]&gt; 0.265
 7   265        0 &lt;dbl [10]&gt; &lt;list [5]&gt; 0.265</code></pre>
 <p>Theses are the neighbours of our passenger with thir id’s. We can get the fraction of surived ones as follows.</p>
-<pre class="r"><code>n&lt;-sdf_nrow(knn)
-pred&lt;-knn %&gt;% 
-  select(Survived)%&gt;%
-  summarise(p=sum(Survived)/n)
+<pre class="r"><code>n &lt;- sdf_nrow(knn)
+pred &lt;- knn %&gt;% select(Survived) %&gt;% summarise(p = sum(Survived)/n)
 pred</code></pre>
 <pre><code>## # Source: spark&lt;?&gt; [?? x 1]
 ##       p
@@ -326,25 +290,15 @@ pred</code></pre>
 ## 1 0.857</code></pre>
 <p>Since this probability is greater than 0.5 we predict this passenger as survived, and here also is correctly classified. however, in some cases we can get different predictions.</p>
 <p>To get the accuracy of the whole testing set, we use the following for loop, which requires a lot of computing time since at the end of each iteration we collect the results into R. Consequently it will not usefull with large dataset.</p>
-<pre class="r"><code>mypred&lt;-numeric(0)
+<pre class="r"><code>mypred &lt;- numeric(0)
 M &lt;- tested %&gt;% collect() %&gt;% .$id
 for (i in M) {
-  id_input &lt;- tested %&gt;%
-  filter(id==i)%&gt;%
-    pull(scaled) %&gt;%
-  unlist()
-knn&lt;-ml_approx_nearest_neighbors(
-  model_lsh,
-  trained,
-  key = id_input,
-  dist_col = &#39;dist&#39;,
-  num_nearest_neighbors = 7
-)
-n&lt;-sdf_nrow(knn)
-pred&lt;-knn%&gt;%select(Survived)%&gt;%
-  summarise(p=sum(Survived)/n)%&gt;%
-  collect()
-mypred&lt;-rbind(mypred,pred)
+    id_input &lt;- tested %&gt;% filter(id == i) %&gt;% pull(scaled) %&gt;% unlist()
+    knn &lt;- ml_approx_nearest_neighbors(model_lsh, trained, key = id_input, dist_col = &quot;dist&quot;, 
+        num_nearest_neighbors = 7)
+    n &lt;- sdf_nrow(knn)
+    pred &lt;- knn %&gt;% select(Survived) %&gt;% summarise(p = sum(Survived)/n) %&gt;% collect()
+    mypred &lt;- rbind(mypred, pred)
 }
 mypred</code></pre>
 <pre><code># A tibble: 200 x 1
@@ -362,12 +316,9 @@ mypred</code></pre>
 10 0.857
 # ... with 190 more rows</code></pre>
 <p>Now first we convert the probabilities into class labels, next we join this data frame with the testing data, and finally we use the function <strong>confusionmatrix</strong> from <strong>caret</strong> package.</p>
-<pre class="r"><code>tested_R&lt;-tested%&gt;%
-  select(Survived)%&gt;%
-  collect()
-new&lt;-cbind(mypred,tested_R)%&gt;%
-  mutate(predicted=ifelse(p&gt;0.5,&quot;1&quot;,&quot;0&quot;))
-  caret::confusionMatrix(as.factor(new$Survived),as.factor(new$predicted))</code></pre>
+<pre class="r"><code>tested_R &lt;- tested %&gt;% select(Survived) %&gt;% collect()
+new &lt;- cbind(mypred, tested_R) %&gt;% mutate(predicted = ifelse(p &gt; 0.5, &quot;1&quot;, &quot;0&quot;))
+caret::confusionMatrix(as.factor(new$Survived), as.factor(new$predicted))</code></pre>
 <pre><code>Confusion Matrix and Statistics
 
           Reference
@@ -400,14 +351,70 @@ Prediction   0   1
 <pre class="r"><code>spark_disconnect(sc)</code></pre>
 </div>
 </div>
-<div id="conclusion" class="section level2">
-<h2>Conclusion</h2>
+<div id="conclusion" class="section level1" number="4">
+<h1><span class="header-section-number">4</span> Conclusion</h1>
 <p>The LSH model is an approximation of knn when we have large dataset. We could increase the model performance by playing around with the threshold value or the number of the neighbours.</p>
 </div>
-<div id="further-reading" class="section level2">
-<h2>Further reading</h2>
+<div id="further-reading" class="section level1" number="5">
+<h1><span class="header-section-number">5</span> Further reading</h1>
 <ul>
 <li><a href="https://therinspark.com" class="uri">https://therinspark.com</a></li>
 <li><a href="https://spark.apache.org/docs/latest/ml-features.html#locality-sensitive-hashing" class="uri">https://spark.apache.org/docs/latest/ml-features.html#locality-sensitive-hashing</a></li>
 </ul>
+</div>
+<div id="session-information" class="section level1" number="6">
+<h1><span class="header-section-number">6</span> Session information</h1>
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>## R version 4.0.1 (2020-06-06)
+## Platform: x86_64-w64-mingw32/x64 (64-bit)
+## Running under: Windows 10 x64 (build 19041)
+## 
+## Matrix products: default
+## 
+## locale:
+## [1] LC_COLLATE=English_United States.1252 
+## [2] LC_CTYPE=English_United States.1252   
+## [3] LC_MONETARY=English_United States.1252
+## [4] LC_NUMERIC=C                          
+## [5] LC_TIME=English_United States.1252    
+## 
+## attached base packages:
+## [1] stats     graphics  grDevices utils     datasets  methods   base     
+## 
+## other attached packages:
+##  [1] plotrix_3.7-8   forcats_0.5.0   stringr_1.4.0   dplyr_1.0.2    
+##  [5] purrr_0.3.4     readr_1.3.1     tidyr_1.1.2     tibble_3.0.3   
+##  [9] ggplot2_3.3.2   tidyverse_1.3.0 sparklyr_1.4.0 
+## 
+## loaded via a namespace (and not attached):
+##  [1] nlme_3.1-149         fs_1.5.0             lubridate_1.7.9     
+##  [4] httr_1.4.2           rprojroot_1.3-2      tools_4.0.1         
+##  [7] backports_1.1.10     utf8_1.1.4           R6_2.4.1            
+## [10] rpart_4.1-15         DBI_1.1.0            colorspace_1.4-1    
+## [13] nnet_7.3-14          withr_2.3.0          tidyselect_1.1.0    
+## [16] compiler_4.0.1       cli_2.0.2            rvest_0.3.6         
+## [19] formatR_1.7          forge_0.2.0          xml2_1.3.2          
+## [22] bookdown_0.20        scales_1.1.1         askpass_1.1         
+## [25] digest_0.6.25        rmarkdown_2.4        base64enc_0.1-3     
+## [28] pkgconfig_2.0.3      htmltools_0.5.0      dbplyr_1.4.4        
+## [31] htmlwidgets_1.5.2    rlang_0.4.7          readxl_1.3.1        
+## [34] rstudioapi_0.11      generics_0.0.2       jsonlite_1.7.1      
+## [37] ModelMetrics_1.2.2.2 config_0.3           magrittr_1.5        
+## [40] Matrix_1.2-18        Rcpp_1.0.5           munsell_0.5.0       
+## [43] fansi_0.4.1          lifecycle_0.2.0      pROC_1.16.2         
+## [46] stringi_1.5.3        yaml_2.2.1           MASS_7.3-53         
+## [49] plyr_1.8.6           recipes_0.1.13       grid_4.0.1          
+## [52] blob_1.2.1           parallel_4.0.1       crayon_1.3.4        
+## [55] lattice_0.20-41      haven_2.3.1          splines_4.0.1       
+## [58] hms_0.5.3            knitr_1.30           pillar_1.4.6        
+## [61] uuid_0.1-4           stats4_4.0.1         reshape2_1.4.4      
+## [64] codetools_0.2-16     reprex_0.3.0         glue_1.4.2          
+## [67] evaluate_0.14        blogdown_0.20        data.table_1.13.0   
+## [70] modelr_0.1.8         vctrs_0.3.4          foreach_1.5.0       
+## [73] cellranger_1.1.0     gtable_0.3.0         openssl_1.4.3       
+## [76] assertthat_0.2.1     r2d3_0.2.3           xfun_0.18           
+## [79] gower_0.2.2          prodlim_2019.11.13   broom_0.7.1         
+## [82] e1071_1.7-3          class_7.3-17         survival_3.2-7      
+## [85] timeDate_3043.102    iterators_1.0.12     lava_1.6.8          
+## [88] ellipsis_0.3.1       caret_6.0-86         ipred_0.9-9</code></pre>
 </div>

@@ -11,6 +11,7 @@ subtitle: ''
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 summary: 'This model is an approximate version of knn model which is  difficult to be implemented with large data set...'
@@ -30,7 +31,19 @@ knitr::opts_chunk$set(echo = TRUE, tidy = TRUE, tidy.opts = list(comment = FALSE
 ```
 
 
-## Introduction
+```{css, echo=FALSE}
+strong {
+  color: Navy;
+}
+
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+```
+
+
+# Introduction
 
 This model is an approximate version of knn model which is  difficult to be implemented with large data set. In contrast to knn model that looks for the exact number of nearest neighbours, this model looks for neighbours with high probabilities. Spark provides two methods to find out the approximate neighbours that depend on the data type at hand, **Bucketed random projection** and **Minhash for jaccard distance**.
 
@@ -40,7 +53,7 @@ $$h^{x,b}(\vec\upsilon)=\lfloor \frac{\vec\upsilon.\vec x}{w}\rfloor$$
 
 Where $h$ is the hashing function, $\vec\upsilon$ is the feature vector, $x$ is standard normal vector that has the same length, and $w$ is the bin width of the hashing bins, and the symbol $\lfloor \rfloor$ to coerce the result to be integer value. The idea is simple, we take the dot product of each feature vector with noisy vector, then the resulted projections (which are random) will be grouped into buckets, these buckets are supposed to include similar points. This process can be repeated many times with different noisy vector at each time to fine the similarity. For more detail about this technique click [here](https://spark.apache.org/docs/latest/ml-features.html#locality-sensitive-hashing)
 
-## Data Preparation
+# Data Preparation
 
 For those who do not know much about sparklyr check my article [introduction to sparklyr](https://modelingwithr.rbind.io/sparklyr/sparklyr/) 
 
@@ -174,7 +187,7 @@ model_lsh<-ml_fit(lsh_vector,trained)
 ```
 
 
-## Prediction
+# Prediction
 
 At the prediction stage this model of classification gives us two alternatives for how we define the nearest neighbours:
 
@@ -216,7 +229,7 @@ In contrast to the above plot, using the second option, the green dot can be pre
 
 **Note**: In fact we can overcome the drawbacks of each method by tuning the hyperparameters. To get predictions of all the new cases we can increase the distance threshold  using the first method so that all the cases will be predicted (but we may lose accuracy if we have any single outlier). And we can reduce the number for the nearest neighbours number to get meaningful similarities (but we may lose accuracy with dots spread out from each other).      
 
-### Similarity based on distance
+## Similarity based on distance
 
 To show the neighbours of each point we use the function
 **ml_approx_similarity_join** provided that the data has an **id** column, this is thus the reason why we have created this id before.   
@@ -284,7 +297,7 @@ df%>%
 
 Using the majority vote this person will be classified as survived since the non survived persons number (5) is less than survived persons number (12), and hence this person is correctly classified.
 
-### The similarity based on the number of nearest neighbours
+## Similarity based on the number of nearest neighbours
 
 Using the same above steps but here with the function
 
@@ -375,11 +388,18 @@ spark_disconnect(sc)
 
 
 
-## Conclusion
+# Conclusion
 
 The LSH model is an approximation of knn when we have large dataset. We could increase the model performance by playing around with the threshold value or the number of the neighbours. 
 
-## Further reading
+# Further reading
 
 * https://therinspark.com
 * https://spark.apache.org/docs/latest/ml-features.html#locality-sensitive-hashing
+
+# Session information
+
+```{r}
+sessionInfo()
+```
+
