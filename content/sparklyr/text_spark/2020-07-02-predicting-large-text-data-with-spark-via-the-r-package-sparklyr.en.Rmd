@@ -16,6 +16,7 @@ summary: 'Unlike the classical programming languages that are very slow and even
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 authors: []
@@ -36,21 +37,34 @@ projects: []
 }
 </style>
 
+
 ```{r setup, include=FALSE, comment=""}
 knitr::opts_chunk$set(echo = TRUE)
 
 ```
 
-## Abstract
+
+```{css, echo=FALSE}
+strong {
+  color: Navy;
+}
+
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+```
+
+# Abstract
 
 Unlike the classical programming languages that are very slow and even sometimes fail to load very large data sets since they  use only a single core, Apache Spark is known as the fastest  distributed system that can handle with ease large datasets by deploying all the available machines and cores to build cluster,  so that the computing time of each task performed on the data will be drastically reduced since each **worker node** in the cluster takes in charge small part of the task in question. Even that the native language of spark is **scala** (but it can also support **java** and **sql**), the good news for R users is that they can benefit from spark without having to learn the above supported languages by making use of the R package **sparklyr**. In this article we trained random forest model using text data which is in practice known as large data set. for illustration purposes and to make things faster however we used  a small data set about email messages and also constrained ourselves to use the **local mode** in which spark created a cluster from the available cores in my machine. Notice that the same codes in this paper can be used in the cloud whatever the size of our data, even with billions of data points, except for the connection method to spark which is slightly different. Since the raw data requires some transformation to be consumed by the model, we applied the well-known method called **tokenization** to create the model features, then trained  and evaluated a random forest model applied on the design matrix after having been filled using the **TF** method. Lastly, we trained the same model (random forest model with the same hyperparameter values) using another method called **TF-IDF** method (Sparck , 1972).
 
 
-## Keywords
+# Keywords
 
 Large dataset, R, spark, sparklyr, cluster, tokenization, TF, TF-IDF, random forest model, machine learning.
 
-## Introduction
+# Introduction
 R is one of the best programming languages for statistical analysis, and provides **data scientist** by super powerful tools that make their work super easy and more exciting. However, since the amount of information today is growing exponentially, R and all the classical languages (python, java,…etc.) that use one single machine (one single core node) would face a great challenges to handle and deal with large dataset that, in some cases, its size can even exceed the memory size.
 As a solution to the above classical programming language limitations, **spark** and **hadoop** are two new systems. Both use a computing distributed system that run multiple tasks using multiple machines (called **nodes**, and together called **cluster**) at the same time. However, spark has the superiority over hadoop by its ability to load the data in memory which makes it much higher faster (Luraschi, 2014).
 Spark creates  a cluster using either physical machines or virtual machines provided by some **cloud** provider such as google, amazon, microsoft…etc (it can also creat a cluster using the available cores in a single machine known as **local mode**). Its native language is scala, but also can support sql and java. Thankfully, spark provides a high level APIs in **python** and **R** so that the R users can use spark as a platform to work with large datasets using their familiar codes and without having to learn scala, sql or java. However, the connection between R and spark is not straightforward, it is set by the help of **sparklyr** package, which is like any other R packages, with its own functions and supports almost all the famous **dplyr** R package functions.
@@ -62,7 +76,7 @@ This article will be divided into the following sections:
 * TF-IDF method: We will train the random forest model on the TF_IDF features.
 * Add features: we will create another feature from the data to be used as a new predictor.
 
-## Data preparation
+# Data preparation
 
 First, we call the R packages **tidyverse** and **sparklyr**, and we set up the connection to spark using the following R codes.
 
@@ -154,7 +168,7 @@ test<-sdf_bind_rows(partitionham$test,partitionspam$test)%>%
 
 
 
-## TF model 
+# TF model 
 
 Since machine learning models require inputs as numeric data, the common practice in text analysis thus is to convert each single text into **tokens** (or pieces) so that these tokens will be the features that can be used to discriminate between class labels, In our case, they are a simple words. Using the **TF** method, if a particular word exists in a particular document we assign the number of frequency of this word (or just 1 if we do not care about the frequency) in the corresponding cell in the design matrix (which is called Document Term Matrix **DTM**), otherwise we assign zero. 
 this method will give us a very large and sparse rectangular matrix with huge number of features compared to the number of documents, that is why spark can help to handle this type of data.
@@ -238,7 +252,7 @@ wordcloud::wordcloud(p2,max.words = 50,random.order = FALSE,
 From the upper figure we see that the most common words in hm’s are: get, good, know, whereas the lower figure shows the most ones for spam’s, which are: call, free, mobile. This means that if we receive a new email message that has the word free for instance , it will be more probable to be spam.   
 
 
-## TF-IDF model
+# TF-IDF model
 
 The main drawback of TF method is that it does not take into account the distribution of each term across the documents that reflects how much information each term provides. To measure the information of each term we compute its **DF** document frequency value which is the number of documents **d** where the term **t** appears, and hence the inverse document frequency **IDF** value for each pair (d,t) will be computed as follows:
 
@@ -268,7 +282,7 @@ ml_transform(model_rf.tfidf,test)%>%
 
 Using this more complex model than the previous one is not justified for this data since their rates are close to each other.
 
-## Add new features
+# Add new features
 
 Customizing new features from the data that we think they are more relevant than the old ones is a popular strategy used to improve prediction quality. For example, with our data we think that spam messages tend to be shorter than ham messages, we can, thus, add the messages' lengths as new features.
 
@@ -279,7 +293,7 @@ test1 <- test %>% mutate(lengths=nchar(cleaned))
 
 Now let's retrain the above models again with this new added feature.
 
-### TF model
+## TF model
 
 
 ```{r}
@@ -303,7 +317,7 @@ ml_transform(model_rf_new,test1)%>%
 
 Fortunately, our expectation about this new feature is confirmed since we have got a significant improvement compared to the previous results.     
 
-### tf_idf model
+## tf_idf model
 
 
 ```{r}
@@ -327,7 +341,7 @@ ml_transform(model_rf_new2,test1)%>%
 
 Again, as we said before, the use of idf method is not justified, and it would be better to stay with the tf method.
 
-## n-gram model
+# n-gram model
 
 In contrast to the function **ft_tokenizer** that splits the text into tokens where each token has a single word, each token resulted from the sparklyr function **ft_ngram** has n words respecting the same appearance order as in the original text.
 To well understand let's take the following example.
@@ -390,11 +404,11 @@ The last thing to mention, is when you finish your work do not forget to free yo
 spark_disconnect(sc)
 ```
 
-## Conclusion:
+# Conclusion:
 
 This article is a brief introduction to illustrate how easy to handle and model large data set with the combination of the two powerful languages R and spark. we have used a text data set since this type of data that characterizes the most large datasets encountered in the real world.       
 
-## References
+# References
 
 -	Brett Lantz (2016). Machine learning with R. packet publishing. Second edition. ISBN 97-8-1-78439-390-8. 
 -	Garet James et al (2013) , An introduction to statistical learning, springer, ISBN 978-1-4614-7138-7.
@@ -404,4 +418,10 @@ This article is a brief introduction to illustrate how easy to handle and model 
 -	https://www.kaggle.com/team-ai/spam-text-message-classification.
 -	https://www.tidyverse.org/packages/https://rstudio.com/wp-content/uploads/2016/09/RegExCheatsheet.pdf
 
+
+# Session information
+
+```{r}
+sessionInfo()
+```
 

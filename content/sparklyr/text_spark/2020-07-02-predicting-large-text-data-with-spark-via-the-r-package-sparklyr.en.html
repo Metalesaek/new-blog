@@ -16,6 +16,7 @@ summary: 'Unlike the classical programming languages that are very slow and even
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 authors: []
@@ -32,20 +33,21 @@ projects: []
 
 <div id="TOC">
 <ul>
-<li><a href="#abstract">Abstract</a></li>
-<li><a href="#keywords">Keywords</a></li>
-<li><a href="#introduction">Introduction</a></li>
-<li><a href="#data-preparation">Data preparation</a></li>
-<li><a href="#tf-model">TF model</a></li>
-<li><a href="#tf-idf-model">TF-IDF model</a></li>
-<li><a href="#add-new-features">Add new features</a>
+<li><a href="#abstract"><span class="toc-section-number">1</span> Abstract</a></li>
+<li><a href="#keywords"><span class="toc-section-number">2</span> Keywords</a></li>
+<li><a href="#introduction"><span class="toc-section-number">3</span> Introduction</a></li>
+<li><a href="#data-preparation"><span class="toc-section-number">4</span> Data preparation</a></li>
+<li><a href="#tf-model"><span class="toc-section-number">5</span> TF model</a></li>
+<li><a href="#tf-idf-model"><span class="toc-section-number">6</span> TF-IDF model</a></li>
+<li><a href="#add-new-features"><span class="toc-section-number">7</span> Add new features</a>
 <ul>
-<li><a href="#tf-model-1">TF model</a></li>
-<li><a href="#tf_idf-model">tf_idf model</a></li>
+<li><a href="#tf-model-1"><span class="toc-section-number">7.1</span> TF model</a></li>
+<li><a href="#tf_idf-model"><span class="toc-section-number">7.2</span> tf_idf model</a></li>
 </ul></li>
-<li><a href="#n-gram-model">n-gram model</a></li>
-<li><a href="#conclusion">Conclusion:</a></li>
-<li><a href="#references">References</a></li>
+<li><a href="#n-gram-model"><span class="toc-section-number">8</span> n-gram model</a></li>
+<li><a href="#conclusion"><span class="toc-section-number">9</span> Conclusion:</a></li>
+<li><a href="#references"><span class="toc-section-number">10</span> References</a></li>
+<li><a href="#session-information"><span class="toc-section-number">11</span> Session information</a></li>
 </ul>
 </div>
 
@@ -56,16 +58,26 @@ projects: []
   margin-right: 2.5em;
 }
 </style>
-<div id="abstract" class="section level2">
-<h2>Abstract</h2>
+<style type="text/css">
+strong {
+  color: Navy;
+}
+
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+</style>
+<div id="abstract" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Abstract</h1>
 <p>Unlike the classical programming languages that are very slow and even sometimes fail to load very large data sets since they use only a single core, Apache Spark is known as the fastest distributed system that can handle with ease large datasets by deploying all the available machines and cores to build cluster, so that the computing time of each task performed on the data will be drastically reduced since each <strong>worker node</strong> in the cluster takes in charge small part of the task in question. Even that the native language of spark is <strong>scala</strong> (but it can also support <strong>java</strong> and <strong>sql</strong>), the good news for R users is that they can benefit from spark without having to learn the above supported languages by making use of the R package <strong>sparklyr</strong>. In this article we trained random forest model using text data which is in practice known as large data set. for illustration purposes and to make things faster however we used a small data set about email messages and also constrained ourselves to use the <strong>local mode</strong> in which spark created a cluster from the available cores in my machine. Notice that the same codes in this paper can be used in the cloud whatever the size of our data, even with billions of data points, except for the connection method to spark which is slightly different. Since the raw data requires some transformation to be consumed by the model, we applied the well-known method called <strong>tokenization</strong> to create the model features, then trained and evaluated a random forest model applied on the design matrix after having been filled using the <strong>TF</strong> method. Lastly, we trained the same model (random forest model with the same hyperparameter values) using another method called <strong>TF-IDF</strong> method (Sparck , 1972).</p>
 </div>
-<div id="keywords" class="section level2">
-<h2>Keywords</h2>
+<div id="keywords" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> Keywords</h1>
 <p>Large dataset, R, spark, sparklyr, cluster, tokenization, TF, TF-IDF, random forest model, machine learning.</p>
 </div>
-<div id="introduction" class="section level2">
-<h2>Introduction</h2>
+<div id="introduction" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> Introduction</h1>
 <p>R is one of the best programming languages for statistical analysis, and provides <strong>data scientist</strong> by super powerful tools that make their work super easy and more exciting. However, since the amount of information today is growing exponentially, R and all the classical languages (python, java,…etc.) that use one single machine (one single core node) would face a great challenges to handle and deal with large dataset that, in some cases, its size can even exceed the memory size.
 As a solution to the above classical programming language limitations, <strong>spark</strong> and <strong>hadoop</strong> are two new systems. Both use a computing distributed system that run multiple tasks using multiple machines (called <strong>nodes</strong>, and together called <strong>cluster</strong>) at the same time. However, spark has the superiority over hadoop by its ability to load the data in memory which makes it much higher faster (Luraschi, 2014).
 Spark creates a cluster using either physical machines or virtual machines provided by some <strong>cloud</strong> provider such as google, amazon, microsoft…etc (it can also creat a cluster using the available cores in a single machine known as <strong>local mode</strong>). Its native language is scala, but also can support sql and java. Thankfully, spark provides a high level APIs in <strong>python</strong> and <strong>R</strong> so that the R users can use spark as a platform to work with large datasets using their familiar codes and without having to learn scala, sql or java. However, the connection between R and spark is not straightforward, it is set by the help of <strong>sparklyr</strong> package, which is like any other R packages, with its own functions and supports almost all the famous <strong>dplyr</strong> R package functions.
@@ -78,8 +90,8 @@ This article will be divided into the following sections:</p>
 <li>Add features: we will create another feature from the data to be used as a new predictor.</li>
 </ul>
 </div>
-<div id="data-preparation" class="section level2">
-<h2>Data preparation</h2>
+<div id="data-preparation" class="section level1" number="4">
+<h1><span class="header-section-number">4</span> Data preparation</h1>
 <p>First, we call the R packages <strong>tidyverse</strong> and <strong>sparklyr</strong>, and we set up the connection to spark using the following R codes.</p>
 <pre class="r"><code>suppressPackageStartupMessages(library(sparklyr))
 suppressPackageStartupMessages(library(tidyverse))
@@ -89,6 +101,10 @@ sc&lt;-spark_connect(master = &quot;local&quot;)</code></pre>
 mydata&lt;-spark_read_csv(sc,name=&quot;SMS&quot;,path=path, header=FALSE,delimiter = &quot;\t&quot;,overwrite = TRUE)
 knitr::kable(head(mydata,3))</code></pre>
 <table>
+<colgroup>
+<col width="3%" />
+<col width="96%" />
+</colgroup>
 <thead>
 <tr class="header">
 <th align="left">V1</th>
@@ -217,16 +233,12 @@ partitionspam&lt;-dataspam%&gt;%
   sdf_random_split(training=0.8,test=0.2,seed = 111)
 
 train&lt;-sdf_bind_rows(partitionham$training,partitionspam$training)%&gt;%
-  compute(&quot;train&quot;)</code></pre>
-<pre><code>## Warning: `data_frame()` is deprecated as of tibble 1.1.0.
-## Please use `tibble()` instead.
-## This warning is displayed once every 8 hours.
-## Call `lifecycle::last_warnings()` to see where this warning was generated.</code></pre>
-<pre class="r"><code>test&lt;-sdf_bind_rows(partitionham$test,partitionspam$test)%&gt;%
+  compute(&quot;train&quot;)
+test&lt;-sdf_bind_rows(partitionham$test,partitionspam$test)%&gt;%
   compute(&quot;test&quot;)</code></pre>
 </div>
-<div id="tf-model" class="section level2">
-<h2>TF model</h2>
+<div id="tf-model" class="section level1" number="5">
+<h1><span class="header-section-number">5</span> TF model</h1>
 <p>Since machine learning models require inputs as numeric data, the common practice in text analysis thus is to convert each single text into <strong>tokens</strong> (or pieces) so that these tokens will be the features that can be used to discriminate between class labels, In our case, they are a simple words. Using the <strong>TF</strong> method, if a particular word exists in a particular document we assign the number of frequency of this word (or just 1 if we do not care about the frequency) in the corresponding cell in the design matrix (which is called Document Term Matrix <strong>DTM</strong>), otherwise we assign zero.
 this method will give us a very large and sparse rectangular matrix with huge number of features compared to the number of documents, that is why spark can help to handle this type of data.
 Due to its popularity, we will fit random forest model, which known as one of the most powerful machine learning models, to the transformed data. to be brief We will make use of the spark feature <strong>pipline</strong> that helps us to group all the following required steps to enable running the model:</p>
@@ -270,18 +282,18 @@ To get the prediction we use the <strong>ml_predict</strong> function .</p>
   unlist()
 wordcloud::wordcloud(p1,max.words = 50, random.order = FALSE,
                      colors=c(&quot;blue&quot;,&quot;red&quot;,&quot;green&quot;,&quot;yellow&quot;),random.color = TRUE)</code></pre>
-<p><img src="/sparklyr/text_spark/2020-07-02-predicting-large-text-data-with-spark-via-the-r-package-sparklyr.en_files/figure-html/unnamed-chunk-13-1.svg" width="576" /></p>
+<p><img src="/sparklyr/text_spark/2020-07-02-predicting-large-text-data-with-spark-via-the-r-package-sparklyr.en_files/figure-html/unnamed-chunk-14-1.svg" width="576" /></p>
 <pre class="r"><code>p2&lt;-pred%&gt;%
   filter(labels==&quot;spam&quot;)%&gt;%
   pull(cleaned_words)%&gt;%
   unlist()
 wordcloud::wordcloud(p2,max.words = 50,random.order = FALSE, 
                      colors=c(&quot;blue&quot;,&quot;red&quot;,&quot;green&quot;,&quot;yellow&quot;),random.color = TRUE)  </code></pre>
-<p><img src="/sparklyr/text_spark/2020-07-02-predicting-large-text-data-with-spark-via-the-r-package-sparklyr.en_files/figure-html/unnamed-chunk-13-2.svg" width="576" /></p>
+<p><img src="/sparklyr/text_spark/2020-07-02-predicting-large-text-data-with-spark-via-the-r-package-sparklyr.en_files/figure-html/unnamed-chunk-14-2.svg" width="576" /></p>
 <p>From the upper figure we see that the most common words in hm’s are: get, good, know, whereas the lower figure shows the most ones for spam’s, which are: call, free, mobile. This means that if we receive a new email message that has the word free for instance , it will be more probable to be spam.</p>
 </div>
-<div id="tf-idf-model" class="section level2">
-<h2>TF-IDF model</h2>
+<div id="tf-idf-model" class="section level1" number="6">
+<h1><span class="header-section-number">6</span> TF-IDF model</h1>
 <p>The main drawback of TF method is that it does not take into account the distribution of each term across the documents that reflects how much information each term provides. To measure the information of each term we compute its <strong>DF</strong> document frequency value which is the number of documents <strong>d</strong> where the term <strong>t</strong> appears, and hence the inverse document frequency <strong>IDF</strong> value for each pair (d,t) will be computed as follows:</p>
 <p><span class="math display">\[idf(t,d)=log(\frac{N}{1+|d\epsilon D,t\epsilon d|})\]</span></p>
 <p>Where N is the total number of documents (number of rows).
@@ -301,17 +313,17 @@ model_rf.tfidf &lt;- ml_fit(pipline2, train)
 ml_transform(model_rf.tfidf,test)%&gt;%
   ml_binary_classification_evaluator(label_col = &quot;class&quot;,
                                      metric_name= &quot;areaUnderROC&quot;)</code></pre>
-<pre><code>## [1] 0.953212</code></pre>
+<pre><code>## [1] 0.9775329</code></pre>
 <p>Using this more complex model than the previous one is not justified for this data since their rates are close to each other.</p>
 </div>
-<div id="add-new-features" class="section level2">
-<h2>Add new features</h2>
+<div id="add-new-features" class="section level1" number="7">
+<h1><span class="header-section-number">7</span> Add new features</h1>
 <p>Customizing new features from the data that we think they are more relevant than the old ones is a popular strategy used to improve prediction quality. For example, with our data we think that spam messages tend to be shorter than ham messages, we can, thus, add the messages’ lengths as new features.</p>
 <pre class="r"><code>train1 &lt;- train %&gt;% mutate(lengths=nchar(cleaned))
 test1 &lt;- test %&gt;% mutate(lengths=nchar(cleaned))</code></pre>
 <p>Now let’s retrain the above models again with this new added feature.</p>
-<div id="tf-model-1" class="section level3">
-<h3>TF model</h3>
+<div id="tf-model-1" class="section level2" number="7.1">
+<h2><span class="header-section-number">7.1</span> TF model</h2>
 <pre class="r"><code>pipline_tf&lt;-ml_pipeline(sc)%&gt;%
   ft_string_indexer(input_col = &quot;labels&quot;,output_col=&quot;class&quot;)%&gt;%
   ft_tokenizer(input_col = &quot;cleaned&quot;, output_col=&quot;words&quot;)%&gt;%
@@ -330,8 +342,8 @@ ml_transform(model_rf_new,test1)%&gt;%
 <pre><code>## [1] 0.9849365</code></pre>
 <p>Fortunately, our expectation about this new feature is confirmed since we have got a significant improvement compared to the previous results.</p>
 </div>
-<div id="tf_idf-model" class="section level3">
-<h3>tf_idf model</h3>
+<div id="tf_idf-model" class="section level2" number="7.2">
+<h2><span class="header-section-number">7.2</span> tf_idf model</h2>
 <pre class="r"><code>pipline_tfidf&lt;-ml_pipeline(sc)%&gt;%
   ft_string_indexer(input_col = &quot;labels&quot;,output_col=&quot;class&quot;)%&gt;%
   ft_tokenizer(input_col = &quot;cleaned&quot;, output_col=&quot;words&quot;)%&gt;%
@@ -352,8 +364,8 @@ ml_transform(model_rf_new2,test1)%&gt;%
 <p>Again, as we said before, the use of idf method is not justified, and it would be better to stay with the tf method.</p>
 </div>
 </div>
-<div id="n-gram-model" class="section level2">
-<h2>n-gram model</h2>
+<div id="n-gram-model" class="section level1" number="8">
+<h1><span class="header-section-number">8</span> n-gram model</h1>
 <p>In contrast to the function <strong>ft_tokenizer</strong> that splits the text into tokens where each token has a single word, each token resulted from the sparklyr function <strong>ft_ngram</strong> has n words respecting the same appearance order as in the original text.
 To well understand let’s take the following example.</p>
 <pre class="r"><code>data &lt;- copy_to(sc, data.frame(x=&quot;I like both R and python&quot;), overwrite = TRUE)
@@ -411,12 +423,12 @@ ml_transform(model_rf_2gram,test1)%&gt;%
 <p>The last thing to mention, is when you finish your work do not forget to free your resources by disconnecting from spark as follows</p>
 <pre class="r"><code>spark_disconnect(sc)</code></pre>
 </div>
-<div id="conclusion" class="section level2">
-<h2>Conclusion:</h2>
+<div id="conclusion" class="section level1" number="9">
+<h1><span class="header-section-number">9</span> Conclusion:</h1>
 <p>This article is a brief introduction to illustrate how easy to handle and model large data set with the combination of the two powerful languages R and spark. we have used a text data set since this type of data that characterizes the most large datasets encountered in the real world.</p>
 </div>
-<div id="references" class="section level2">
-<h2>References</h2>
+<div id="references" class="section level1" number="10">
+<h1><span class="header-section-number">10</span> References</h1>
 <ul>
 <li>Brett Lantz (2016). Machine learning with R. packet publishing. Second edition. ISBN 97-8-1-78439-390-8.</li>
 <li>Garet James et al (2013) , An introduction to statistical learning, springer, ISBN 978-1-4614-7138-7.</li>
@@ -426,4 +438,48 @@ ml_transform(model_rf_2gram,test1)%&gt;%
 <li><a href="https://www.kaggle.com/team-ai/spam-text-message-classification" class="uri">https://www.kaggle.com/team-ai/spam-text-message-classification</a>.</li>
 <li><a href="https://www.tidyverse.org/packages/https://rstudio.com/wp-content/uploads/2016/09/RegExCheatsheet.pdf" class="uri">https://www.tidyverse.org/packages/https://rstudio.com/wp-content/uploads/2016/09/RegExCheatsheet.pdf</a></li>
 </ul>
+</div>
+<div id="session-information" class="section level1" number="11">
+<h1><span class="header-section-number">11</span> Session information</h1>
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>## R version 4.0.1 (2020-06-06)
+## Platform: x86_64-w64-mingw32/x64 (64-bit)
+## Running under: Windows 10 x64 (build 19041)
+## 
+## Matrix products: default
+## 
+## locale:
+## [1] LC_COLLATE=English_United States.1252 
+## [2] LC_CTYPE=English_United States.1252   
+## [3] LC_MONETARY=English_United States.1252
+## [4] LC_NUMERIC=C                          
+## [5] LC_TIME=English_United States.1252    
+## 
+## attached base packages:
+## [1] stats     graphics  grDevices utils     datasets  methods   base     
+## 
+## other attached packages:
+##  [1] forcats_0.5.0   stringr_1.4.0   dplyr_1.0.2     purrr_0.3.4    
+##  [5] readr_1.3.1     tidyr_1.1.2     tibble_3.0.3    ggplot2_3.3.2  
+##  [9] tidyverse_1.3.0 sparklyr_1.4.0 
+## 
+## loaded via a namespace (and not attached):
+##  [1] Rcpp_1.0.5         lubridate_1.7.9    forge_0.2.0        utf8_1.1.4        
+##  [5] assertthat_0.2.1   rprojroot_1.3-2    digest_0.6.25      slam_0.1-47       
+##  [9] R6_2.4.1           cellranger_1.1.0   backports_1.1.10   reprex_0.3.0      
+## [13] evaluate_0.14      httr_1.4.2         highr_0.8          blogdown_0.20     
+## [17] pillar_1.4.6       rlang_0.4.7        readxl_1.3.1       uuid_0.1-4        
+## [21] rstudioapi_0.11    blob_1.2.1         rmarkdown_2.4      config_0.3        
+## [25] r2d3_0.2.3         htmlwidgets_1.5.2  munsell_0.5.0      broom_0.7.1       
+## [29] compiler_4.0.1     modelr_0.1.8       xfun_0.18          pkgconfig_2.0.3   
+## [33] askpass_1.1        base64enc_0.1-3    htmltools_0.5.0    openssl_1.4.3     
+## [37] tidyselect_1.1.0   bookdown_0.20      fansi_0.4.1        crayon_1.3.4      
+## [41] dbplyr_1.4.4       withr_2.3.0        grid_4.0.1         jsonlite_1.7.1    
+## [45] gtable_0.3.0       lifecycle_0.2.0    DBI_1.1.0          magrittr_1.5      
+## [49] scales_1.1.1       cli_2.0.2          stringi_1.5.3      fs_1.5.0          
+## [53] NLP_0.2-0          xml2_1.3.2         ellipsis_0.3.1     generics_0.0.2    
+## [57] vctrs_0.3.4        wordcloud_2.6      RColorBrewer_1.1-2 tools_4.0.1       
+## [61] glue_1.4.2         hms_0.5.3          parallel_4.0.1     yaml_2.2.1        
+## [65] tm_0.7-7           colorspace_1.4-1   rvest_0.3.6        knitr_1.30        
+## [69] haven_2.3.1</code></pre>
 </div>
