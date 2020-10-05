@@ -14,6 +14,7 @@ reading_time: true
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 authors: []
@@ -30,33 +31,47 @@ projects: []
 
 <div id="TOC">
 <ul>
-<li><a href="#introduction">Introduction</a></li>
-<li><a href="#data-preparation">data preparation</a></li>
-<li><a href="#logistic-regression">Logistic regression</a></li>
-<li><a href="#random-forest">Random forest</a>
+<li><a href="#introduction"><span class="toc-section-number">1</span> Introduction</a></li>
+<li><a href="#data-preparation"><span class="toc-section-number">2</span> data preparation</a></li>
+<li><a href="#logistic-regression"><span class="toc-section-number">3</span> Logistic regression</a></li>
+<li><a href="#random-forest"><span class="toc-section-number">4</span> Random forest</a>
 <ul>
-<li><a href="#random-forest-with-binomial-double-trees">Random forest with binomial double trees</a></li>
-<li><a href="#random-forest-tuning">Random forest tuning</a></li>
+<li><a href="#random-forest-with-binomial-double-trees"><span class="toc-section-number">4.1</span> Random forest with binomial double trees</a></li>
+<li><a href="#random-forest-tuning"><span class="toc-section-number">4.2</span> Random forest tuning</a></li>
 </ul></li>
-<li><a href="#deep-learning-model">Deep learning model</a></li>
-<li><a href="#conclusion">Conclusion:</a></li>
-<li><a href="#further-reading">Further reading</a></li>
-<li><a href="#session-information">Session information</a></li>
+<li><a href="#deep-learning-model"><span class="toc-section-number">5</span> Deep learning model</a></li>
+<li><a href="#conclusion"><span class="toc-section-number">6</span> Conclusion:</a></li>
+<li><a href="#further-reading"><span class="toc-section-number">7</span> Further reading</a></li>
+<li><a href="#session-information"><span class="toc-section-number">8</span> Session information</a></li>
 </ul>
 </div>
 
-<div id="introduction" class="section level2">
-<h2>Introduction</h2>
+<style type="text/css">
+strong {
+  color: Navy;
+}
+
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+</style>
+<div id="introduction" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Introduction</h1>
 <p>H2O is an open-source distributed scalable framework used to train machine learning and deep learning models as well as data analysis. It can handle large data sets, with ease of use, by creating a cluster from the available nodes. Fortunately, it provides an API for R users to get the most benefits from it, especially when it comes to large data sets, with which R has its most limitations.</p>
 <p>The beauty is that R users can load and use this system via the package <strong>h2o</strong> which can be called and used like any other R packages.</p>
 <pre class="r"><code># install.packages(&quot;h2o&quot;) if not already installed
 library(tidyverse)</code></pre>
-<pre><code>-- Attaching packages -------------------</code></pre>
-<pre><code>v ggplot2 3.3.1     v purrr   0.3.4
-v tibble  3.0.1     v dplyr   1.0.0
-v tidyr   1.1.0     v stringr 1.4.0
+<pre><code>-- Attaching packages -------- tidyverse 1.3.0 --</code></pre>
+<pre><code>v ggplot2 3.3.2     v purrr   0.3.4
+v tibble  3.0.3     v dplyr   1.0.2
+v tidyr   1.1.2     v stringr 1.4.0
 v readr   1.3.1     v forcats 0.5.0</code></pre>
-<pre><code>-- Conflicts --- tidyverse_conflicts() --
+<pre><code>Warning: package &#39;ggplot2&#39; was built under R version 4.0.2</code></pre>
+<pre><code>Warning: package &#39;tibble&#39; was built under R version 4.0.2</code></pre>
+<pre><code>Warning: package &#39;tidyr&#39; was built under R version 4.0.2</code></pre>
+<pre><code>Warning: package &#39;dplyr&#39; was built under R version 4.0.2</code></pre>
+<pre><code>-- Conflicts ----------- tidyverse_conflicts() --
 x dplyr::filter() masks stats::filter()
 x dplyr::lag()    masks stats::lag()</code></pre>
 <pre class="r"><code>library(h2o)</code></pre>
@@ -70,7 +85,7 @@ For H2O package documentation, ask for help:
     &gt; ??h2o
 
 After starting H2O, you can use the Web UI at http://localhost:54321
-For more information visit http://docs.h2o.ai
+For more information visit https://docs.h2o.ai
 
 ----------------------------------------------------------------------</code></pre>
 <pre><code>
@@ -85,17 +100,25 @@ Attaching package: &#39;h2o&#39;</code></pre>
     log10, log1p, log2, round, signif, trunc</code></pre>
 <p>Then to lunch the cluster run the following script</p>
 <pre class="r"><code>h2o.init(nthreads = -1)</code></pre>
-<pre><code> Connection successful!
+<pre><code>
+H2O is not running yet, starting it now...
+
+Note:  In case of errors look at the following log files:
+    C:\Users\dell\AppData\Local\Temp\RtmpwRlEMB\file137c2ab049f1/h2o_dell_started_from_r.out
+    C:\Users\dell\AppData\Local\Temp\RtmpwRlEMB\file137c51175641/h2o_dell_started_from_r.err
+
+
+Starting H2O JVM and connecting: . Connection successful!
 
 R is connected to the H2O cluster: 
-    H2O cluster uptime:         12 minutes 19 seconds 
+    H2O cluster uptime:         5 seconds 844 milliseconds 
     H2O cluster timezone:       Europe/Paris 
     H2O data parsing timezone:  UTC 
-    H2O cluster version:        3.30.0.1 
-    H2O cluster version age:    3 months  
-    H2O cluster name:           H2O_started_from_R_dell_ybo118 
+    H2O cluster version:        3.30.1.3 
+    H2O cluster version age:    6 days  
+    H2O cluster name:           H2O_started_from_R_dell_ecb506 
     H2O cluster total nodes:    1 
-    H2O cluster total memory:   1.66 GB 
+    H2O cluster total memory:   1.99 GB 
     H2O cluster total cores:    4 
     H2O cluster allowed cores:  4 
     H2O cluster healthy:        TRUE 
@@ -108,13 +131,15 @@ R is connected to the H2O cluster:
 <p>Looking at this output, we see that h2o uses java virtual machine JVM, so you need java already installed. If you notice I have specified the <strong>nthreads</strong> argument to be -1 to tell h20 to create its cluster using all the available cores I have less than 1.</p>
 <p>Since our purpose is understanding how to work with h2o, we are going be using a small data set, in which the response will be a binary variable. The data that we will use is <strong>creditcard</strong> which is downloaded from <a href="https://www.kaggle.com/mlg-ulb/creditcardfraud">kaggle</a> website.</p>
 </div>
-<div id="data-preparation" class="section level2">
-<h2>data preparation</h2>
+<div id="data-preparation" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> data preparation</h1>
 <p>To import the data directly into the h2o cluster we use the function <strong>h2O.importFile</strong> as follows.</p>
 <pre class="r"><code>card &lt;- h2o.importFile(&quot;../creditcard.csv&quot;)</code></pre>
 <pre><code>
   |                                                                            
   |                                                                      |   0%
+  |                                                                            
+  |==================================================================    |  94%
   |                                                                            
   |======================================================================| 100%</code></pre>
 <p>The following script gives the dimension of this data.</p>
@@ -122,142 +147,858 @@ R is connected to the H2O cluster:
 <pre><code>[1] 284807     31</code></pre>
 <p>This data has 284807 and 31 columns. According to the description of this data, the response variable is <strong>class</strong> with two values 1 for <strong>fraudulent card</strong> and 0 for <strong>regular card</strong>. The other variables are PCA components derived from the original ones for privacy purposes to protect, for instance, the users’ identities.<br />
 So first let’s check the summary of this data.</p>
-<pre class="r"><code>h2o.describe(card)</code></pre>
-<pre><code>    Label Type Missing  Zeros PosInf NegInf         Min          Max
-1    Time  int       0      2      0      0    0.000000 1.727920e+05
-2      V1 real       0      0      0      0  -56.407510 2.454930e+00
-3      V2 real       0      0      0      0  -72.715728 2.205773e+01
-4      V3 real       0      0      0      0  -48.325589 9.382558e+00
-5      V4 real       0      0      0      0   -5.683171 1.687534e+01
-6      V5 real       0      0      0      0 -113.743307 3.480167e+01
-7      V6 real       0      0      0      0  -26.160506 7.330163e+01
-8      V7 real       0      0      0      0  -43.557242 1.205895e+02
-9      V8 real       0      0      0      0  -73.216718 2.000721e+01
-10     V9 real       0      0      0      0  -13.434066 1.559499e+01
-11    V10 real       0      0      0      0  -24.588262 2.374514e+01
-12    V11 real       0      0      0      0   -4.797473 1.201891e+01
-13    V12 real       0      0      0      0  -18.683715 7.848392e+00
-14    V13 real       0      0      0      0   -5.791881 7.126883e+00
-15    V14 real       0      0      0      0  -19.214325 1.052677e+01
-16    V15 real       0      0      0      0   -4.498945 8.877742e+00
-17    V16 real       0      0      0      0  -14.129855 1.731511e+01
-18    V17 real       0      0      0      0  -25.162799 9.253526e+00
-19    V18 real       0      0      0      0   -9.498746 5.041069e+00
-20    V19 real       0      0      0      0   -7.213527 5.591971e+00
-21    V20 real       0      0      0      0  -54.497720 3.942090e+01
-22    V21 real       0      0      0      0  -34.830382 2.720284e+01
-23    V22 real       0      0      0      0  -10.933144 1.050309e+01
-24    V23 real       0      0      0      0  -44.807735 2.252841e+01
-25    V24 real       0      0      0      0   -2.836627 4.584549e+00
-26    V25 real       0      0      0      0  -10.295397 7.519589e+00
-27    V26 real       0      0      0      0   -2.604551 3.517346e+00
-28    V27 real       0      0      0      0  -22.565679 3.161220e+01
-29    V28 real       0      0      0      0  -15.430084 3.384781e+01
-30 Amount real       0   1825      0      0    0.000000 2.569116e+04
-31  Class  int       0 284315      0      0    0.000000 1.000000e+00
-            Mean        Sigma Cardinality
-1   9.481386e+04 4.748815e+04          NA
-2   1.759011e-12 1.958696e+00          NA
-3  -8.250683e-13 1.651309e+00          NA
-4  -9.647560e-13 1.516255e+00          NA
-5   8.321544e-13 1.415869e+00          NA
-6   1.648035e-13 1.380247e+00          NA
-7   4.249739e-13 1.332271e+00          NA
-8  -3.055929e-13 1.237094e+00          NA
-9   8.772193e-14 1.194353e+00          NA
-10 -1.179836e-12 1.098632e+00          NA
-11  7.093134e-13 1.088850e+00          NA
-12  1.875289e-12 1.020713e+00          NA
-13  1.052772e-12 9.992014e-01          NA
-14  7.125770e-13 9.952742e-01          NA
-15 -1.477477e-13 9.585956e-01          NA
-16 -5.231893e-13 9.153160e-01          NA
-17 -2.282734e-13 8.762529e-01          NA
-18 -6.425575e-13 8.493371e-01          NA
-19  4.950876e-13 8.381762e-01          NA
-20  7.057097e-13 8.140405e-01          NA
-21  1.766136e-12 7.709250e-01          NA
-22 -3.405763e-13 7.345240e-01          NA
-23 -5.724055e-13 7.257016e-01          NA
-24 -9.725862e-13 6.244603e-01          NA
-25  1.464123e-12 6.056471e-01          NA
-26 -6.987098e-13 5.212781e-01          NA
-27 -5.617541e-13 4.822270e-01          NA
-28  3.332080e-12 4.036325e-01          NA
-29 -3.518873e-12 3.300833e-01          NA
-30  8.834962e+01 2.501201e+02          NA
-31  1.727486e-03 4.152719e-02          NA</code></pre>
+<pre class="r"><code>knitr::kable(h2o.describe(card))</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Label</th>
+<th align="left">Type</th>
+<th align="right">Missing</th>
+<th align="right">Zeros</th>
+<th align="right">PosInf</th>
+<th align="right">NegInf</th>
+<th align="right">Min</th>
+<th align="right">Max</th>
+<th align="right">Mean</th>
+<th align="right">Sigma</th>
+<th align="right">Cardinality</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Time</td>
+<td align="left">int</td>
+<td align="right">0</td>
+<td align="right">2</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0.000000</td>
+<td align="right">1.727920e+05</td>
+<td align="right">9.481386e+04</td>
+<td align="right">4.748815e+04</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V1</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-56.407510</td>
+<td align="right">2.454930e+00</td>
+<td align="right">0.000000e+00</td>
+<td align="right">1.958696e+00</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V2</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-72.715728</td>
+<td align="right">2.205773e+01</td>
+<td align="right">0.000000e+00</td>
+<td align="right">1.651309e+00</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V3</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-48.325589</td>
+<td align="right">9.382558e+00</td>
+<td align="right">0.000000e+00</td>
+<td align="right">1.516255e+00</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V4</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-5.683171</td>
+<td align="right">1.687534e+01</td>
+<td align="right">0.000000e+00</td>
+<td align="right">1.415869e+00</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V5</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-113.743307</td>
+<td align="right">3.480167e+01</td>
+<td align="right">0.000000e+00</td>
+<td align="right">1.380247e+00</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V6</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-26.160506</td>
+<td align="right">7.330163e+01</td>
+<td align="right">0.000000e+00</td>
+<td align="right">1.332271e+00</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V7</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-43.557242</td>
+<td align="right">1.205895e+02</td>
+<td align="right">0.000000e+00</td>
+<td align="right">1.237094e+00</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V8</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-73.216718</td>
+<td align="right">2.000721e+01</td>
+<td align="right">0.000000e+00</td>
+<td align="right">1.194353e+00</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V9</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-13.434066</td>
+<td align="right">1.559499e+01</td>
+<td align="right">0.000000e+00</td>
+<td align="right">1.098632e+00</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V10</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-24.588262</td>
+<td align="right">2.374514e+01</td>
+<td align="right">0.000000e+00</td>
+<td align="right">1.088850e+00</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V11</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-4.797473</td>
+<td align="right">1.201891e+01</td>
+<td align="right">0.000000e+00</td>
+<td align="right">1.020713e+00</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V12</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-18.683715</td>
+<td align="right">7.848392e+00</td>
+<td align="right">0.000000e+00</td>
+<td align="right">9.992014e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V13</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-5.791881</td>
+<td align="right">7.126883e+00</td>
+<td align="right">0.000000e+00</td>
+<td align="right">9.952742e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V14</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-19.214326</td>
+<td align="right">1.052677e+01</td>
+<td align="right">0.000000e+00</td>
+<td align="right">9.585956e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V15</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-4.498945</td>
+<td align="right">8.877742e+00</td>
+<td align="right">0.000000e+00</td>
+<td align="right">9.153160e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V16</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-14.129855</td>
+<td align="right">1.731511e+01</td>
+<td align="right">0.000000e+00</td>
+<td align="right">8.762529e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V17</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-25.162799</td>
+<td align="right">9.253526e+00</td>
+<td align="right">0.000000e+00</td>
+<td align="right">8.493371e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V18</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-9.498746</td>
+<td align="right">5.041069e+00</td>
+<td align="right">0.000000e+00</td>
+<td align="right">8.381762e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V19</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-7.213527</td>
+<td align="right">5.591971e+00</td>
+<td align="right">0.000000e+00</td>
+<td align="right">8.140405e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V20</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-54.497720</td>
+<td align="right">3.942090e+01</td>
+<td align="right">0.000000e+00</td>
+<td align="right">7.709250e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V21</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-34.830382</td>
+<td align="right">2.720284e+01</td>
+<td align="right">0.000000e+00</td>
+<td align="right">7.345240e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V22</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-10.933144</td>
+<td align="right">1.050309e+01</td>
+<td align="right">0.000000e+00</td>
+<td align="right">7.257016e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V23</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-44.807735</td>
+<td align="right">2.252841e+01</td>
+<td align="right">0.000000e+00</td>
+<td align="right">6.244603e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V24</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-2.836627</td>
+<td align="right">4.584549e+00</td>
+<td align="right">0.000000e+00</td>
+<td align="right">6.056471e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V25</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-10.295397</td>
+<td align="right">7.519589e+00</td>
+<td align="right">0.000000e+00</td>
+<td align="right">5.212781e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V26</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-2.604551</td>
+<td align="right">3.517346e+00</td>
+<td align="right">0.000000e+00</td>
+<td align="right">4.822270e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V27</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-22.565679</td>
+<td align="right">3.161220e+01</td>
+<td align="right">0.000000e+00</td>
+<td align="right">4.036325e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V28</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-15.430084</td>
+<td align="right">3.384781e+01</td>
+<td align="right">0.000000e+00</td>
+<td align="right">3.300833e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">Amount</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">1825</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0.000000</td>
+<td align="right">2.569116e+04</td>
+<td align="right">8.834962e+01</td>
+<td align="right">2.501201e+02</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">Class</td>
+<td align="left">int</td>
+<td align="right">0</td>
+<td align="right">284315</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0.000000</td>
+<td align="right">1.000000e+00</td>
+<td align="right">1.727500e-03</td>
+<td align="right">4.152720e-02</td>
+<td align="right">NA</td>
+</tr>
+</tbody>
+</table>
 <p>The most important issues that we usually check first are missing values and imbalance problems for classification.</p>
 <p>For the missing values, you should know that a value recognized by R as a missing value if it is written as <strong>NA</strong> or blank cells. If, otherwise a missing value in imported data written in any other format, for instance, in a string format like <strong>na</strong> or <strong>missing</strong>, we should tell R that these are missing values to be converted to <strong>NA</strong>. Or like in our case when a variable takes zero value while it should not have to take it. The <strong>Amount</strong> variable, for instance, we know that any transaction requires some amount of money so that it should not be equal to zero, while in the data it has 1825 zero’s. the same thing applies for the <strong>Time</strong> variable with two zero’s. However, since the data is large then this is not a big issue, and we can comfortably remove these rows.</p>
 <pre class="r"><code>card$Amount &lt;- h2o.ifelse(card$Amount == 0, NA, card$Amount)
 card$Time &lt;- h2o.ifelse(card$Time == 0, NA, card$Time)
 card &lt;- h2o.na_omit(card)</code></pre>
 <p>it is a good practice to check your output after each transformation to make sure your code did what would be expected.</p>
-<pre class="r"><code>h2o.describe(card)</code></pre>
-<pre><code>    Label Type Missing  Zeros PosInf NegInf         Min          Max
-1    Time  int       0      0      0      0    1.000000 1.727920e+05
-2      V1 real       0      0      0      0  -56.407510 2.454930e+00
-3      V2 real       0      0      0      0  -72.715728 2.205773e+01
-4      V3 real       0      0      0      0  -48.325589 9.382558e+00
-5      V4 real       0      0      0      0   -5.683171 1.687534e+01
-6      V5 real       0      0      0      0 -113.743307 3.480167e+01
-7      V6 real       0      0      0      0  -26.160506 7.330163e+01
-8      V7 real       0      0      0      0  -43.557242 1.205895e+02
-9      V8 real       0      0      0      0  -73.216718 2.000721e+01
-10     V9 real       0      0      0      0  -13.320155 1.559499e+01
-11    V10 real       0      0      0      0  -24.588262 2.374514e+01
-12    V11 real       0      0      0      0   -4.797473 1.201891e+01
-13    V12 real       0      0      0      0  -18.683715 7.848392e+00
-14    V13 real       0      0      0      0   -5.791881 7.126883e+00
-15    V14 real       0      0      0      0  -19.214325 1.052677e+01
-16    V15 real       0      0      0      0   -4.498945 8.877742e+00
-17    V16 real       0      0      0      0  -14.129855 1.731511e+01
-18    V17 real       0      0      0      0  -25.162799 9.253526e+00
-19    V18 real       0      0      0      0   -9.498746 5.041069e+00
-20    V19 real       0      0      0      0   -7.213527 5.591971e+00
-21    V20 real       0      0      0      0  -54.497720 3.942090e+01
-22    V21 real       0      0      0      0  -34.830382 2.720284e+01
-23    V22 real       0      0      0      0  -10.933144 1.050309e+01
-24    V23 real       0      0      0      0  -44.807735 2.252841e+01
-25    V24 real       0      0      0      0   -2.836627 4.584549e+00
-26    V25 real       0      0      0      0  -10.295397 7.519589e+00
-27    V26 real       0      0      0      0   -2.604551 3.517346e+00
-28    V27 real       0      0      0      0  -22.565679 3.161220e+01
-29    V28 real       0      0      0      0  -15.430084 3.384781e+01
-30 Amount real       0      0      0      0    0.010000 2.569116e+04
-31  Class  int       0 282515      0      0    0.000000 1.000000e+00
-            Mean        Sigma Cardinality
-1   9.484963e+04 4.748196e+04          NA
-2  -3.483003e-04 1.956753e+00          NA
-3  -2.017854e-03 1.650496e+00          NA
-4  -3.302670e-03 1.514214e+00          NA
-5  -1.199330e-02 1.404852e+00          NA
-6  -2.239576e-03 1.378819e+00          NA
-7  -1.305135e-03 1.331596e+00          NA
-8   2.509043e-03 1.233944e+00          NA
-9   2.694780e-05 1.191177e+00          NA
-10  1.464239e-03 1.099065e+00          NA
-11 -2.278298e-03 1.087587e+00          NA
-12  2.311358e-03 1.018693e+00          NA
-13  8.656482e-04 9.972279e-01          NA
-14  6.992494e-04 9.945502e-01          NA
-15  2.020090e-04 9.555395e-01          NA
-16  3.645617e-03 9.137113e-01          NA
-17 -1.095849e-03 8.760560e-01          NA
-18  1.618984e-03 8.462568e-01          NA
-19  1.306725e-03 8.386969e-01          NA
-20  1.914719e-03 8.119902e-01          NA
-21  9.806997e-04 7.705625e-01          NA
-22 -4.814073e-05 7.326525e-01          NA
-23 -1.607323e-03 7.255767e-01          NA
-24  1.474258e-04 6.230342e-01          NA
-25  2.017716e-04 6.057968e-01          NA
-26 -5.086588e-04 5.209869e-01          NA
-27 -1.364828e-03 4.819297e-01          NA
-28  2.533476e-04 4.029874e-01          NA
-29  1.926961e-04 3.303524e-01          NA
-30  8.891949e+01 2.508252e+02          NA
-31  1.643226e-03 4.050347e-02          NA</code></pre>
+<pre class="r"><code>knitr::kable(h2o.describe(card))</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Label</th>
+<th align="left">Type</th>
+<th align="right">Missing</th>
+<th align="right">Zeros</th>
+<th align="right">PosInf</th>
+<th align="right">NegInf</th>
+<th align="right">Min</th>
+<th align="right">Max</th>
+<th align="right">Mean</th>
+<th align="right">Sigma</th>
+<th align="right">Cardinality</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Time</td>
+<td align="left">int</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">1.000000</td>
+<td align="right">1.727920e+05</td>
+<td align="right">94849.6338858</td>
+<td align="right">4.748196e+04</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V1</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-56.407510</td>
+<td align="right">2.454930e+00</td>
+<td align="right">-0.0003483</td>
+<td align="right">1.956753e+00</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V2</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-72.715728</td>
+<td align="right">2.205773e+01</td>
+<td align="right">-0.0020179</td>
+<td align="right">1.650496e+00</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V3</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-48.325589</td>
+<td align="right">9.382558e+00</td>
+<td align="right">-0.0033027</td>
+<td align="right">1.514214e+00</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V4</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-5.683171</td>
+<td align="right">1.687534e+01</td>
+<td align="right">-0.0119933</td>
+<td align="right">1.404852e+00</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V5</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-113.743307</td>
+<td align="right">3.480167e+01</td>
+<td align="right">-0.0022396</td>
+<td align="right">1.378819e+00</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V6</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-26.160506</td>
+<td align="right">7.330163e+01</td>
+<td align="right">-0.0013051</td>
+<td align="right">1.331596e+00</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V7</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-43.557242</td>
+<td align="right">1.205895e+02</td>
+<td align="right">0.0025090</td>
+<td align="right">1.233944e+00</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V8</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-73.216718</td>
+<td align="right">2.000721e+01</td>
+<td align="right">0.0000269</td>
+<td align="right">1.191177e+00</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V9</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-13.320155</td>
+<td align="right">1.559499e+01</td>
+<td align="right">0.0014642</td>
+<td align="right">1.099065e+00</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V10</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-24.588262</td>
+<td align="right">2.374514e+01</td>
+<td align="right">-0.0022783</td>
+<td align="right">1.087587e+00</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V11</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-4.797473</td>
+<td align="right">1.201891e+01</td>
+<td align="right">0.0023114</td>
+<td align="right">1.018693e+00</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V12</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-18.683715</td>
+<td align="right">7.848392e+00</td>
+<td align="right">0.0008656</td>
+<td align="right">9.972279e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V13</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-5.791881</td>
+<td align="right">7.126883e+00</td>
+<td align="right">0.0006992</td>
+<td align="right">9.945502e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V14</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-19.214326</td>
+<td align="right">1.052677e+01</td>
+<td align="right">0.0002020</td>
+<td align="right">9.555395e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V15</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-4.498945</td>
+<td align="right">8.877742e+00</td>
+<td align="right">0.0036456</td>
+<td align="right">9.137113e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V16</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-14.129855</td>
+<td align="right">1.731511e+01</td>
+<td align="right">-0.0010958</td>
+<td align="right">8.760560e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V17</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-25.162799</td>
+<td align="right">9.253526e+00</td>
+<td align="right">0.0016190</td>
+<td align="right">8.462568e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V18</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-9.498746</td>
+<td align="right">5.041069e+00</td>
+<td align="right">0.0013067</td>
+<td align="right">8.386969e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V19</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-7.213527</td>
+<td align="right">5.591971e+00</td>
+<td align="right">0.0019147</td>
+<td align="right">8.119902e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V20</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-54.497720</td>
+<td align="right">3.942090e+01</td>
+<td align="right">0.0009807</td>
+<td align="right">7.705625e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V21</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-34.830382</td>
+<td align="right">2.720284e+01</td>
+<td align="right">-0.0000481</td>
+<td align="right">7.326525e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V22</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-10.933144</td>
+<td align="right">1.050309e+01</td>
+<td align="right">-0.0016073</td>
+<td align="right">7.255767e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V23</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-44.807735</td>
+<td align="right">2.252841e+01</td>
+<td align="right">0.0001474</td>
+<td align="right">6.230342e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V24</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-2.836627</td>
+<td align="right">4.584549e+00</td>
+<td align="right">0.0002018</td>
+<td align="right">6.057968e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V25</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-10.295397</td>
+<td align="right">7.519589e+00</td>
+<td align="right">-0.0005087</td>
+<td align="right">5.209869e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V26</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-2.604551</td>
+<td align="right">3.517346e+00</td>
+<td align="right">-0.0013648</td>
+<td align="right">4.819297e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">V27</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-22.565679</td>
+<td align="right">3.161220e+01</td>
+<td align="right">0.0002533</td>
+<td align="right">4.029874e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">V28</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">-15.430084</td>
+<td align="right">3.384781e+01</td>
+<td align="right">0.0001927</td>
+<td align="right">3.303524e-01</td>
+<td align="right">NA</td>
+</tr>
+<tr class="even">
+<td align="left">Amount</td>
+<td align="left">real</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0.010000</td>
+<td align="right">2.569116e+04</td>
+<td align="right">88.9194915</td>
+<td align="right">2.508252e+02</td>
+<td align="right">NA</td>
+</tr>
+<tr class="odd">
+<td align="left">Class</td>
+<td align="left">int</td>
+<td align="right">0</td>
+<td align="right">282515</td>
+<td align="right">0</td>
+<td align="right">0</td>
+<td align="right">0.000000</td>
+<td align="right">1.000000e+00</td>
+<td align="right">0.0016432</td>
+<td align="right">4.050350e-02</td>
+<td align="right">NA</td>
+</tr>
+</tbody>
+</table>
 <p>In contrast, we have a very serious imbalance problem since the <strong>class</strong> variable, with only two values 1 and 0, has its mean equals 0.00173 which means that we have a large number of class label 0.</p>
 <pre class="r"><code>h2o.table(card$Class)</code></pre>
 <pre><code>  Class  Count
@@ -291,8 +1032,8 @@ test &lt;- parts[[2]]</code></pre>
 
 [2 rows x 2 columns] </code></pre>
 </div>
-<div id="logistic-regression" class="section level2">
-<h2>Logistic regression</h2>
+<div id="logistic-regression" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> Logistic regression</h1>
 <p>For binary classification problems, the first model that comes in mind is the logistic regression model. This model belongs to the <strong>glm</strong> models such that when we set the argument family to <strong>binomial</strong> we get a logistic regression model. The following are the main arguments of **glm* models (besides the arguments discussed above):</p>
 <ul>
 <li>x: should contains the predictor names (not the data) or their indices.</li>
@@ -328,9 +1069,9 @@ test &lt;- parts[[2]]</code></pre>
   |                                                                            
   |                                                                      |   0%
   |                                                                            
-  |=                                                                     |   2%
+  |========                                                              |  12%
   |                                                                            
-  |==========                                                            |  14%
+  |=============                                                         |  18%
   |                                                                            
   |======================================================================| 100%</code></pre>
 <p>h2o provides a bunch of metrics already computed during the training process along with the confusion matrix. we can get access to them by calling the function <strong>h2O.performance</strong>.</p>
@@ -424,7 +1165,7 @@ table(train_balance$Class)</code></pre>
   |                                                                            
   |                                                                      |   0%
   |                                                                            
-  |===========                                                           |  16%
+  |======                                                                |   8%
   |                                                                            
   |======================================================================| 100%</code></pre>
 <p>We can check the confusion matrix as follows.</p>
@@ -477,8 +1218,8 @@ Totals 56216 124 0.001118  =63/56340</code></pre>
 30       V3         0.003304571       0.003321534 0.0004785241</code></pre>
 <p>Or as plot as follows:</p>
 <pre class="r"><code>h2o.varimp_plot(model_logit)</code></pre>
-<p><img src="/sparklyr/h2o/2020-06-03-predicting-binary-response-variable-with-h2o-framework.en_files/figure-html/unnamed-chunk-20-1.svg" width="576" /></p>
-<p>Another strategy to remove the less important variables, which is better, is using the lasso regression (L1) that can strip out the less important ones automatically, known also as a feature selection method. Lasso, like ridge regression (L2), is a regularization technique to fight overfitting problems, and besides that, it is also known as a reduction technique since it reduces the number of predictors. We enable this method in h2o by setting <code>alpha=1</code>, where <strong>alpha</strong> is a ratio to the trade-off between lasso (L1) or ridge regression (L2). alpha closer to zero means more ridge than lasso.</p>
+<p><img src="/sparklyr/h2o/2020-06-03-predicting-binary-response-variable-with-h2o-framework.en_files/figure-html/unnamed-chunk-21-1.svg" width="576" /></p>
+<p>Another strategy to remove the less important variables, which is better, is by using the lasso regression (L1) that can strip out the less important ones automatically, known also as a feature selection method. Lasso, like ridge regression (L2), is a regularization technique to fight overfitting problems, and besides that, it is also known as a reduction technique since it reduces the number of predictors. We enable this method in h2o by setting <code>alpha=1</code>, where <strong>alpha</strong> is a ratio to the trade-off between lasso (L1) or ridge regression (L2). alpha closer to zero means more ridge than lasso.</p>
 <pre class="r"><code>model_lasso &lt;- h2o.glm(
   x = 1:30,
   y = 31,
@@ -495,7 +1236,7 @@ Totals 56216 124 0.001118  =63/56340</code></pre>
   |                                                                            
   |                                                                      |   0%
   |                                                                            
-  |======                                                                |   8%
+  |====                                                                  |   6%
   |                                                                            
   |======================================================================| 100%</code></pre>
 <pre class="r"><code>h2o.confusionMatrix(model_lasso)</code></pre>
@@ -538,7 +1279,9 @@ mygrid &lt;- lapply(solvers, function(solver) {
   |                                                                            
   |                                                                      |   0%
   |                                                                            
-  |======                                                                |   8%
+  |====                                                                  |   6%
+  |                                                                            
+  |=============                                                         |  18%
   |                                                                            
   |======================================================================| 100%
 
@@ -550,7 +1293,7 @@ mygrid &lt;- lapply(solvers, function(solver) {
   |                                                                            
   |                                                                      |   0%
   |                                                                            
-  |========                                                              |  12%
+  |====                                                                  |   6%
   |                                                                            
   |======================================================================| 100%</code></pre>
 <pre class="r"><code>df &lt;- cbind(
@@ -571,8 +1314,8 @@ L_BFGS              0.024354  0.110189    0.067301
 COORDINATE_DESCENT  0.025909  0.109051    0.067508</code></pre>
 <p>It seems there is no significant difference between these solvers. If we focus, however, on the error of the minor class, it seems that the <strong>COORDINATE_DESCT</strong> is the best one with the lowest error. But it can be the result of random chances since we did not use cross-validation.</p>
 </div>
-<div id="random-forest" class="section level2">
-<h2>Random forest</h2>
+<div id="random-forest" class="section level1" number="4">
+<h1><span class="header-section-number">4</span> Random forest</h1>
 <p>The random forest model is the most popular machine learning model due to its capability to capture even complex patterns in the data. This is also, however, can be considered at the same time as a downside, since this capability tends to exceedingly memorize everything in the data including the noise, which gives rise to the overfitting problem. That is why this model has a large number of hyperparameters for regularization techniques, among others, to control the training process.
 The main hyperparameters provided by h2O are the following<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> :</p>
 <ul>
@@ -586,8 +1329,8 @@ The main hyperparameters provided by h2O are the following<a href="#fn1" class="
 <li>min_split_improvement: The minimum error reduction to make further splitting. The default is 0.</li>
 <li>binomial_double_trees: for binary classification. If true then the model two random forests, one for each output class. this method cn give high accuracy with the cost of doubling the computation time.</li>
 <li>stopping_rounds: The number of iterations required to early stopping the training process if the moving average of the stopping_metric (based on this number of iterations) does not improve. The default is 0, which means the early stopping is disabled.</li>
-<li>stopping_metric: works with the last argument. The default is AUTO, that is the <strong>logloss</strong> for classification, <strong>deviance</strong> for regression, but we have also <strong>MSE</strong>, <strong>RMSE</strong>, <strong>MAE</strong>, <strong>AUC</strong>, <strong>misclasssification</strong>.
-** stopping_tolerance: The threshold under which we consider no improvement. The default is 0.001.</li>
+<li>stopping_metric: works with the last argument. The default is AUTO, that is the <strong>logloss</strong> for classification, <strong>deviance</strong> for regression, but we have also <strong>MSE</strong>, <strong>RMSE</strong>, <strong>MAE</strong>, <strong>AUC</strong>, <strong>misclasssification</strong>.</li>
+<li>stopping_tolerance: The threshold under which we consider no improvement. The default is 0.001.</li>
 </ul>
 <p>First let’s try this model with the default values, except for balance_classes that we set to true. Fortunately, unlike glm models, this argument works fine with random forest model.</p>
 <pre class="r"><code>model_rf &lt;- h2o.randomForest(
@@ -602,6 +1345,8 @@ The main hyperparameters provided by h2O are the following<a href="#fn1" class="
   |                                                                            
   |                                                                      |   0%
   |                                                                            
+  |=                                                                     |   2%
+  |                                                                            
   |===                                                                   |   4%
   |                                                                            
   |======                                                                |   8%
@@ -610,27 +1355,29 @@ The main hyperparameters provided by h2O are the following<a href="#fn1" class="
   |                                                                            
   |===========                                                           |  16%
   |                                                                            
-  |===============                                                       |  22%
+  |==============                                                        |  20%
   |                                                                            
   |==================                                                    |  26%
   |                                                                            
   |=====================                                                 |  30%
   |                                                                            
-  |=========================                                             |  36%
+  |========================                                              |  34%
   |                                                                            
-  |============================                                          |  40%
+  |===========================                                           |  38%
   |                                                                            
-  |================================                                      |  46%
+  |=============================                                         |  42%
+  |                                                                            
+  |===============================                                       |  44%
   |                                                                            
   |==================================                                    |  48%
   |                                                                            
-  |======================================                                |  54%
+  |====================================                                  |  52%
   |                                                                            
-  |=========================================                             |  58%
+  |=======================================                               |  56%
   |                                                                            
   |===========================================                           |  62%
   |                                                                            
-  |=============================================                         |  64%
+  |==============================================                        |  66%
   |                                                                            
   |================================================                      |  68%
   |                                                                            
@@ -638,15 +1385,13 @@ The main hyperparameters provided by h2O are the following<a href="#fn1" class="
   |                                                                            
   |=======================================================               |  78%
   |                                                                            
-  |========================================================              |  80%
+  |=========================================================             |  82%
   |                                                                            
-  |============================================================          |  86%
+  |==============================================================        |  88%
   |                                                                            
   |===============================================================       |  90%
   |                                                                            
   |==================================================================    |  94%
-  |                                                                            
-  |===================================================================== |  98%
   |                                                                            
   |======================================================================| 100%</code></pre>
 <p>Now we check how this model did with the training data.</p>
@@ -700,8 +1445,8 @@ Gains/Lift Table: Extract with `h2o.gainsLift(&lt;model&gt;, &lt;data&gt;)` or `
 1         16 77 0.172043     =16/93
 Totals 56256 84 0.000408  =23/56340</code></pre>
 <p>As expected the model overfitted the data. The error rate of the minor class is now very large which is the same as that obtained from the lasso model.</p>
-<div id="random-forest-with-binomial-double-trees" class="section level3">
-<h3>Random forest with binomial double trees</h3>
+<div id="random-forest-with-binomial-double-trees" class="section level2" number="4.1">
+<h2><span class="header-section-number">4.1</span> Random forest with binomial double trees</h2>
 <p>Before going ahead with hyperparameters tuning, let’s try the binomial double trees technique discussed above.</p>
 <pre class="r"><code>model_rf_dbl &lt;- h2o.randomForest(
   x = 1:30,
@@ -723,31 +1468,29 @@ Totals 56256 84 0.000408  =23/56340</code></pre>
   |                                                                            
   |=============                                                         |  18%
   |                                                                            
-  |===============                                                       |  22%
+  |=================                                                     |  24%
   |                                                                            
-  |====================                                                  |  28%
+  |======================                                                |  32%
   |                                                                            
-  |========================                                              |  34%
+  |=========================                                             |  36%
   |                                                                            
-  |===========================                                           |  38%
+  |===============================                                       |  44%
   |                                                                            
-  |================================                                      |  46%
+  |===================================                                   |  50%
   |                                                                            
-  |====================================                                  |  52%
+  |=========================================                             |  58%
   |                                                                            
-  |=======================================                               |  56%
+  |=============================================                         |  64%
   |                                                                            
-  |===========================================                           |  62%
+  |=================================================                     |  70%
   |                                                                            
-  |================================================                      |  68%
-  |                                                                            
-  |=====================================================                 |  76%
+  |====================================================                  |  74%
   |                                                                            
   |========================================================              |  80%
   |                                                                            
-  |============================================================          |  86%
+  |===========================================================           |  84%
   |                                                                            
-  |================================================================      |  92%
+  |===============================================================       |  90%
   |                                                                            
   |===================================================================== |  98%
   |                                                                            
@@ -766,8 +1509,8 @@ Totals 226341 299 0.000410  =93/226640</code></pre>
 Totals 56252 88 0.000373  =21/56340</code></pre>
 <p>As we see, this model is the best one until now with the lowest rate for the minor class at 13.98%.</p>
 </div>
-<div id="random-forest-tuning" class="section level3">
-<h3>Random forest tuning</h3>
+<div id="random-forest-tuning" class="section level2" number="4.2">
+<h2><span class="header-section-number">4.2</span> Random forest tuning</h2>
 <p>We can try to tune the hyperparameters related to the regularization techniques to fight the overfitting problem. For instance, we use lower values for max_depth and larger values for min_rows to prune the trees, lower values for sample_rate to let each tree focus on a small part of the training data. We set also some values to early stop the training process if we do not obtain significant improvement. Finally, to avoid the randomness of the results we use cross-validation.</p>
 <pre class="r"><code>#model_rftuned &lt;- h2o.grid(
 #  &quot;randomForest&quot;,
@@ -776,7 +1519,7 @@ Totals 56252 88 0.000373  =21/56340</code></pre>
 #    min_rows = c(10, 20, 30),
 #    sample_rate = c(0.3, 0.5)
 #  ),
-#  stopping_rounds = 5,
+# stopping_rounds = 5,
 #  stopping_metric = &quot;AUTO&quot;,
 #  stopping_tolerance = 0.001,
 #  balance_classes = TRUE,
@@ -792,20 +1535,91 @@ Totals 56252 88 0.000373  =21/56340</code></pre>
 #  arrange(logloss)
 #write.csv(df_output, &quot;df_output.csv&quot;,  row.names = F)
 df_output &lt;- read.csv(&quot;df_output.csv&quot;)
-df_output</code></pre>
-<pre><code>   max_depth min_rows sample_rate     logloss
-1         10       30         0.3 0.004340259
-2         10       30         0.5 0.004349693
-3         10       20         0.3 0.004410775
-4         10       20         0.5 0.004509070
-5          5       20         0.3 0.004571208
-6          5       30         0.3 0.004596356
-7          5       20         0.5 0.004607659
-8         10       10         0.3 0.004617148
-9          5       30         0.5 0.004690543
-10        10       10         0.5 0.004724862
-11         5       10         0.3 0.004777967
-12         5       10         0.5 0.004792143</code></pre>
+knitr::kable(df_output)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="right">max_depth</th>
+<th align="right">min_rows</th>
+<th align="right">sample_rate</th>
+<th align="right">logloss</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="right">10</td>
+<td align="right">30</td>
+<td align="right">0.3</td>
+<td align="right">0.0041177</td>
+</tr>
+<tr class="even">
+<td align="right">10</td>
+<td align="right">20</td>
+<td align="right">0.3</td>
+<td align="right">0.0041834</td>
+</tr>
+<tr class="odd">
+<td align="right">10</td>
+<td align="right">30</td>
+<td align="right">0.5</td>
+<td align="right">0.0043959</td>
+</tr>
+<tr class="even">
+<td align="right">5</td>
+<td align="right">30</td>
+<td align="right">0.3</td>
+<td align="right">0.0044893</td>
+</tr>
+<tr class="odd">
+<td align="right">10</td>
+<td align="right">10</td>
+<td align="right">0.3</td>
+<td align="right">0.0045269</td>
+</tr>
+<tr class="even">
+<td align="right">5</td>
+<td align="right">20</td>
+<td align="right">0.5</td>
+<td align="right">0.0045655</td>
+</tr>
+<tr class="odd">
+<td align="right">10</td>
+<td align="right">10</td>
+<td align="right">0.5</td>
+<td align="right">0.0045780</td>
+</tr>
+<tr class="even">
+<td align="right">10</td>
+<td align="right">20</td>
+<td align="right">0.5</td>
+<td align="right">0.0046402</td>
+</tr>
+<tr class="odd">
+<td align="right">5</td>
+<td align="right">20</td>
+<td align="right">0.3</td>
+<td align="right">0.0046463</td>
+</tr>
+<tr class="even">
+<td align="right">5</td>
+<td align="right">10</td>
+<td align="right">0.3</td>
+<td align="right">0.0046960</td>
+</tr>
+<tr class="odd">
+<td align="right">5</td>
+<td align="right">30</td>
+<td align="right">0.5</td>
+<td align="right">0.0047160</td>
+</tr>
+<tr class="even">
+<td align="right">5</td>
+<td align="right">10</td>
+<td align="right">0.5</td>
+<td align="right">0.0047175</td>
+</tr>
+</tbody>
+</table>
 <p>Using the logloss metric, the best model is obtained with 10 for max_depth, 30 for min_rows, and the sample rate is about 0.3. Now let’s run this model with these values.</p>
 <pre class="r"><code>model_rf_best &lt;- h2o.randomForest(
   x = 1:30,
@@ -825,53 +1639,53 @@ df_output</code></pre>
   |                                                                            
   |                                                                      |   0%
   |                                                                            
-  |===                                                                   |   4%
+  |====                                                                  |   6%
   |                                                                            
   |=======                                                               |  10%
   |                                                                            
   |==========                                                            |  14%
   |                                                                            
-  |=============                                                         |  18%
+  |===============                                                       |  22%
   |                                                                            
-  |==================                                                    |  26%
+  |=====================                                                 |  30%
   |                                                                            
-  |========================                                              |  34%
+  |=========================                                             |  36%
   |                                                                            
-  |=============================                                         |  42%
+  |============================                                          |  40%
   |                                                                            
   |==================================                                    |  48%
   |                                                                            
   |=======================================                               |  56%
   |                                                                            
-  |===========================================                           |  62%
+  |=============================================                         |  64%
   |                                                                            
   |================================================                      |  68%
   |                                                                            
-  |=====================================================                 |  76%
+  |=======================================================               |  78%
   |                                                                            
-  |===========================================================           |  84%
+  |============================================================          |  86%
   |                                                                            
-  |================================================================      |  92%
+  |==================================================================    |  94%
   |                                                                            
   |======================================================================| 100%</code></pre>
 <pre class="r"><code>h2o.confusionMatrix(model_rf_best)</code></pre>
-<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.00183321256638754:
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.00180477647421117:
             0      1    Error          Rate
-0      225849    419 0.001852   =419/226268
-1        2724 223538 0.012039  =2724/226262
-Totals 228573 223957 0.006945  =3143/452530</code></pre>
+0      225985    283 0.001251   =283/226268
+1        2582 223680 0.011412  =2582/226262
+Totals 228567 223963 0.006331  =2865/452530</code></pre>
 <p>The model did well with the training data. But what about the testing set?.</p>
 <pre class="r"><code>h2o.confusionMatrix(model_rf_best, test)</code></pre>
-<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.00512118210853157:
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.00496959295307637:
            0   1    Error       Rate
-0      56227  20 0.000356  =20/56247
+0      56226  21 0.000373  =21/56247
 1         13  80 0.139785     =13/93
-Totals 56240 100 0.000586  =33/56340</code></pre>
+Totals 56239 101 0.000603  =34/56340</code></pre>
 <p>With this model, we get the same error rate for the minor class as the binomial double trees model. But for the overall error rate, the latter is better than the former.</p>
 </div>
 </div>
-<div id="deep-learning-model" class="section level2">
-<h2>Deep learning model</h2>
+<div id="deep-learning-model" class="section level1" number="5">
+<h1><span class="header-section-number">5</span> Deep learning model</h1>
 <p>Deep learning models are known for their high accuracy at predicting very large and complex datasets. They have a large number of hyperparameters that can be tuned to efficiently handle a wide range of datasets. Tuning a large number of hyperparameters with large datasets, however, requires very large hardware resources and time, which is not always available or very costly (using the cloud providers’ platforms). That is why this type of model requires quite high experience and practice to be able to correctly set the right hyperparameter values.</p>
 <p>There are many frameworks for deep learning models. The most used ones are <strong>tensorflow</strong> and <strong>keras</strong> since they are designed specifically for this type of models and can handle almost all the famous architectures such as: <strong>feedforward neural network</strong>, <strong>convolutional neural network</strong>, <strong>recurrent neural network</strong>,..etc. Besides, they can also provide us with some tools to define our architecture.</p>
 <p>For h2o, it provides only the <strong>feedforward neural network</strong> which is densely connected layers. However, this type of architecture is the most used one in economics.
@@ -904,23 +1718,23 @@ We can briefly discuss the main hyperparameters provided by h2O for this type of
 #  balance_classes = TRUE
 #)</code></pre>
 <p>As we did earlier, we save the model then we load it again to prevent rerunning the model when rendering this document.</p>
-<pre class="r"><code># h2o.saveModel(model_deep, 
-#              path = &quot;C://Users/dell/Documents/new-blog/content/sparklyr/h2o&quot;,
+<pre class="r"><code>#h2o.saveModel(model_deep, 
+#              path = #&quot;C://Users/dell/Documents/new-blog/content/sparklyr/h2o&quot;,
 #              force = TRUE)
 model_deep &lt;- h2o.loadModel(&quot;C://Users/dell/Documents/new-blog/content/sparklyr/h2o/deep_def&quot;)</code></pre>
 <pre class="r"><code>h2o.confusionMatrix(model_deep)</code></pre>
-<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.000417836060585278:
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 9.38199481764512e-07:
           0    1    Error     Rate
-0      4875    3 0.000615  =3/4878
-1         0 4985 0.000000  =0/4985
-Totals 4875 4988 0.000304  =3/9863</code></pre>
+0      4904    5 0.001019  =5/4909
+1         0 5017 0.000000  =0/5017
+Totals 4904 5022 0.000504  =5/9926</code></pre>
 <p>Like the above models, this model is almost perfect for predicting the training data.</p>
 <pre class="r"><code>h2o.confusionMatrix(model_deep, test)</code></pre>
-<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.999029626321672:
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.991909621262387:
            0  1    Error       Rate
-0      56245  2 0.000036   =2/56247
-1         23 70 0.247312     =23/93
-Totals 56268 72 0.000444  =25/56340</code></pre>
+0      56237 10 0.000178  =10/56247
+1         17 76 0.182796     =17/93
+Totals 56254 86 0.000479  =27/56340</code></pre>
 <p>As we see this model fails to predict very well the minor class. This result can be expected since we only used the default values. so let’s try using some custom hyperparameter values now.</p>
 <p><strong>Note</strong>: We will not tune any hyperparameters since we do not have many resources on my laptop.</p>
 <p>As a guideline, since the above default deep learning model fitted almost perfectly the training data and it generalized poorly to the unseen testing data, then we should think to reduce the complexity of the model and some regularization methods. So we will set the following values.</p>
@@ -952,44 +1766,44 @@ Totals 56268 72 0.000444  =25/56340</code></pre>
 #)</code></pre>
 <p>To prevent this model to be rerun when rendering our rmarkdown document, we save the model and load it again to further use.</p>
 <pre class="r"><code>#h2o.saveModel(model_deep_new, 
-#              path = &quot;C://Users/dell/Documents/new-blog/content/sparklyr/h2o&quot;,
+#              path = #&quot;C://Users/dell/Documents/new-blog/content/sparklyr/h2o&quot;,
 #              force = TRUE)
 model_deep_new &lt;- h2o.loadModel(&quot;C://Users/dell/Documents/new-blog/content/sparklyr/h2o/deep_new&quot;)</code></pre>
 <pre class="r"><code>h2o.confusionMatrix(model_deep_new)</code></pre>
-<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 2.34654254256535e-06:
-          0    1    Error       Rate
-0      4973   57 0.011332   =57/5030
-1        57 4872 0.011564   =57/4929
-Totals 5030 4929 0.011447  =114/9959</code></pre>
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 1.69163968745202e-06:
+          0    1    Error        Rate
+0      4908   77 0.015446    =77/4985
+1        51 5022 0.010053    =51/5073
+Totals 4959 5099 0.012726  =128/10058</code></pre>
 <p>As expected, this model has less accuracy than the default one due to its less flexibility. In other words, it has a larger bias but we hope it has also lower variance, which can be verified by using the testing set.</p>
 <pre class="r"><code>h2o.confusionMatrix(model_deep_new, test)</code></pre>
-<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.331909579485978:
+<pre><code>Confusion Matrix (vertical: actual; across: predicted)  for max f1 @ threshold = 0.250769269598065:
            0  1    Error       Rate
-0      56227 20 0.000356  =20/56247
+0      56228 19 0.000338  =19/56247
 1         15 78 0.161290     =15/93
-Totals 56242 98 0.000621  =35/56340</code></pre>
-<p>With these new settings, we obtained a large improvement for the error rate of the minor class with 16% (compared to the default model with 24%). But this rate still larger than that of the best random forest model (13.97%). If you have enough time you can improve your model by applying a grid search to some hyperparameters.</p>
+Totals 56243 97 0.000603  =34/56340</code></pre>
+<p>With these new settings, we obtained a large improvement for the error rate of the minor class with 16% (compared to the default model with 18%). But this rate still larger than that of the best random forest model (13.97%). If you have enough time you can improve your model by applying a grid search to some hyperparameters.</p>
 <p>Finally, when you finish your work do not forget to shut down your h2o to free your resources as follows:</p>
 <pre class="r"><code>h2o.shutdown()</code></pre>
 <pre><code>Are you sure you want to shutdown the H2O instance running at http://localhost:54321/ (Y/N)? </code></pre>
 </div>
-<div id="conclusion" class="section level2">
-<h2>Conclusion:</h2>
+<div id="conclusion" class="section level1" number="6">
+<h1><span class="header-section-number">6</span> Conclusion:</h1>
 <p>Maybe the most important thing learned from this article is how important the hyperparameter values on the model performance. The difference (of performance) can be larger between models of the same type (with different hyperparameter values) than the difference between different types of models. In other words, if you do not have enough time, so exploit your time to fine-tune the hyperparameters of the same model rather than try a different type of models. In practice, for large and complex datasets, the most powerful models are by order: Deep learning, Xgboost, and Random forest.</p>
 </div>
-<div id="further-reading" class="section level2">
-<h2>Further reading</h2>
+<div id="further-reading" class="section level1" number="7">
+<h1><span class="header-section-number">7</span> Further reading</h1>
 <ul>
 <li>Darren Cook, Practical Machine Learning with h2o, O’Reilly, 2017.</li>
 <li><a href="https://docs.h2o.ai" class="uri">https://docs.h2o.ai</a></li>
 </ul>
 </div>
-<div id="session-information" class="section level2">
-<h2>Session information</h2>
+<div id="session-information" class="section level1" number="8">
+<h1><span class="header-section-number">8</span> Session information</h1>
 <pre class="r"><code>sessionInfo()</code></pre>
 <pre><code>R version 4.0.1 (2020-06-06)
 Platform: x86_64-w64-mingw32/x64 (64-bit)
-Running under: Windows 10 x64 (build 18362)
+Running under: Windows 10 x64 (build 19041)
 
 Matrix products: default
 
@@ -1004,26 +1818,26 @@ attached base packages:
 [1] stats     graphics  grDevices utils     datasets  methods   base     
 
 other attached packages:
- [1] h2o_3.30.0.1    forcats_0.5.0   stringr_1.4.0   dplyr_1.0.0    
- [5] purrr_0.3.4     readr_1.3.1     tidyr_1.1.0     tibble_3.0.1   
- [9] ggplot2_3.3.1   tidyverse_1.3.0
+ [1] h2o_3.30.1.3    forcats_0.5.0   stringr_1.4.0   dplyr_1.0.2    
+ [5] purrr_0.3.4     readr_1.3.1     tidyr_1.1.2     tibble_3.0.3   
+ [9] ggplot2_3.3.2   tidyverse_1.3.0
 
 loaded via a namespace (and not attached):
- [1] tidyselect_1.1.0  xfun_0.14         haven_2.3.1       lattice_0.20-41  
- [5] colorspace_1.4-1  vctrs_0.3.1       generics_0.0.2    htmltools_0.4.0  
- [9] yaml_2.2.1        blob_1.2.1        rlang_0.4.6       pillar_1.4.4     
-[13] glue_1.4.1        withr_2.2.0       DBI_1.1.0         dbplyr_1.4.4     
+ [1] tidyselect_1.1.0  xfun_0.18         haven_2.3.1       colorspace_1.4-1 
+ [5] vctrs_0.3.4       generics_0.0.2    htmltools_0.5.0   yaml_2.2.1       
+ [9] blob_1.2.1        rlang_0.4.7       pillar_1.4.6      glue_1.4.2       
+[13] withr_2.3.0       DBI_1.1.0         bit64_4.0.5       dbplyr_1.4.4     
 [17] modelr_0.1.8      readxl_1.3.1      lifecycle_0.2.0   munsell_0.5.0    
-[21] blogdown_0.19     gtable_0.3.0      cellranger_1.1.0  rvest_0.3.5      
-[25] evaluate_0.14     knitr_1.28        fansi_0.4.1       broom_0.5.6      
-[29] Rcpp_1.0.4.6      scales_1.1.1      backports_1.1.7   jsonlite_1.6.1   
-[33] fs_1.4.1          hms_0.5.3         digest_0.6.25     stringi_1.4.6    
-[37] bookdown_0.19     grid_4.0.1        bitops_1.0-6      cli_2.0.2        
-[41] tools_4.0.1       ROSE_0.0-3        magrittr_1.5      RCurl_1.98-1.2   
-[45] crayon_1.3.4      pkgconfig_2.0.3   ellipsis_0.3.1    data.table_1.12.8
-[49] xml2_1.3.2        reprex_0.3.0      lubridate_1.7.9   assertthat_0.2.1 
-[53] rmarkdown_2.2     httr_1.4.1        rstudioapi_0.11   R6_2.4.1         
-[57] nlme_3.1-148      compiler_4.0.1   </code></pre>
+[21] blogdown_0.20     gtable_0.3.0      cellranger_1.1.0  rvest_0.3.6      
+[25] codetools_0.2-16  evaluate_0.14     knitr_1.30        fansi_0.4.1      
+[29] highr_0.8         broom_0.7.1       Rcpp_1.0.5        scales_1.1.1     
+[33] backports_1.1.10  jsonlite_1.7.1    bit_4.0.4         fs_1.5.0         
+[37] hms_0.5.3         digest_0.6.25     stringi_1.5.3     bookdown_0.20    
+[41] grid_4.0.1        bitops_1.0-6      cli_2.0.2         tools_4.0.1      
+[45] ROSE_0.0-3        magrittr_1.5      RCurl_1.98-1.2    crayon_1.3.4     
+[49] pkgconfig_2.0.3   ellipsis_0.3.1    data.table_1.13.0 xml2_1.3.2       
+[53] reprex_0.3.0      lubridate_1.7.9   assertthat_0.2.1  rmarkdown_2.4    
+[57] httr_1.4.2        rstudioapi_0.11   R6_2.4.1          compiler_4.0.1   </code></pre>
 </div>
 <div class="footnotes">
 <hr />

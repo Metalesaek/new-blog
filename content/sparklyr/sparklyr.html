@@ -10,6 +10,7 @@ comments: true
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 tags:
@@ -31,39 +32,49 @@ projects: []
 
 <div id="TOC">
 <ul>
-<li><a href="#introduction">Introduction</a></li>
-<li><a href="#installing-sparklyr">Installing sparklyr</a></li>
-<li><a href="#installing-spark">Installing spark</a></li>
-<li><a href="#connecting-to-spark">Connecting to spark</a></li>
-<li><a href="#importing-data">Importing data</a></li>
-<li><a href="#manipulating-data">Manipulating data</a></li>
-<li><a href="#disconnecting">Disconnecting</a></li>
-<li><a href="#saving-data">saving data</a></li>
-<li><a href="#example-of-modeling-in-spark">Example of modeling in spark</a></li>
-<li><a href="#streaming">Streaming</a></li>
+<li><a href="#introduction"><span class="toc-section-number">1</span> Introduction</a></li>
+<li><a href="#installing-sparklyr"><span class="toc-section-number">2</span> Installing sparklyr</a></li>
+<li><a href="#installing-spark"><span class="toc-section-number">3</span> Installing spark</a></li>
+<li><a href="#connecting-to-spark"><span class="toc-section-number">4</span> Connecting to spark</a></li>
+<li><a href="#importing-data"><span class="toc-section-number">5</span> Importing data</a></li>
+<li><a href="#manipulating-data"><span class="toc-section-number">6</span> Manipulating data</a></li>
+<li><a href="#disconnecting"><span class="toc-section-number">7</span> Disconnecting</a></li>
+<li><a href="#saving-data"><span class="toc-section-number">8</span> saving data</a></li>
+<li><a href="#example-of-modeling-in-spark"><span class="toc-section-number">9</span> Example of modeling in spark</a></li>
+<li><a href="#streaming"><span class="toc-section-number">10</span> Streaming</a></li>
 </ul>
 </div>
 
-<div id="introduction" class="section level2">
-<h2>Introduction</h2>
+<style type="text/css">
+strong {
+  color: Navy;
+}
+
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+</style>
+<div id="introduction" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Introduction</h1>
 <p>The programming language R has very powerful tools and functions to do almost every thing we want to do, such as wrangling , visualizing, modeling…etc. However, R such as all the classical languages, requires the whole data to be completely loaded into its memory before doing anything, and this is a big disadvantage when we deal with large data set using less powerful machine, so that any even small data manipulation is time consuming, and may be in some cases the data size can exceed the memory size and R fails even to load the data.</p>
 <p>However, there are two widely used engines for this type of data <strong>hadoop</strong> and <strong>spark</strong> which both use a distributed system to partition the data into different storage locations and distribute any computation processes among different machines (computing clusters), or among different CPU’s inside a single machine.</p>
-<p>Spark is more recent and recognized to be more faster than hadoop (2010). <strong>scala</strong> is its native language, but it can also support <strong>SQL</strong> and <strong>java</strong>. Obviously, if you do not know neither spark nor hadoop it would be obvious to choose spark . However, if you are R user and you do not want to spent time to learn the spark languages (scala, or sql) good news for you is that <strong>sparklyr</strong> package (or sparkR) is R interface for spark from which you can use the most of the R codes and other functions from some packages such as dplyr …etc.</p>
+<p>Spark is more recent and recognized to be more faster than hadoop (2010). <strong>scala</strong> is its native language, but it can also support <strong>SQL</strong> and <strong>java</strong>. If you do not know neither spark nor hadoop it would be obvious to choose spark . However, if you are R user and you do not want to spent time to learn the spark languages (scala, or sql) good news for you is that <strong>sparklyr</strong> package (or sparkR) is R interface for spark from which you can use the most of the R codes and other functions from some packages such as dplyr …etc.</p>
 <p>In this paper we will go step by step to learn how to use sparklyr by making use of some examples .</p>
 </div>
-<div id="installing-sparklyr" class="section level2">
-<h2>Installing sparklyr</h2>
+<div id="installing-sparklyr" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> Installing sparklyr</h1>
 <p>Such as any R package we call the function <strong>install.packages</strong>
 to install sparklyr, but before that make sure you have <strong>java</strong> installed in your system since the programming language <strong>scala</strong> is run by the java virtual machine.</p>
 <pre class="r"><code>#install.packages(&quot;sparklyr&quot;)</code></pre>
 </div>
-<div id="installing-spark" class="section level2">
-<h2>Installing spark</h2>
+<div id="installing-spark" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> Installing spark</h1>
 <p>We have deliberately installed sparklyr before spark to provide us with the function <strong>spark_install()</strong> that downloads, installs, and configures the latest version of spark at once.</p>
 <pre class="r"><code>#spark_install()</code></pre>
 </div>
-<div id="connecting-to-spark" class="section level2">
-<h2>Connecting to spark</h2>
+<div id="connecting-to-spark" class="section level1" number="4">
+<h1><span class="header-section-number">4</span> Connecting to spark</h1>
 <p>Usually, spark is designed to create a clusters using multiple machines either physical machines or virtual machines (in the cloud). However, it can also create a local cluster in your single machine by making use of the CPU’s, if exist in this machine, to speed up the data processing.</p>
 <p>Wherever the clusters are created (local or in cloud), the data processing functions work in the same way, and the only difference is how to create and interact with these clusters. Since this is the case, then we can get started in our local cluster to learn the most basic things of data science such as importing, analyzing, visualizing data, and perform machine learning models using spark via sparklyr.</p>
 <p>To connect to spark in the local mode we use the function <strong>spark_connect</strong> as follows.</p>
@@ -71,8 +82,8 @@ to install sparklyr, but before that make sure you have <strong>java</strong> in
 library(tidyverse)
 sc&lt;-spark_connect(master = &quot;local&quot;)</code></pre>
 </div>
-<div id="importing-data" class="section level2">
-<h2>Importing data</h2>
+<div id="importing-data" class="section level1" number="5">
+<h1><span class="header-section-number">5</span> Importing data</h1>
 <p>If the data is build-in R we load it to the spark memory using the function <strong>copy_to</strong>.</p>
 <pre class="r"><code>mydata&lt;-copy_to(sc,airquality)</code></pre>
 <p>Then R can get access to this data by the help of sparklyr, for example we can use the dplyr function <strong>glimpse</strong>.</p>
@@ -95,8 +106,8 @@ sdf_dim(card)</code></pre>
 <p>if we want to show what is going on in spark we call the function <strong>spark_web()</strong> that lead us to the spark website</p>
 <pre class="r"><code>#spark_web(sc)</code></pre>
 </div>
-<div id="manipulating-data" class="section level2">
-<h2>Manipulating data</h2>
+<div id="manipulating-data" class="section level1" number="6">
+<h1><span class="header-section-number">6</span> Manipulating data</h1>
 <p>With the help of sparklyr, we can access very easily to the data into spark memory by using the dplyr functions. Let’s apply some manipulations on the data <strong>card</strong> like, for instance, filtering the data using the variable <strong>Time</strong> , then computing the mean of <strong>Amount</strong> for each class label in the variable <strong>Class</strong>.</p>
 <pre class="r"><code>card %&gt;%
   filter(Time &lt;= mean(Time,na.rm = TRUE))%&gt;%
@@ -114,7 +125,7 @@ sdf_dim(card)</code></pre>
   summarise(Class_avg=mean(Amount,na.rm=TRUE))%&gt;%
   collect()%&gt;%
   plot(col=&quot;red&quot;,pch=19,main = &quot;Class average vs Class&quot;)</code></pre>
-<p><img src="/sparklyr/sparklyr_files/figure-html/unnamed-chunk-9-1.svg" width="576" /></p>
+<p><img src="/sparklyr/sparklyr_files/figure-html/unnamed-chunk-10-1.svg" width="576" /></p>
 <p>However , we can plot the sparklyr outputs without having to remove them to R memory by using the <strong>dbplot</strong> functions, since most of the functions of this package are supported by sparklyr. Let’s for example plot the mean of Amount by Class for cards transaction that have time less than the mean.</p>
 <pre class="r"><code>library(dbplot)
 card %&gt;%
@@ -123,21 +134,21 @@ card %&gt;%
 <pre><code>## Warning: Missing values are always removed in SQL.
 ## Use `mean(x, na.rm = TRUE)` to silence this warning
 ## This warning is displayed only once per session.</code></pre>
-<p><img src="/sparklyr/sparklyr_files/figure-html/unnamed-chunk-10-1.svg" width="576" /></p>
+<p><img src="/sparklyr/sparklyr_files/figure-html/unnamed-chunk-11-1.svg" width="576" /></p>
 <p>As we see the Amount mean of fraudulent cards is higher than that of regular cards.</p>
 </div>
-<div id="disconnecting" class="section level2">
-<h2>Disconnecting</h2>
+<div id="disconnecting" class="section level1" number="7">
+<h1><span class="header-section-number">7</span> Disconnecting</h1>
 <p>each time you finish your work think to disconnect from spark to save your resources as follows.</p>
 <pre class="r"><code>#spark_disconnect(sc)</code></pre>
 </div>
-<div id="saving-data" class="section level2">
-<h2>saving data</h2>
+<div id="saving-data" class="section level1" number="8">
+<h1><span class="header-section-number">8</span> saving data</h1>
 <p>Sparklyr provides functions to save files directly from spark memory into our directory. For example, to save data in csv file we use spark function <strong>spark_write_csv</strong> (we can save in other type of formats such as <strong>spark_write_parquet</strong>,…etc) as follows</p>
 <pre class="r"><code>#spark_write_csv(card,&quot;card.csv&quot;)</code></pre>
 </div>
-<div id="example-of-modeling-in-spark" class="section level2">
-<h2>Example of modeling in spark</h2>
+<div id="example-of-modeling-in-spark" class="section level1" number="9">
+<h1><span class="header-section-number">9</span> Example of modeling in spark</h1>
 <p>For machine learning models spark has its own library <strong>MLlib</strong> that has almost every thing we need so that we do not need the library <strong>caret</strong>.</p>
 <p>To illustrate how do we perform a machine learning model, we train a logistic regression model to predict the fraudulent cards form the data <strong>card</strong>.</p>
 <p>first let’s split the data between training set and testing set as follows, and to do this we use the function <strong>sdf_random_split</strong> as follows</p>
@@ -168,8 +179,9 @@ test&lt;-partitions$test</code></pre>
 ##        Amount 
 ##  1.039041e-03</code></pre>
 <p>Fortunately, sparklyr also supports the functions of <strong>broom</strong> package so that We can get nicer table using the function <strong>tidy</strong>.</p>
-<pre class="r"><code>library(broom)
-tidy(model_in_spark)</code></pre>
+<pre class="r"><code>library(broom)</code></pre>
+<pre><code>## Warning: package &#39;broom&#39; was built under R version 4.0.2</code></pre>
+<pre class="r"><code>tidy(model_in_spark)</code></pre>
 <pre><code>## # A tibble: 31 x 2
 ##    features    coefficients
 ##    &lt;chr&gt;              &lt;dbl&gt;
@@ -214,7 +226,7 @@ model_summary</code></pre>
 ##  - weighted_true_positive_rate()</code></pre>
 <p>To extract the metric that we want we use <strong>$</strong>. we can extract for example <strong>the accuracy rate</strong>, the <strong>AUC</strong> or the <strong>roc</strong></p>
 <pre class="r"><code>model_summary$area_under_roc()</code></pre>
-<pre><code>## [1] 0.9765234</code></pre>
+<pre><code>## [1] 0.9765322</code></pre>
 <pre class="r"><code>model_summary$accuracy()</code></pre>
 <pre><code>## [1] 0.999149</code></pre>
 <pre class="r"><code>model_summary$roc()</code></pre>
@@ -239,13 +251,13 @@ ggplot(aes(FPR,TPR ))+
   geom_line(col=&quot;blue&quot;)+
   geom_abline(intercept = 0,slope = 1,col=&quot;red&quot;)+
   ggtitle(&quot;the roc of model_in_spark &quot;)</code></pre>
-<p><img src="/sparklyr/sparklyr_files/figure-html/unnamed-chunk-19-1.svg" width="576" /></p>
+<p><img src="/sparklyr/sparklyr_files/figure-html/unnamed-chunk-20-1.svg" width="576" /></p>
 <p>High accuracy rate for the training set can be only the result of overfitting problem. the accuracy rate using the testing set is the more reliable one.</p>
 <pre class="r"><code>pred&lt;-ml_evaluate(model_in_spark,test)
 pred$accuracy()</code></pre>
 <pre><code>## [1] 0.9994722</code></pre>
 <pre class="r"><code>pred$area_under_roc()</code></pre>
-<pre><code>## [1] 0.9692158</code></pre>
+<pre><code>## [1] 0.9693565</code></pre>
 <p>Finally, to get the prediction we use the function <strong>ml_predict</strong></p>
 <pre class="r"><code>pred&lt;-ml_predict(model_in_spark,test)%&gt;%
 select(.,Class,prediction,probability_0,probability_1)
@@ -271,10 +283,10 @@ pred  </code></pre>
   geom_point(size=0.1)+
   geom_jitter()+
   ggtitle(&quot;Actual vs predicted&quot;)</code></pre>
-<p><img src="/sparklyr/sparklyr_files/figure-html/unnamed-chunk-22-1.svg" width="576" /></p>
+<p><img src="/sparklyr/sparklyr_files/figure-html/unnamed-chunk-23-1.svg" width="576" /></p>
 </div>
-<div id="streaming" class="section level2">
-<h2>Streaming</h2>
+<div id="streaming" class="section level1" number="10">
+<h1><span class="header-section-number">10</span> Streaming</h1>
 <p>Among the most powrful properties of spark is that can handle streaming data very easily. to show that let’s use a simple example by creating a folder to contain the input for some data transformations and then we save the output in another folder so that each time we add files to the first folder the above transformations will be excuted automotically and the output will be saved in the last folder.</p>
 <pre class="r"><code>#dir.create(&quot;raw_data&quot;)</code></pre>
 <p>once the file is created we split the data <strong>card</strong> into tow parts the first part will be exported now to the folder <strong>raw_data</strong>, and then we apply some operations using spark functions <strong>stream_read_csv</strong> and <strong>spark_wrirte_csv</strong> as follows .</p>

@@ -10,6 +10,7 @@ comments: true
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 tags:
@@ -32,7 +33,19 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```
 
-## Introduction
+
+```{css, echo=FALSE}
+strong {
+  color: Navy;
+}
+
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+```
+
+# Introduction
 
 
 The programming language R has very powerful tools and functions to do almost every thing we want to do, such as wrangling , visualizing, modeling...etc. However, R such as all the classical languages, requires the whole data to be completely loaded into its memory before doing anything, and this is a big disadvantage when we deal with large data set using less powerful machine, so that any even small data manipulation is time consuming, and may be in some cases the data size can exceed the memory size and R fails even to load the data.
@@ -41,11 +54,11 @@ The programming language R has very powerful tools and functions to do almost ev
 However, there are two widely used engines for this type of data **hadoop** and **spark** which both use a distributed system to partition the data into different storage locations and distribute any computation processes among different machines (computing clusters), or among different CPU’s inside a single machine.
 
 
-Spark is more recent and recognized to be more faster than hadoop (2010). **scala** is its native language, but it can also support **SQL** and **java**. Obviously, if you do not know neither spark nor hadoop it would be obvious to choose spark . However,  if you are R user and you do  not want to spent time to learn the spark languages (scala, or sql) good news for you is that **sparklyr**  package (or sparkR) is R interface for spark from which you can use the most of the R codes and other functions from some packages such as dplyr …etc.
+Spark is more recent and recognized to be more faster than hadoop (2010). **scala** is its native language, but it can also support **SQL** and **java**. If you do not know neither spark nor hadoop it would be obvious to choose spark . However,  if you are R user and you do  not want to spent time to learn the spark languages (scala, or sql) good news for you is that **sparklyr**  package (or sparkR) is R interface for spark from which you can use the most of the R codes and other functions from some packages such as dplyr …etc.
 
 In this paper we will go step by step to learn how to use sparklyr by making use of some examples .   
 
-## Installing sparklyr
+# Installing sparklyr
 
 Such as any R package we call the function **install.packages**
  to install sparklyr, but before that make sure you have **java** installed in your system since the programming language **scala** is run by the java virtual machine.
@@ -55,7 +68,7 @@ Such as any R package we call the function **install.packages**
 ```
  
 
-## Installing spark
+# Installing spark
 
 
 We have deliberately installed  sparklyr before  spark to provide us with the function **spark_install()** that downloads, installs, and configures the latest version of spark at once.
@@ -64,7 +77,7 @@ We have deliberately installed  sparklyr before  spark to provide us with the fu
 #spark_install()
 ```
 
-## Connecting to spark
+# Connecting to spark
 
 Usually, spark is designed to create a clusters using multiple machines either physical machines or virtual machines (in the cloud). However, it can also create a local cluster in your single machine by making use of the CPU’s, if exist in this machine, to speed up the data processing. 
 
@@ -82,7 +95,7 @@ sc<-spark_connect(master = "local")
 ```
 
 
-## Importing data
+# Importing data
 
 If the data is build-in R we load it to the spark memory using the function **copy_to**.
 
@@ -118,7 +131,7 @@ if we want to show what is going on in spark we call the function **spark_web()*
 ```
 
 
-## Manipulating data
+# Manipulating data
 
 With the help of sparklyr, we can access very easily to the data into spark memory by using the dplyr functions. Let's apply some  manipulations on the data **card** like, for instance, filtering the data using the variable **Time** , then computing the mean of **Amount** for each class label in the variable **Class**.
 
@@ -158,7 +171,7 @@ card %>%
 
 As we see the Amount mean of fraudulent cards is higher than that of regular cards. 
 
-## Disconnecting
+# Disconnecting
 
 each time you finish your work think to disconnect from spark to save your resources as follows.
 
@@ -167,7 +180,7 @@ each time you finish your work think to disconnect from spark to save your resou
 ```
 
 
-## saving data
+# saving data
 
 Sparklyr provides functions to save files directly from spark memory into our directory. For example, to save data in csv file we use spark function **spark_write_csv** (we can save in other type of formats such as **spark_write_parquet**,...etc) as follows
 
@@ -177,7 +190,7 @@ Sparklyr provides functions to save files directly from spark memory into our di
 ```
 
 
-## Example of modeling in spark 
+# Example of modeling in spark 
 
 
 For machine learning models spark has its own library **MLlib** that has almost every thing  we need so that we do not need the library **caret**.
@@ -285,7 +298,7 @@ pred%>%
 
 
 
-## Streaming
+# Streaming
 
 Among the most powrful properties of spark is that can handle streaming data very easily. to show that let's use a simple example by creating a folder to contain the input for some data transformations and then we save the output in another folder so that each time we add files to the first folder the above transformations will be excuted automotically and the output will be saved in the last folder.
 
