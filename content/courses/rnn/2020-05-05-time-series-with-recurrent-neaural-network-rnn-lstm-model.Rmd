@@ -13,6 +13,7 @@ summary: 'The classical methods for predicting univariate time series are ARIMA 
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 authors: []
@@ -31,7 +32,18 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-## Introduction
+```{css, echo=FALSE}
+strong {
+  color: Navy;
+}
+
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+```
+
+# Introduction
 The classical methods for predicting univariate  time series are [ARIMA](https://otexts.com/fpp2/arima.html) models (under linearity assumption and provided that the non stationarity is of type DS) that use the autocorrelation function (up to some order) to predict the target variable based on its own past values (Autoregressive part) and the past values of the errors (moving average part) in a linear function . However, the hardest step in ARIMA models is to derive stationary series from non stationary series that exhibits less well defined trend (deterministic or stochastic) or seasonality. The RNN model, proposed by John Hopfield (1982), is a deep learning model that does not need the above requirements (the type of non stationarity and linearity) and can capture and model the memory of the time series, which is the main characteristic of some type of sequence data, in addition to time series, such as **text data**, **image captioning**, **speech recognition** .. etc.
 
 The basic idea behind RNN is very simple (As described in the plot below). At each time step **t** the model compute a state value $h_t$ that combines (in linear combination) the previous state $h_{t-1}$ (which contains all the memory available at time **t-1** ) and the current input $x_t$ (which is the current value of the time series), passing then the result to the activation function **tanh** (to capture any nonlinearity relations). The state at each time step t thus can formally be expressed as follows:
@@ -50,7 +62,7 @@ plot(img)
 
 
 
-## Data preparation
+# Data preparation
 
 First let's call the packages needed for our analysis
 
@@ -101,7 +113,7 @@ pacf(data)
 As you know the ACF is related to the MA part and PACF to the AR part, so since in the pacf we have one bar that exceeds far away the confidence interval we are confident that our data has unit root and we can get ride of it by differencing the data by one. In ARIMA terms the data should be integrated by 1 (d=1), and this the **I**  part of arima. In addition, since we do not have a decay of bars in PACF, the model would not have any lag included in the AR part.
 Whereas, from the ACF plot, all the bars are highly far from the confidence interval then the model would have many lags of MA part.
 
-## ARIMA model
+# ARIMA model
 
 To fit an ARIMA model we have to determine the lag of the AR (p) and MA(q) components and how many times we integrate the series to be stationary (d). Fortunately, we do not have to worry about these issues, we leave everything to the **forcast** package that provides a fast way to get the best model by calling the function **auto.arima**. But before that let's held out the last 100 observations to be used as testing data in order to compare the quality of this model and the RNN model.
 
@@ -222,7 +234,7 @@ Finally we should save the **df_eval** table with the original and the fitted va
 ```
 
 
-## RNN model
+# RNN model
 
 
 As an alternative to ARIMA prediction method discussed above, the deep learning RNN method can also take into account the memory of the time series. Unlike the classical feedforward networks that process each single input independently, the RNN takes a bunch of inputs that supposed to be in one sequence and process them together as showed in the first plot. In keras this step can be achieved by **layer_simple_rnn** (Chollet, 2017, p167]. 
@@ -268,7 +280,7 @@ x_train <- array_reshape(x_train, dim = c((length(data_train)-maxlen-1), maxlen,
 dim(x_train)
 ```
 
-### Model architecture  
+## Model architecture  
 
 
 When it comes to deep learning models, there is a large space for hyperparameters to be defined and the results are heavily depending on these hyperparameters, such as the optimal number of layers, the optimal number of nodes in each layer, the suitable activation function, the suitable loss function, the best optimizer, the best regularization techniques, the best random initialization , ...etc. Unfortunately, we do not have yet an exact rule to decide about these hyperparameters, and they depend on the problem under study, the data at hand, and the experience of the modeler. In our case, for instance, our data is very simple, and, actually does not require complex architecture, we will thus use only one hidden rnn layer with 10 nodes, the loss function will be the mean square error **mse** , the optimizer will be **adam**,  and the metric will be the mean absolute error **mae**.
@@ -284,7 +296,7 @@ model %>%
 summary(model)
 ```
 
-### Model training 
+## Model training 
 
 Now let's compile and run the model with 5 epochs, batch_size of 32 instances at a time to update the weights, and to keep track of the model performance we held out 10% of the training data as validation set.
 
@@ -312,7 +324,7 @@ since each time we rerun the model we will get different results, so we should s
 rnn_model <- load_model_hdf5("rnn_model.h5")
 ```
 
-### Prediction
+## Prediction
 
 In order to get the prediction of the last 100 data point, we will predict the entire data then we compute the **rmse** for the last 100 predictions.
 
@@ -337,7 +349,7 @@ df_eval_rnn <- tibble::tibble(y_rnn=y_train2[(length(y_train2)-99):length(y_trai
                           yhat_rnn=as.vector(pred)[(length(y_train2)-99):length(y_train2)])
 ```
 
-## results comparison
+# results comparison
 
 we can now compare the prediction of the last 100 data points using this model with the predicted values for the same data points using the ARIMA model. We first load the above data predicted with ARIMA model and join every thing in one data frame, then we use two metrics to compare, **rmse**, **mae** which are easily available in **ModelMetrics** package.
 
@@ -356,12 +368,19 @@ df
 
 As we see, The two models are closer to each other. However, if we use the **rmse**, which is the popular metrics used with continuous variables the rnn model is better, but with **mae** they are approximately  the same.
 
-## Conclusion
+# Conclusion
 
 Even though this data is very simple and does not need an RNN model, and it can be predicted with the classical ARIMA models, but it is used here for pedagogic purposes to well understand how the RNN works, and how the data should be processed to be ingested by **keras**.  However, rnn model suffers from a major problem when running a large sequence known as **Vanishing gradient** and **exploding gradient**. In other words, with the former,  when using the chain rule to compute the gradients, if the derivatives have small values then multiplying a large number of small values (as the length of the sequence) yields very tiny values that cause the network to be slowly trainable or even untrainable. The opposite is true when we face the latter problem, in this case we will get very large values and the network never converges.        
 Soon I will post an article with multivariate time series by implementing Long Short term memory **LSTM** model that is supposed to overcome the above problems that faces simple rnn model .
 
-## Further reading
+# Further reading
 
 * Froncois Chollet, Deep learning with R, Meap edition, 2017, p167
 * Ian Godfollow et al, Deep Learning, http://www.deeplearningbook.org/ 
+
+# Session info
+
+```{r}
+sessionInfo()
+```
+

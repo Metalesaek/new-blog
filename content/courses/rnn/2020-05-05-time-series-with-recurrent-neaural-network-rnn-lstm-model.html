@@ -13,6 +13,7 @@ summary: 'The classical methods for predicting univariate time series are ARIMA 
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 authors: []
@@ -29,24 +30,35 @@ projects: []
 
 <div id="TOC">
 <ul>
-<li><a href="#introduction">Introduction</a></li>
-<li><a href="#data-preparation">Data preparation</a></li>
-<li><a href="#arima-model">ARIMA model</a></li>
-<li><a href="#rnn-model">RNN model</a>
+<li><a href="#introduction"><span class="toc-section-number">1</span> Introduction</a></li>
+<li><a href="#data-preparation"><span class="toc-section-number">2</span> Data preparation</a></li>
+<li><a href="#arima-model"><span class="toc-section-number">3</span> ARIMA model</a></li>
+<li><a href="#rnn-model"><span class="toc-section-number">4</span> RNN model</a>
 <ul>
-<li><a href="#reshape-the-time-series">Reshape the time series</a></li>
-<li><a href="#model-architecture">Model architecture</a></li>
-<li><a href="#model-training">Model training</a></li>
-<li><a href="#prediction">Prediction</a></li>
+<li><a href="#reshape-the-time-series"><span class="toc-section-number">4.0.1</span> Reshape the time series</a></li>
+<li><a href="#model-architecture"><span class="toc-section-number">4.1</span> Model architecture</a></li>
+<li><a href="#model-training"><span class="toc-section-number">4.2</span> Model training</a></li>
+<li><a href="#prediction"><span class="toc-section-number">4.3</span> Prediction</a></li>
 </ul></li>
-<li><a href="#results-comparison">results comparison</a></li>
-<li><a href="#conclusion">Conclusion</a></li>
-<li><a href="#further-reading">Further reading</a></li>
+<li><a href="#results-comparison"><span class="toc-section-number">5</span> results comparison</a></li>
+<li><a href="#conclusion"><span class="toc-section-number">6</span> Conclusion</a></li>
+<li><a href="#further-reading"><span class="toc-section-number">7</span> Further reading</a></li>
+<li><a href="#session-info"><span class="toc-section-number">8</span> Session info</a></li>
 </ul>
 </div>
 
-<div id="introduction" class="section level2">
-<h2>Introduction</h2>
+<style type="text/css">
+strong {
+  color: Navy;
+}
+
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+</style>
+<div id="introduction" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Introduction</h1>
 <p>The classical methods for predicting univariate time series are <a href="https://otexts.com/fpp2/arima.html">ARIMA</a> models (under linearity assumption and provided that the non stationarity is of type DS) that use the autocorrelation function (up to some order) to predict the target variable based on its own past values (Autoregressive part) and the past values of the errors (moving average part) in a linear function . However, the hardest step in ARIMA models is to derive stationary series from non stationary series that exhibits less well defined trend (deterministic or stochastic) or seasonality. The RNN model, proposed by John Hopfield (1982), is a deep learning model that does not need the above requirements (the type of non stationarity and linearity) and can capture and model the memory of the time series, which is the main characteristic of some type of sequence data, in addition to time series, such as <strong>text data</strong>, <strong>image captioning</strong>, <strong>speech recognition</strong> .. etc.</p>
 <p>The basic idea behind RNN is very simple (As described in the plot below). At each time step <strong>t</strong> the model compute a state value <span class="math inline">\(h_t\)</span> that combines (in linear combination) the previous state <span class="math inline">\(h_{t-1}\)</span> (which contains all the memory available at time <strong>t-1</strong> ) and the current input <span class="math inline">\(x_t\)</span> (which is the current value of the time series), passing then the result to the activation function <strong>tanh</strong> (to capture any nonlinearity relations). The state at each time step t thus can formally be expressed as follows:</p>
 <p><span class="math display">\[h_t=tanh(W_h.h_{t-1}+W_x.x_t+b)\]</span></p>
@@ -55,18 +67,20 @@ Similarely, the output <span class="math display">\[y_t\]</span> will be compute
 <span class="math display">\[y_t=W_y.h_t\]</span></p>
 <pre class="r"><code>img &lt;- EBImage::readImage(&quot;C://Users/dell/Documents/new-blog/content/courses/rnn/rnn_plot.jpg&quot;)
 plot(img)</code></pre>
-<p><img src="/courses/rnn/2020-05-05-time-series-with-recurrent-neaural-network-rnn-lstm-model_files/figure-html/unnamed-chunk-1-1.svg" width="576" /></p>
+<p><img src="/courses/rnn/2020-05-05-time-series-with-recurrent-neaural-network-rnn-lstm-model_files/figure-html/unnamed-chunk-2-1.svg" width="576" /></p>
 </div>
-<div id="data-preparation" class="section level2">
-<h2>Data preparation</h2>
+<div id="data-preparation" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> Data preparation</h1>
 <p>First let’s call the packages needed for our analysis</p>
 <pre class="r"><code>ssh &lt;- suppressPackageStartupMessages
 ssh(library(timeSeries))
 ssh(library(tseries))
 ssh(library(aTSA))
-ssh(library(forecast))
-ssh(library(rugarch))
-ssh(library(ModelMetrics))
+ssh(library(forecast))</code></pre>
+<pre><code>## Warning: package &#39;forecast&#39; was built under R version 4.0.2</code></pre>
+<pre class="r"><code>ssh(library(rugarch))</code></pre>
+<pre><code>## Warning: package &#39;rugarch&#39; was built under R version 4.0.2</code></pre>
+<pre class="r"><code>ssh(library(ModelMetrics))
 ssh(library(keras))</code></pre>
 <p>In this article we will use the data <strong>USDCHF</strong> from the <strong>timeSeries</strong> package which is the univariate series of the intraday foreign exchange rates between US dollar and Swiss franc with <strong>62496</strong> observations.</p>
 <pre class="r"><code>data(USDCHF)
@@ -76,21 +90,21 @@ length(USDCHF)</code></pre>
 <pre class="r"><code>data(USDCHF)
 data &lt;- ts(USDCHF, frequency = 365)
 plot(data)</code></pre>
-<p><img src="/courses/rnn/2020-05-05-time-series-with-recurrent-neaural-network-rnn-lstm-model_files/figure-html/unnamed-chunk-4-1.svg" width="576" /></p>
+<p><img src="/courses/rnn/2020-05-05-time-series-with-recurrent-neaural-network-rnn-lstm-model_files/figure-html/unnamed-chunk-5-1.svg" width="576" /></p>
 <p>This series seems to have a trend and it is not stationary, but let’s verify this by the <a href="https://faculty.washington.edu/ezivot/econ584/notes/unitroot.pdf">dickey fuller</a> and <a href="https://faculty.washington.edu/ezivot/econ584/notes/unitroot.pdf">philip perron</a> tests</p>
 <pre class="r"><code>adf.test(data)
 pp.test(data )</code></pre>
 <p>Both tests confirm that the data has unit roots(high p-value: we do not reject the null hypothesis). We can also check the correlogram of the autocorrelation function
 <a href="https://towardsdatascience.com/significance-of-acf-and-pacf-plots-in-time-series-analysis-2fa11a5d10a8">acf</a> and the Partial autocorrelation function <a href="https://towardsdatascience.com/significance-of-acf-and-pacf-plots-in-time-series-analysis-2fa11a5d10a8">pacf</a> as follows:</p>
 <pre class="r"><code>acf(data)</code></pre>
-<p><img src="/courses/rnn/2020-05-05-time-series-with-recurrent-neaural-network-rnn-lstm-model_files/figure-html/unnamed-chunk-6-1.svg" width="576" /></p>
+<p><img src="/courses/rnn/2020-05-05-time-series-with-recurrent-neaural-network-rnn-lstm-model_files/figure-html/unnamed-chunk-7-1.svg" width="576" /></p>
 <pre class="r"><code>pacf(data)</code></pre>
-<p><img src="/courses/rnn/2020-05-05-time-series-with-recurrent-neaural-network-rnn-lstm-model_files/figure-html/unnamed-chunk-6-2.svg" width="576" /></p>
+<p><img src="/courses/rnn/2020-05-05-time-series-with-recurrent-neaural-network-rnn-lstm-model_files/figure-html/unnamed-chunk-7-2.svg" width="576" /></p>
 <p>As you know the ACF is related to the MA part and PACF to the AR part, so since in the pacf we have one bar that exceeds far away the confidence interval we are confident that our data has unit root and we can get ride of it by differencing the data by one. In ARIMA terms the data should be integrated by 1 (d=1), and this the <strong>I</strong> part of arima. In addition, since we do not have a decay of bars in PACF, the model would not have any lag included in the AR part.
 Whereas, from the ACF plot, all the bars are highly far from the confidence interval then the model would have many lags of MA part.</p>
 </div>
-<div id="arima-model" class="section level2">
-<h2>ARIMA model</h2>
+<div id="arima-model" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> ARIMA model</h1>
 <p>To fit an ARIMA model we have to determine the lag of the AR (p) and MA(q) components and how many times we integrate the series to be stationary (d). Fortunately, we do not have to worry about these issues, we leave everything to the <strong>forcast</strong> package that provides a fast way to get the best model by calling the function <strong>auto.arima</strong>. But before that let’s held out the last 100 observations to be used as testing data in order to compare the quality of this model and the RNN model.</p>
 <pre class="r"><code>data_test &lt;- data[(length(data)-99):length(data)]
 data_train &lt;- data[1:(length(data)-99-1)]</code></pre>
@@ -115,7 +129,7 @@ summary(model_arima)</code></pre>
 <p>As expected this model is an ARIMA(0,1,2) integrated by 1 (differenced series is now stationary) and has two MA lags without <strong>drift</strong> (constant). The output also has some metric values like Root mean square error <strong>RMSE</strong> and mean absolute error <strong>MAE</strong> which are the most popular ones. we will use later on this metric to compare this model with the RNN model.
 To validate this model we have to make sure that the residuals are white noise without any problems such as autocorrelation or <a href="https://www.investopedia.com/terms/h/heteroskedasticity.asp">heterskedasticity</a>. Thankfully to <strong>forecast</strong> package we can check the residual straightforwardly by calling the function <strong>checkresiduals</strong></p>
 <pre class="r"><code>checkresiduals(model_arima)</code></pre>
-<p><img src="/courses/rnn/2020-05-05-time-series-with-recurrent-neaural-network-rnn-lstm-model_files/figure-html/unnamed-chunk-9-1.svg" width="576" /></p>
+<p><img src="/courses/rnn/2020-05-05-time-series-with-recurrent-neaural-network-rnn-lstm-model_files/figure-html/unnamed-chunk-10-1.svg" width="576" /></p>
 <pre><code>## 
 ##  Ljung-Box test
 ## 
@@ -126,7 +140,7 @@ To validate this model we have to make sure that the residuals are white noise w
 <p>Since the p-value is far larger than the significance level 5% we do not reject the null hypothesis that the errors are not autocorrelated. However, by looking at the ACF plot we have some bars that go outside the confidence interval, but this can be expected by the significance level of 5% (as false positive). So we can confirm the non correlation with 95% of confidence.
 For possible heteroskedasticity we use <a href="https://hal.archives-ouvertes.fr/hal-00588680/document">ARCH_LM</a> statistic from the package <strong>aTSA</strong> package.</p>
 <pre class="r"><code>arch.test(arima(data_train, order = c(0,1,2)))</code></pre>
-<p><img src="/courses/rnn/2020-05-05-time-series-with-recurrent-neaural-network-rnn-lstm-model_files/figure-html/unnamed-chunk-10-1.svg" width="576" /></p>
+<p><img src="/courses/rnn/2020-05-05-time-series-with-recurrent-neaural-network-rnn-lstm-model_files/figure-html/unnamed-chunk-11-1.svg" width="576" /></p>
 <p>We see that both test are highly significant (we reject the null hypothesis of homoskedasticity), so the above arima model is not able to capture such pattern. That is why we should join to the above model another model that keeps track of this type of patterns which is called <a href="https://medium.com/auquan/time-series-analysis-for-finance-arch-garch-models-822f87f1d755">GARCH</a> model.
 The garch model attempts to model the residuals of the ARIMA model with the general following formula:
 <span class="math display">\[\epsilon_t=w_t\sqrt{h_t}\]</span>
@@ -246,7 +260,7 @@ we can check the residuals of this model with box test.</p>
 <p>With significance level of 5% we do not reject the null hypothesis of independence.
 As an alternative we can inspect the acf of the residuals.</p>
 <pre class="r"><code>acf(model_garch$residuals[-1])</code></pre>
-<p><img src="/courses/rnn/2020-05-05-time-series-with-recurrent-neaural-network-rnn-lstm-model_files/figure-html/unnamed-chunk-13-1.svg" width="576" /></p>
+<p><img src="/courses/rnn/2020-05-05-time-series-with-recurrent-neaural-network-rnn-lstm-model_files/figure-html/unnamed-chunk-14-1.svg" width="576" /></p>
 <p>The easiest way to get prediction from our model is by making use of the <strong>rugarch</strong> package. First, we specify the model with the parameters obtained above (the different lags)</p>
 <pre class="r"><code># garch1 &lt;- ugarchspec(mean.model = list(armaOrder = c(0,2), include.mean = FALSE), 
 # variance.model = list(garchOrder = c(1,1))) </code></pre>
@@ -271,12 +285,12 @@ e_t\sim N(0,\hat\sigma_t^2) \\
 <p>Finally we should save the <strong>df_eval</strong> table with the original and the fitted values of the data_test for further use.</p>
 <pre class="r"><code>#write.csv(df_eval, &quot;df_eval.csv&quot;)</code></pre>
 </div>
-<div id="rnn-model" class="section level2">
-<h2>RNN model</h2>
+<div id="rnn-model" class="section level1" number="4">
+<h1><span class="header-section-number">4</span> RNN model</h1>
 <p>As an alternative to ARIMA prediction method discussed above, the deep learning RNN method can also take into account the memory of the time series. Unlike the classical feedforward networks that process each single input independently, the RNN takes a bunch of inputs that supposed to be in one sequence and process them together as showed in the first plot. In keras this step can be achieved by <strong>layer_simple_rnn</strong> (Chollet, 2017, p167].
 This means we have to decide the length of the sequence, in other words how far back we think that the current value is depending on (the memory of the time series). In our case we think that 7 days values should be satisfactory to predict the current value.</p>
-<div id="reshape-the-time-series" class="section level3">
-<h3>Reshape the time series</h3>
+<div id="reshape-the-time-series" class="section level3" number="4.0.1">
+<h3><span class="header-section-number">4.0.1</span> Reshape the time series</h3>
 <p>The first thing we do is organizing the data in such way that the model knows what part is considered as sequences to be processed by the rnn layer, and what part is the target variable. To do so we reorganize the time series into a matrix where each row is a single input , and the columns contain the lagged values (of the target variable) up to 7 and the target variable in the last column. Consequently, The total number of rows will be the <strong>length(data)-maxlen-1</strong>, where maxlen refers to the length of each sequences (constant) which here is equal to 7.</p>
 <p>Let’s first create an empty matrix</p>
 <pre class="r"><code>maxlen &lt;- 7
@@ -304,8 +318,8 @@ y_train &lt;- exch_matrix[, ncol(exch_matrix)]</code></pre>
 dim(x_train)</code></pre>
 <pre><code>## [1] 62388     7     1</code></pre>
 </div>
-<div id="model-architecture" class="section level3">
-<h3>Model architecture</h3>
+<div id="model-architecture" class="section level2" number="4.1">
+<h2><span class="header-section-number">4.1</span> Model architecture</h2>
 <p>When it comes to deep learning models, there is a large space for hyperparameters to be defined and the results are heavily depending on these hyperparameters, such as the optimal number of layers, the optimal number of nodes in each layer, the suitable activation function, the suitable loss function, the best optimizer, the best regularization techniques, the best random initialization , …etc. Unfortunately, we do not have yet an exact rule to decide about these hyperparameters, and they depend on the problem under study, the data at hand, and the experience of the modeler. In our case, for instance, our data is very simple, and, actually does not require complex architecture, we will thus use only one hidden rnn layer with 10 nodes, the loss function will be the mean square error <strong>mse</strong> , the optimizer will be <strong>adam</strong>, and the metric will be the mean absolute error <strong>mae</strong>.</p>
 <p><strong>Note</strong> : with large and complex time series it might be needed to stack many rnn layers.</p>
 <pre class="r"><code>model &lt;- keras_model_sequential()
@@ -329,8 +343,8 @@ summary(model)</code></pre>
 ## Non-trainable params: 0
 ## ________________________________________________________________________________</code></pre>
 </div>
-<div id="model-training" class="section level3">
-<h3>Model training</h3>
+<div id="model-training" class="section level2" number="4.2">
+<h2><span class="header-section-number">4.2</span> Model training</h2>
 <p>Now let’s compile and run the model with 5 epochs, batch_size of 32 instances at a time to update the weights, and to keep track of the model performance we held out 10% of the training data as validation set.</p>
 <pre class="r"><code>model %&gt;% compile(
   loss = &quot;mse&quot;,
@@ -343,8 +357,8 @@ summary(model)</code></pre>
 <pre class="r"><code>#save_model_hdf5(model, &quot;rnn_model.h5&quot;)
 rnn_model &lt;- load_model_hdf5(&quot;rnn_model.h5&quot;)</code></pre>
 </div>
-<div id="prediction" class="section level3">
-<h3>Prediction</h3>
+<div id="prediction" class="section level2" number="4.3">
+<h2><span class="header-section-number">4.3</span> Prediction</h2>
 <p>In order to get the prediction of the last 100 data point, we will predict the entire data then we compute the <strong>rmse</strong> for the last 100 predictions.</p>
 <pre class="r"><code>maxlen &lt;- 7
 exch_matrix2&lt;- matrix(0, nrow = length(data)-maxlen-1, ncol = maxlen+1) 
@@ -362,8 +376,8 @@ df_eval_rnn &lt;- tibble::tibble(y_rnn=y_train2[(length(y_train2)-99):length(y_t
                           yhat_rnn=as.vector(pred)[(length(y_train2)-99):length(y_train2)])</code></pre>
 </div>
 </div>
-<div id="results-comparison" class="section level2">
-<h2>results comparison</h2>
+<div id="results-comparison" class="section level1" number="5">
+<h1><span class="header-section-number">5</span> results comparison</h1>
 <p>we can now compare the prediction of the last 100 data points using this model with the predicted values for the same data points using the ARIMA model. We first load the above data predicted with ARIMA model and join every thing in one data frame, then we use two metrics to compare, <strong>rmse</strong>, <strong>mae</strong> which are easily available in <strong>ModelMetrics</strong> package.</p>
 <p><strong>Note</strong>: You might want to ask why we only use 100 data points for predictions where usually, in machine learning, we use a large number sometimes 20% of the entire data. The answer is because of the nature of the ARIMA models which are a short term prediction models, especially with financial data that are characterized by the high and instable volatility (that is why we use garch model above).</p>
 <pre class="r"><code>df_eval &lt;- read.csv(&quot;df_eval.csv&quot;)
@@ -380,15 +394,86 @@ df</code></pre>
 ## 2 RNN   0.00442 0.00401</code></pre>
 <p>As we see, The two models are closer to each other. However, if we use the <strong>rmse</strong>, which is the popular metrics used with continuous variables the rnn model is better, but with <strong>mae</strong> they are approximately the same.</p>
 </div>
-<div id="conclusion" class="section level2">
-<h2>Conclusion</h2>
+<div id="conclusion" class="section level1" number="6">
+<h1><span class="header-section-number">6</span> Conclusion</h1>
 <p>Even though this data is very simple and does not need an RNN model, and it can be predicted with the classical ARIMA models, but it is used here for pedagogic purposes to well understand how the RNN works, and how the data should be processed to be ingested by <strong>keras</strong>. However, rnn model suffers from a major problem when running a large sequence known as <strong>Vanishing gradient</strong> and <strong>exploding gradient</strong>. In other words, with the former, when using the chain rule to compute the gradients, if the derivatives have small values then multiplying a large number of small values (as the length of the sequence) yields very tiny values that cause the network to be slowly trainable or even untrainable. The opposite is true when we face the latter problem, in this case we will get very large values and the network never converges.<br />
 Soon I will post an article with multivariate time series by implementing Long Short term memory <strong>LSTM</strong> model that is supposed to overcome the above problems that faces simple rnn model .</p>
 </div>
-<div id="further-reading" class="section level2">
-<h2>Further reading</h2>
+<div id="further-reading" class="section level1" number="7">
+<h1><span class="header-section-number">7</span> Further reading</h1>
 <ul>
 <li>Froncois Chollet, Deep learning with R, Meap edition, 2017, p167</li>
 <li>Ian Godfollow et al, Deep Learning, <a href="http://www.deeplearningbook.org/" class="uri">http://www.deeplearningbook.org/</a></li>
 </ul>
+</div>
+<div id="session-info" class="section level1" number="8">
+<h1><span class="header-section-number">8</span> Session info</h1>
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>## R version 4.0.1 (2020-06-06)
+## Platform: x86_64-w64-mingw32/x64 (64-bit)
+## Running under: Windows 10 x64 (build 19041)
+## 
+## Matrix products: default
+## 
+## locale:
+## [1] LC_COLLATE=English_United States.1252 
+## [2] LC_CTYPE=English_United States.1252   
+## [3] LC_MONETARY=English_United States.1252
+## [4] LC_NUMERIC=C                          
+## [5] LC_TIME=English_United States.1252    
+## 
+## attached base packages:
+## [1] parallel  stats     graphics  grDevices utils     datasets  methods  
+## [8] base     
+## 
+## other attached packages:
+## [1] keras_2.3.0.0        ModelMetrics_1.2.2.2 rugarch_1.4-4       
+## [4] forecast_8.13        aTSA_3.1.2           tseries_0.10-47     
+## [7] timeSeries_3062.100  timeDate_3043.102   
+## 
+## loaded via a namespace (and not attached):
+##  [1] jsonlite_1.7.1              assertthat_0.2.1           
+##  [3] TTR_0.24.2                  tiff_0.1-5                 
+##  [5] yaml_2.2.1                  GeneralizedHyperbolic_0.8-4
+##  [7] numDeriv_2016.8-1.1         pillar_1.4.6               
+##  [9] lattice_0.20-41             reticulate_1.16            
+## [11] glue_1.4.2                  quadprog_1.5-8             
+## [13] DistributionUtils_0.6-0     digest_0.6.25              
+## [15] colorspace_1.4-1            htmltools_0.5.0            
+## [17] Matrix_1.2-18               pkgconfig_2.0.3            
+## [19] bookdown_0.20               purrr_0.3.4                
+## [21] fftwtools_0.9-9             mvtnorm_1.1-1              
+## [23] scales_1.1.1                whisker_0.4                
+## [25] jpeg_0.1-8.1                tibble_3.0.3               
+## [27] farver_2.0.3                EBImage_4.30.0             
+## [29] generics_0.0.2              ggplot2_3.3.2              
+## [31] ellipsis_0.3.1              urca_1.3-0                 
+## [33] nnet_7.3-14                 BiocGenerics_0.34.0        
+## [35] cli_2.0.2                   quantmod_0.4.17            
+## [37] magrittr_1.5                crayon_1.3.4               
+## [39] mclust_5.4.6                evaluate_0.14              
+## [41] ks_1.11.7                   fansi_0.4.1                
+## [43] nlme_3.1-149                MASS_7.3-53                
+## [45] xts_0.12.1                  truncnorm_1.0-8            
+## [47] blogdown_0.20               tools_4.0.1                
+## [49] data.table_1.13.0           lifecycle_0.2.0            
+## [51] stringr_1.4.0               munsell_0.5.0              
+## [53] locfit_1.5-9.4              compiler_4.0.1             
+## [55] SkewHyperbolic_0.4-0        rlang_0.4.7                
+## [57] grid_4.0.1                  RCurl_1.98-1.2             
+## [59] nloptr_1.2.2.2              rappdirs_0.3.1             
+## [61] htmlwidgets_1.5.2           Rsolnp_1.16                
+## [63] labeling_0.3                base64enc_0.1-3            
+## [65] spd_2.0-1                   bitops_1.0-6               
+## [67] rmarkdown_2.4               gtable_0.3.0               
+## [69] fracdiff_1.5-1              abind_1.4-5                
+## [71] curl_4.3                    R6_2.4.1                   
+## [73] tfruns_1.4                  zoo_1.8-8                  
+## [75] tensorflow_2.2.0            knitr_1.30                 
+## [77] dplyr_1.0.2                 utf8_1.1.4                 
+## [79] zeallot_0.1.0               KernSmooth_2.23-17         
+## [81] stringi_1.5.3               Rcpp_1.0.5                 
+## [83] vctrs_0.3.4                 png_0.1-7                  
+## [85] tidyselect_1.1.0            xfun_0.18                  
+## [87] lmtest_0.9-38</code></pre>
 </div>

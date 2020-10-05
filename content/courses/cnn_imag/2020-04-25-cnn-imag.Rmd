@@ -5,6 +5,7 @@ date: '2020-04-25'
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 slug: cnn_imag
@@ -24,21 +25,31 @@ image:
 projects: []
 ---
 
-
-
 ```{r setup, include=FALSE,message=FALSE,warning=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
 ```
 
 
-## Introduction
+
+```{css, echo=FALSE}
+strong {
+  color: Navy;
+}
+
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+```
+
+# Introduction
 
 In this article we will make use of the convolutional neural network, the most widely deep learning method used for image classification, object detection,..etc^[Francois chollet, Deep learning with R, Meap edition, 2017, P112 ]. For more detail about how it works please click [here](https://docs.google.com/presentation/d/1f7yAMxElPorSAdy3iiIBWw6Py20uiu2_xK4lmeB9Dpk/edit?usp=sharing).
 
 We are going be learning how to build and train **convolutional neural network** model using small sample of images collected from google search. The data includes 30 images, each of which is either one of three types of animals: **cat**, **dog**, or **lion**, and each one has equally number of images, that is 10.   
 
-## Data preparation
+# Data preparation
 
 First, we call the packages needed along this paper and load the data into two different objects, one called **train**, will contain 7 instances of each animal type used for training the model, and another one, called **test**, will contain the remaining instances for the evaluation of the model performance.
 
@@ -133,7 +144,7 @@ testy <- to_categorical(testlabels)
 ```
 
 
-## Training the model:
+# Training the model:
 
 The architecture of our model will contain the following layers:
 
@@ -278,7 +289,7 @@ plot(as.raster(readImage("plot_acc.jpg")))
 
 **Note**: we coud have used directly the plot function , plot(history), but doing so we will get different plot each time we knit the document. 
 
-## Model Evaluation
+# Model Evaluation
 
 We can evaluate the model performance using the training set as follows:  
 
@@ -298,7 +309,7 @@ test_evaluate<- evaluate(model, testall, testy)
 Using the testing set that is not seen by the model,  the accuracy rate is about  55.56%.
 In fact this is exactly what we warned about it, indeed we have an overfitting problem where the model try to memorize every noisy pattern which will constrain the model to poorly generalize to unseen data.   
 
-## Prediction
+# Prediction
 
 We can get the predictions of the testing set as follows:
 
@@ -349,10 +360,16 @@ par(mfrow=c(1,1))
 ```
 
 
-## Conclusion
+# Conclusion
 
 As we see this model perfectly identified lions but failed to identify any of the dogs in the testing set which is not the case for the training data where the model has high accuracy,  and as I mentioned earlier this is the consequences of the overfitting problem. However, There are bunch of techniques that can be used in such situation such as regularization methods (L2,L1), pooling, dropout layers..ect.  All these techniques will be addressed soon in further articles.
 Besides overfitting, we can also improve the model by playing around with hyperparameters such as changing , the number of the layers, number of the nodes in each layer, number of epochs...ect.    
 
 **Note**: Be aware that this model can not be reliable since it has used very small data. However, we may get a higher performance for this model if we implement very large dataset.
+
+#Session information
+
+```{r}
+sessionInfo()
+```
 

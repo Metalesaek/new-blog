@@ -5,6 +5,7 @@ date: '2020-04-25'
 output:
   blogdown::html_page:
     toc: true
+    number_sections: true
     fig_width: 6
     dev: "svg"
 slug: cnn_imag
@@ -28,22 +29,32 @@ projects: []
 
 <div id="TOC">
 <ul>
-<li><a href="#introduction">Introduction</a></li>
-<li><a href="#data-preparation">Data preparation</a></li>
-<li><a href="#training-the-model">Training the model:</a></li>
-<li><a href="#model-evaluation">Model Evaluation</a></li>
-<li><a href="#prediction">Prediction</a></li>
-<li><a href="#conclusion">Conclusion</a></li>
+<li><a href="#introduction"><span class="toc-section-number">1</span> Introduction</a></li>
+<li><a href="#data-preparation"><span class="toc-section-number">2</span> Data preparation</a></li>
+<li><a href="#training-the-model"><span class="toc-section-number">3</span> Training the model:</a></li>
+<li><a href="#model-evaluation"><span class="toc-section-number">4</span> Model Evaluation</a></li>
+<li><a href="#prediction"><span class="toc-section-number">5</span> Prediction</a></li>
+<li><a href="#conclusion"><span class="toc-section-number">6</span> Conclusion</a></li>
 </ul>
 </div>
 
-<div id="introduction" class="section level2">
-<h2>Introduction</h2>
+<style type="text/css">
+strong {
+  color: Navy;
+}
+
+h1,h2, h3, h4 {
+  font-size:28px;
+  color:DarkBlue;
+}
+</style>
+<div id="introduction" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Introduction</h1>
 <p>In this article we will make use of the convolutional neural network, the most widely deep learning method used for image classification, object detection,..etc<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>. For more detail about how it works please click <a href="https://docs.google.com/presentation/d/1f7yAMxElPorSAdy3iiIBWw6Py20uiu2_xK4lmeB9Dpk/edit?usp=sharing">here</a>.</p>
 <p>We are going be learning how to build and train <strong>convolutional neural network</strong> model using small sample of images collected from google search. The data includes 30 images, each of which is either one of three types of animals: <strong>cat</strong>, <strong>dog</strong>, or <strong>lion</strong>, and each one has equally number of images, that is 10.</p>
 </div>
-<div id="data-preparation" class="section level2">
-<h2>Data preparation</h2>
+<div id="data-preparation" class="section level1" number="2">
+<h1><span class="header-section-number">2</span> Data preparation</h1>
 <p>First, we call the packages needed along this paper and load the data into two different objects, one called <strong>train</strong>, will contain 7 instances of each animal type used for training the model, and another one, called <strong>test</strong>, will contain the remaining instances for the evaluation of the model performance.</p>
 <pre class="r"><code>ssh &lt;- suppressPackageStartupMessages
 ssh(library(EBImage))
@@ -69,19 +80,19 @@ test &lt;- lapply(mytest, readImage)</code></pre>
 ## 
 ## imageData(object)[1:5,1:6,1]
 ##           [,1]      [,2]      [,3]      [,4]      [,5]      [,6]
-## [1,] 0.2039216 0.2039216 0.2039216 0.2078431 0.2078431 0.2000000
-## [2,] 0.2039216 0.2039216 0.2078431 0.2078431 0.2078431 0.2039216
-## [3,] 0.2078431 0.2078431 0.2078431 0.2117647 0.2117647 0.2078431
-## [4,] 0.2117647 0.2117647 0.2156863 0.2156863 0.2196078 0.2117647
-## [5,] 0.2156863 0.2156863 0.2196078 0.2196078 0.2235294 0.2156863</code></pre>
+## [1,] 0.2039216 0.2039216 0.2039216 0.2078431 0.2000000 0.2000000
+## [2,] 0.2039216 0.2039216 0.2078431 0.2078431 0.2000000 0.2039216
+## [3,] 0.2078431 0.2078431 0.2078431 0.2117647 0.2039216 0.2078431
+## [4,] 0.2117647 0.2117647 0.2156863 0.2156863 0.2117647 0.2117647
+## [5,] 0.2156863 0.2156863 0.2196078 0.2196078 0.2156863 0.2156863</code></pre>
 <p>As we see this image is color image with 275 pxl hight, 183 pxl width and 3 channels (RGB) since it is a color image.</p>
 <p>we can visualize an image as follows:</p>
 <pre class="r"><code>plot(test[[4]])</code></pre>
-<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-3-1.svg" width="576" /></p>
+<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-4-1.svg" width="576" /></p>
 <p>If instead we want to visualize all the image as one block we can make use of <strong>foreach</strong> package to apply a for loop as follows.</p>
 <pre class="r"><code>par(mfrow=c(7,3))
 foreach(i=1:21) %do% {plot(train[[i]])}</code></pre>
-<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-4-1.svg" width="576" /></p>
+<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-5-1.svg" width="576" /></p>
 <pre class="r"><code>par(mfrow=c(1,1))</code></pre>
 <p>After having taken a brief glance at our data, we found that the image sizes are different from each other which is not what our image classification model expects. That is why, the following script will resize all the images to have the same size <strong>150x150x3</strong>.</p>
 <pre class="r"><code>foreach(i=1:21) %do% {train[[i]] &lt;- resize(train[[i]],150,150)}
@@ -93,7 +104,7 @@ foreach(i=1:9) %do% {test[[i]] &lt;- resize(test[[i]],150,150)}</code></pre>
 ##   .. ..@ .Data    : num [1:150, 1:150, 1:3] 0.761 0.78 0.773 0.755 0.768 ...
 ##   .. ..@ colormode: int 2
 ##  $ :Formal class &#39;Image&#39; [package &quot;EBImage&quot;] with 2 slots
-##   .. ..@ .Data    : num [1:150, 1:150, 1:3] 0.462 0.48 0.512 0.544 0.54 ...
+##   .. ..@ .Data    : num [1:150, 1:150, 1:3] 0.441 0.465 0.496 0.528 0.524 ...
 ##   .. ..@ colormode: int 2
 ##  $ :Formal class &#39;Image&#39; [package &quot;EBImage&quot;] with 2 slots
 ##   .. ..@ .Data    : num [1:150, 1:150, 1:3] 0.986 0.992 0.951 0.945 0.929 ...
@@ -102,13 +113,13 @@ foreach(i=1:9) %do% {test[[i]] &lt;- resize(test[[i]],150,150)}</code></pre>
 ##   .. ..@ .Data    : num [1:150, 1:150, 1:3] 0.81 0.751 0.787 0.825 0.508 ...
 ##   .. ..@ colormode: int 2
 ##  $ :Formal class &#39;Image&#39; [package &quot;EBImage&quot;] with 2 slots
-##   .. ..@ .Data    : num [1:150, 1:150, 1:3] 0.361 0.502 0.49 0.627 0.524 ...
+##   .. ..@ .Data    : num [1:150, 1:150, 1:3] 0.357 0.5 0.49 0.626 0.522 ...
 ##   .. ..@ colormode: int 2
 ##  $ :Formal class &#39;Image&#39; [package &quot;EBImage&quot;] with 2 slots
 ##   .. ..@ .Data    : num [1:150, 1:150, 1:3] 0.375 0.365 0.375 0.397 0.393 ...
 ##   .. ..@ colormode: int 2
 ##  $ :Formal class &#39;Image&#39; [package &quot;EBImage&quot;] with 2 slots
-##   .. ..@ .Data    : num [1:150, 1:150, 1:3] 0.651 0.57 0.614 0.636 0.63 ...
+##   .. ..@ .Data    : num [1:150, 1:150, 1:3] 0.651 0.57 0.614 0.634 0.63 ...
 ##   .. ..@ colormode: int 2
 ##  $ :Formal class &#39;Image&#39; [package &quot;EBImage&quot;] with 2 slots
 ##   .. ..@ .Data    : num [1:150, 1:150, 1:3] 0.268 0.201 0.198 0.213 0.182 ...
@@ -121,7 +132,7 @@ foreach(i=1:9) %do% {test[[i]] &lt;- resize(test[[i]],150,150)}</code></pre>
 testall &lt;- combine(test) </code></pre>
 <p>We can display the output block usine the following:</p>
 <pre class="r"><code>display(tile(trainall,7))</code></pre>
-<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-8-1.svg" width="576" /></p>
+<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-9-1.svg" width="576" /></p>
 <p>Now the images are nicely combined in one block with four dimensions: number of instances (images), height, width, and number of channels, and this is the input that will be used in our model. However, to correctly read the input our model expects that the first dimension is the number of instances, the second is height , the third is width, and the fourth is the number of channels.
 Let us check whether the input has the correct order or not.</p>
 <pre class="r"><code>str(trainall)</code></pre>
@@ -137,8 +148,8 @@ testlabels &lt;- rep(0:2, each=3)
 trainy &lt;- to_categorical(trainlabels)
 testy &lt;- to_categorical(testlabels)</code></pre>
 </div>
-<div id="training-the-model" class="section level2">
-<h2>Training the model:</h2>
+<div id="training-the-model" class="section level1" number="3">
+<h1><span class="header-section-number">3</span> Training the model:</h1>
 <p>The architecture of our model will contain the following layers:</p>
 <ol style="list-style-type: decimal">
 <li>Convolution layer that makes use of 32 filters with size 3x3 (since the input has 150x150x3 consequently the third dimension of the filter size will be 3 that is 3x3x3), and with <strong>Relu</strong> as activation function.</li>
@@ -229,8 +240,9 @@ model %&gt;%
 #valid_acc &lt;- history$metrics$val_accuracy
 #epoch &lt;- 1:50</code></pre>
 <pre class="r"><code>#df &lt;- tibble::tibble(epoch,train_loss,valid_loss,train_acc,valid_acc)</code></pre>
-<pre class="r"><code>library(ggplot2)
-#p1 &lt;- ggplot(df,aes(x=epoch, train_loss))+
+<pre class="r"><code>library(ggplot2)</code></pre>
+<pre><code>## Warning: package &#39;ggplot2&#39; was built under R version 4.0.2</code></pre>
+<pre class="r"><code>#p1 &lt;- ggplot(df,aes(x=epoch, train_loss))+
  # geom_point(size=1, color=&quot;blue&quot;)+
 #  geom_point(aes(x=epoch, valid_loss), size=1, color=&quot;red&quot;)+
  # ylab(&quot;Loss&quot;)
@@ -238,7 +250,7 @@ model %&gt;%
 <p>As you notice all the above codes have not been executed to avoide the issue discussed above and to make things simple. here we load the saved plot.</p>
 <pre class="r"><code>par(mar=c(0,0,0,0))
 plot(as.raster(readImage(&quot;plot_loss.jpg&quot;)))</code></pre>
-<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-21-1.svg" width="576" /></p>
+<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-22-1.svg" width="576" /></p>
 <p>This plot shows the loss values for both the training set (in blue) and the validation set (in red), we see that the training loss consistently increases whereas the validation loss largely oscillating reflecting the less capability of the model to well predict the new unseen examples.
 The same conclusion can be induced from the following plot for the accuracy metric.</p>
 <pre class="r"><code>#p2 &lt;- ggplot(df,aes(x=epoch, train_acc))+
@@ -249,11 +261,11 @@ The same conclusion can be induced from the following plot for the accuracy metr
 <p>Here also we do the same thing</p>
 <pre class="r"><code>par(mar=c(0,0,0,0))
 plot(as.raster(readImage(&quot;plot_acc.jpg&quot;)))</code></pre>
-<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-23-1.svg" width="576" /></p>
+<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-24-1.svg" width="576" /></p>
 <p><strong>Note</strong>: we coud have used directly the plot function , plot(history), but doing so we will get different plot each time we knit the document.</p>
 </div>
-<div id="model-evaluation" class="section level2">
-<h2>Model Evaluation</h2>
+<div id="model-evaluation" class="section level1" number="4">
+<h1><span class="header-section-number">4</span> Model Evaluation</h1>
 <p>We can evaluate the model performance using the training set as follows:</p>
 <pre class="r"><code>train_evaluate&lt;- evaluate(model, trainall, trainy)</code></pre>
 <p>With this first architecture we get a high accuracy rate <strong>95.24%</strong> and the loss is <strong>0.0832</strong>. However, you should be cautious when this rate is very high since it is computed from the training data which in many cases reflects the <strong>overfitting</strong> problem<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a>. The best evaluation thus is that based on the testing set.</p>
@@ -261,8 +273,8 @@ plot(as.raster(readImage(&quot;plot_acc.jpg&quot;)))</code></pre>
 <p>Using the testing set that is not seen by the model, the accuracy rate is about 55.56%.
 In fact this is exactly what we warned about it, indeed we have an overfitting problem where the model try to memorize every noisy pattern which will constrain the model to poorly generalize to unseen data.</p>
 </div>
-<div id="prediction" class="section level2">
-<h2>Prediction</h2>
+<div id="prediction" class="section level1" number="5">
+<h1><span class="header-section-number">5</span> Prediction</h1>
 <p>We can get the predictions of the testing set as follows:</p>
 <pre class="r"><code>pred &lt;- predict_classes(model,testall)
 pred</code></pre>
@@ -280,7 +292,7 @@ foreach(i=1:9) %do% {display(test[[i]], method=&quot;raster&quot;);
   text(x = 20, y = 20, label = pred[i], 
        adj = c(0,1), col = &quot;black&quot;, cex = 4)
 }</code></pre>
-<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-27-1.svg" width="576" /></p>
+<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-28-1.svg" width="576" /></p>
 <pre class="r"><code>par(mfrow=c(1,1))</code></pre>
 <p>Using this model to predict the test examples, all the dogs are misclassified whereas the lions are perfectly classified.</p>
 <p>We can also display the training examples as follows:</p>
@@ -298,14 +310,56 @@ foreach(i=1:21) %do% {display(train[[i]], method=&quot;raster&quot;);
   text(x = 20, y = 20, label = pred1[i], 
        adj = c(0,1), col = &quot;black&quot;, cex = 2)
 }</code></pre>
-<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-28-1.svg" width="576" /></p>
+<p><img src="/courses/cnn_imag/2020-04-25-cnn-imag_files/figure-html/unnamed-chunk-29-1.svg" width="576" /></p>
 <pre class="r"><code>par(mfrow=c(1,1))</code></pre>
 </div>
-<div id="conclusion" class="section level2">
-<h2>Conclusion</h2>
+<div id="conclusion" class="section level1" number="6">
+<h1><span class="header-section-number">6</span> Conclusion</h1>
 <p>As we see this model perfectly identified lions but failed to identify any of the dogs in the testing set which is not the case for the training data where the model has high accuracy, and as I mentioned earlier this is the consequences of the overfitting problem. However, There are bunch of techniques that can be used in such situation such as regularization methods (L2,L1), pooling, dropout layers..ect. All these techniques will be addressed soon in further articles.
 Besides overfitting, we can also improve the model by playing around with hyperparameters such as changing , the number of the layers, number of the nodes in each layer, number of epochs…ect.</p>
 <p><strong>Note</strong>: Be aware that this model can not be reliable since it has used very small data. However, we may get a higher performance for this model if we implement very large dataset.</p>
+<p>#Session information</p>
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>## R version 4.0.1 (2020-06-06)
+## Platform: x86_64-w64-mingw32/x64 (64-bit)
+## Running under: Windows 10 x64 (build 19041)
+## 
+## Matrix products: default
+## 
+## locale:
+## [1] LC_COLLATE=English_United States.1252 
+## [2] LC_CTYPE=English_United States.1252   
+## [3] LC_MONETARY=English_United States.1252
+## [4] LC_NUMERIC=C                          
+## [5] LC_TIME=English_United States.1252    
+## 
+## attached base packages:
+## [1] stats     graphics  grDevices utils     datasets  methods   base     
+## 
+## other attached packages:
+## [1] ggplot2_3.3.2  foreach_1.5.0  keras_2.3.0.0  EBImage_4.30.0
+## 
+## loaded via a namespace (and not attached):
+##  [1] reticulate_1.16     locfit_1.5-9.4      tidyselect_1.1.0   
+##  [4] xfun_0.18           purrr_0.3.4         lattice_0.20-41    
+##  [7] colorspace_1.4-1    generics_0.0.2      vctrs_0.3.4        
+## [10] htmltools_0.5.0     yaml_2.2.1          base64enc_0.1-3    
+## [13] rlang_0.4.7         pillar_1.4.6        withr_2.3.0        
+## [16] glue_1.4.2          rappdirs_0.3.1      BiocGenerics_0.34.0
+## [19] jpeg_0.1-8.1        lifecycle_0.2.0     tensorflow_2.2.0   
+## [22] stringr_1.4.0       munsell_0.5.0       blogdown_0.20      
+## [25] gtable_0.3.0        htmlwidgets_1.5.2   codetools_0.2-16   
+## [28] evaluate_0.14       knitr_1.30          tfruns_1.4         
+## [31] parallel_4.0.1      Rcpp_1.0.5          scales_1.1.1       
+## [34] jsonlite_1.7.1      abind_1.4-5         png_0.1-7          
+## [37] digest_0.6.25       stringi_1.5.3       tiff_0.1-5         
+## [40] bookdown_0.20       dplyr_1.0.2         grid_4.0.1         
+## [43] tools_4.0.1         bitops_1.0-6        magrittr_1.5       
+## [46] RCurl_1.98-1.2      tibble_3.0.3        crayon_1.3.4       
+## [49] whisker_0.4         pkgconfig_2.0.3     zeallot_0.1.0      
+## [52] ellipsis_0.3.1      Matrix_1.2-18       rmarkdown_2.4      
+## [55] iterators_1.0.12    R6_2.4.1            fftwtools_0.9-9    
+## [58] compiler_4.0.1</code></pre>
 </div>
 <div class="footnotes">
 <hr />
