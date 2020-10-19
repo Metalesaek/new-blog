@@ -313,7 +313,7 @@ model_rf.tfidf &lt;- ml_fit(pipline2, train)
 ml_transform(model_rf.tfidf,test)%&gt;%
   ml_binary_classification_evaluator(label_col = &quot;class&quot;,
                                      metric_name= &quot;areaUnderROC&quot;)</code></pre>
-<pre><code>## [1] 0.9775329</code></pre>
+<pre><code>## [1] 0.953212</code></pre>
 <p>Using this more complex model than the previous one is not justified for this data since their rates are close to each other.</p>
 </div>
 <div id="add-new-features" class="section level1" number="7">
@@ -416,7 +416,7 @@ model_rf_2gram &lt;- ml_fit(pipline_2gram, train1)
 ml_transform(model_rf_2gram,test1)%&gt;%
   ml_binary_classification_evaluator(label_col = &quot;class&quot;,
                                      metric_name= &quot;areaUnderROC&quot;)</code></pre>
-<pre><code>## [1] 0.9561697</code></pre>
+<pre><code>## [1] 0.8835537</code></pre>
 <p>You should know that this function takes only tokens with tow words exactly, not tokens with less or equal 2 words. That is why we have obtained a lower rate than the previous models.</p>
 <p>When you are satisfied by your final model, you can save it for further use as follows.</p>
 <pre class="r"><code>#ml_save(model_rf_ngram,&quot;spark_ngram&quot;,overwrite = TRUE)</code></pre>
