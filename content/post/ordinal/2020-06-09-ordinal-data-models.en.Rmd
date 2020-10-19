@@ -53,6 +53,7 @@ First, we call the data and the libraries that we need along with this illustrat
 
 
 ```{r results='hide'}
+options(warn = -1)
 library(tidyverse)
 library(caret)
 library(tidymodels)
@@ -131,7 +132,8 @@ xtabs(~cp+thal,data=mydata)
 The following variables do not respect this threshold and hence they will be removed from the predictors set: **restecg**, **exang**, **slope**, **ca**, and **thal**.
 
 ```{r}
-mydata<-mydata[,setdiff(names(mydata), c("restecg", "exang", "slope", "ca",  "thal"))]
+mydata<-mydata[,setdiff(names(mydata), 
+                        c("restecg", "exang", "slope", "ca",  "thal"))]
 ```
 
 The data is ready and we can now split the data between training and testing set.
@@ -380,7 +382,7 @@ Since the create function **train** use bootstrapping method to perform hyperpar
 # model_forest<-train(cp~.-age-trestbps-chol, data=train,
 #                       method='ordinalRF')
 
-# saveRDS(model_forest, "C://Users/dell/Documents/new-blog/content/post/ordinal/model_forest.rds")
+# saveRDS(model_forest, #"C://Users/dell/Documents/new-blog/content/post/ordinal/model_forest.rds")
 
 model_forest <- readRDS("C://Users/dell/Documents/new-blog/content/post/ordinal/model_forest.rds")
 
@@ -424,7 +426,7 @@ This is exactly what is called the overfitting problem. The model generalizes po
 This model uses The vector generalized additive models which are available in the **VGAM** package. for more detail about these models click [here](https://cran.r-project.org/web/packages/VGAM/vignettes/categoricalVGAM.pdf).  
 
 
-```{r,message=FALSE,error=FALSE,warning=FALSE}
+```{r,message=FALSE, cache=TRUE,error=FALSE,warning=FALSE}
 library(VGAM)
 set.seed(1234)
 model_vgam<-train(cp~.-age-trestbps-chol, data=train,

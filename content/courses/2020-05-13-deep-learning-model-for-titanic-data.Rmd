@@ -28,7 +28,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 
-## Introducction
+## Introduction
 
 Deep learning model belongs to the area of machine learning models which can be used either for supervised or unsupervised learning. Based on [artificial neural network](https://www.digitaltrends.com/cool-tech/what-is-an-artificial-neural-network/), it can handle a wide variety of data types by using different neural network architectures such as [recurrent neural network RNN](https://stanford.edu/~shervine/teaching/cs-230/cheatsheet-recurrent-neural-networks) for sequence data (time series, text data etc.), [convolutional neural network CNN](https://towardsdatascience.com/a-comprehensive-guide-to-convolutional-neural-networks-the-eli5-way-3bd2b1164a53) for computer vision, [generative adversarial network GAN](https://machinelearningmastery.com/what-are-generative-adversarial-networks-gans/) for image generation   and many other types of architecture. 
 The basic architecture of deep learning is the same as the classical artificial neural network (that has one hidden layer) with the difference that deep learning allows more than one hidden layer (this is where does the name deep come from ). Theses layers are called dense layers since that each node of a particular layer is connected with all the nodes of the previous layer, and in addition each node has an [activation function](https://missinglink.ai/guides/neural-network-concepts/7-types-neural-network-activation-functions-right/) to capture any nonlinearity in the data.
@@ -245,11 +245,11 @@ Let's evaluate our model using both the training set then the testing set.
 train_eva <- model %>%
   evaluate(trainx,trainlabel)
 test_eva <- model %>% 
-  evaluate(testx, testlabel)
-tibble(train_acc= train_eva$accuracy, test_acc= test_eva$accuracy, train_loss=train_eva$loss,test_loss=test_eva$loss)
+  evaluate(testx, testlabel) 
+tibble(train_acc= train_eva[["accuracy"]], test_acc= test_eva[["accuracy"]], train_loss=train_eva[["loss"]],test_loss=test_eva[["loss"]])
 ```
 
-The accuracy rate of the model using the test set is 80.62% which is higher than that of the training set (78.82%) which means that this model needs more improvement. 
+The accuracy rate of the model using the test set is 80.89% which is higher than that of the training set (79.92%) which means that this model needs more improvement. 
 
 
 ## model tuning
@@ -276,7 +276,7 @@ model1 %>%
 
 ```
  
-Before evalation we should svve it.
+Before evaluation we should save it.
 
 
 ```{r}
@@ -294,7 +294,7 @@ train_eva <- model1 %>%
   evaluate(trainx,trainlabel)
 test_eva <- model1 %>% 
   evaluate(testx, testlabel)
-tibble(train_acc= train_eva$accuracy, test_acc= test_eva$accuracy, train_loss=train_eva$loss,test_loss=test_eva$loss)
+tibble(train_acc= train_eva[["accuracy"]], test_acc= test_eva[["accuracy"]], train_loss=train_eva[["loss"]],test_loss=test_eva[["loss"]])
 ```
 
 

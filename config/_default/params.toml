@@ -215,7 +215,7 @@ plugins_js  = []
 
   # Configuration of Disqus.
   [comments.disqus]
-    shortname = ""  # Paste the shortname from your Disqus dashboard.
+    shortname = "modelingwithr"  # Paste the shortname from your Disqus dashboard.
     show_count = true  # Show comment count in page header? (true/false)
 
   # Configuration of Commento.
@@ -267,7 +267,7 @@ plugins_js  = []
 ## Marketing
 ############################
 [marketing]
-  google_analytics = ""
+  google_analytics = "UA-54516992-1"
   google_tag_manager = ""
 
 ############################

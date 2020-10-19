@@ -71,15 +71,26 @@ h1,h2, h3, h4 {
 <h1><span class="header-section-number">2</span> Data preparation</h1>
 <p>To well understand how to model the count data we are going be using <strong>Doctorvisits</strong> data from <strong>AER</strong> package, in which the variable <strong>visits</strong> will be our target variable, so let’s call this data with the packages that we need along this article.</p>
 <pre class="r"><code>ssh &lt;- suppressPackageStartupMessages
-ssh(library(performance))
-ssh(library(ModelMetrics))
+ssh(library(performance))</code></pre>
+<pre><code>Warning: package &#39;performance&#39; was built under R version 4.0.2</code></pre>
+<pre class="r"><code>ssh(library(ModelMetrics))
 ssh(library(corrr))
 ssh(library(purrr))
-ssh(library(MASS))
-ssh(library(tidyverse))
-ssh(library(AER))
-ssh(library(broom))
-data(&quot;DoctorVisits&quot;)
+ssh(library(MASS))</code></pre>
+<pre><code>Warning: package &#39;MASS&#39; was built under R version 4.0.2</code></pre>
+<pre class="r"><code>ssh(library(tidyverse))</code></pre>
+<pre><code>Warning: package &#39;ggplot2&#39; was built under R version 4.0.2</code></pre>
+<pre><code>Warning: package &#39;tibble&#39; was built under R version 4.0.2</code></pre>
+<pre><code>Warning: package &#39;tidyr&#39; was built under R version 4.0.2</code></pre>
+<pre><code>Warning: package &#39;dplyr&#39; was built under R version 4.0.2</code></pre>
+<pre class="r"><code>ssh(library(AER))</code></pre>
+<pre><code>Warning: package &#39;car&#39; was built under R version 4.0.2</code></pre>
+<pre><code>Warning: package &#39;lmtest&#39; was built under R version 4.0.2</code></pre>
+<pre><code>Warning: package &#39;sandwich&#39; was built under R version 4.0.2</code></pre>
+<pre><code>Warning: package &#39;survival&#39; was built under R version 4.0.2</code></pre>
+<pre class="r"><code>ssh(library(broom))</code></pre>
+<pre><code>Warning: package &#39;broom&#39; was built under R version 4.0.2</code></pre>
+<pre class="r"><code>data(&quot;DoctorVisits&quot;)
 doc &lt;- DoctorVisits
 glimpse(doc)</code></pre>
 <pre><code>Rows: 5,190
@@ -217,10 +228,10 @@ tidy(model1)</code></pre>
 <p>For the interpretation of the coefficient estimates, we should exponentiate these values to get the marginal effect since the poisson model uses the log link function to preclude negative values. For continuous predictor, say age, if this predictor increases by one year, ceteris-paribus, we expect the doctor visits will be <span class="math inline">\(exp(0.47876624)=1.614082\)</span> times larger. whereas, for categorical predictor, say gender, the female has <span class="math inline">\(exp(0.21342446)=1.23791\)</span> larger doctor visits than male.<br />
 By looking at p-values all the predictors are significant. However, we have to check other statistics and metrics.</p>
 <pre class="r"><code>glance(model1)</code></pre>
-<pre><code># A tibble: 1 x 7
-  null.deviance df.null logLik   AIC   BIC deviance df.residual
-          &lt;dbl&gt;   &lt;int&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;       &lt;int&gt;
-1         4565.    4154 -2685. 5399. 5494.    3486.        4140</code></pre>
+<pre><code># A tibble: 1 x 8
+  null.deviance df.null logLik   AIC   BIC deviance df.residual  nobs
+          &lt;dbl&gt;   &lt;int&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;       &lt;int&gt; &lt;int&gt;
+1         4565.    4154 -2685. 5399. 5494.    3486.        4140  4155</code></pre>
 <p>since the deviance value <strong>3485.905</strong> is lower than the degrees of freedom <strong>4140</strong>, we will then worry about <strong>overdispersion</strong> problem.
 Fortunateley, the <strong>AER</strong> package provides a super easy way to test the significance of this difference via the function <strong>dispersiontest</strong>.</p>
 <pre class="r"><code>dispersiontest(model1)</code></pre>
@@ -810,32 +821,31 @@ attached base packages:
 [1] stats     graphics  grDevices utils     datasets  methods   base     
 
 other attached packages:
- [1] pscl_1.5.5           broom_0.5.6          AER_1.2-9           
- [4] survival_3.1-12      sandwich_2.5-1       lmtest_0.9-37       
- [7] zoo_1.8-8            car_3.0-8            carData_3.0-4       
-[10] forcats_0.5.0        stringr_1.4.0        dplyr_1.0.0         
-[13] readr_1.3.1          tidyr_1.1.0          tibble_3.0.1        
-[16] ggplot2_3.3.1        tidyverse_1.3.0      MASS_7.3-51.6       
+ [1] pscl_1.5.5           broom_0.7.1          AER_1.2-9           
+ [4] survival_3.2-7       sandwich_3.0-0       lmtest_0.9-38       
+ [7] zoo_1.8-8            car_3.0-10           carData_3.0-4       
+[10] forcats_0.5.0        stringr_1.4.0        dplyr_1.0.2         
+[13] readr_1.3.1          tidyr_1.1.2          tibble_3.0.3        
+[16] ggplot2_3.3.2        tidyverse_1.3.0      MASS_7.3-53         
 [19] purrr_0.3.4          corrr_0.4.2          ModelMetrics_1.2.2.2
-[22] performance_0.4.7   
+[22] performance_0.5.0   
 
 loaded via a namespace (and not attached):
- [1] nlme_3.1-148      fs_1.4.1          lubridate_1.7.9   insight_0.8.5    
- [5] httr_1.4.1        tools_4.0.1       backports_1.1.7   utf8_1.1.4       
- [9] R6_2.4.1          DBI_1.1.0         colorspace_1.4-1  withr_2.2.0      
-[13] tidyselect_1.1.0  curl_4.3          compiler_4.0.1    cli_2.0.2        
-[17] rvest_0.3.5       xml2_1.3.2        labeling_0.3      bookdown_0.19    
-[21] bayestestR_0.6.0  scales_1.1.1      digest_0.6.25     foreign_0.8-80   
-[25] rmarkdown_2.2     rio_0.5.16        pkgconfig_2.0.3   htmltools_0.4.0  
-[29] dbplyr_1.4.4      highr_0.8         rlang_0.4.6       readxl_1.3.1     
-[33] rstudioapi_0.11   generics_0.0.2    farver_2.0.3      jsonlite_1.6.1   
-[37] zip_2.0.4         magrittr_1.5      Formula_1.2-3     Matrix_1.2-18    
-[41] Rcpp_1.0.4.6      munsell_0.5.0     fansi_0.4.1       abind_1.4-5      
-[45] lifecycle_0.2.0   stringi_1.4.6     yaml_2.2.1        grid_4.0.1       
-[49] blob_1.2.1        crayon_1.3.4      lattice_0.20-41   haven_2.3.1      
-[53] splines_4.0.1     hms_0.5.3         knitr_1.29        pillar_1.4.4     
-[57] reprex_0.3.0      glue_1.4.1        evaluate_0.14     blogdown_0.20    
-[61] data.table_1.12.8 modelr_0.1.8      vctrs_0.3.1       cellranger_1.1.0 
-[65] gtable_0.3.0      assertthat_0.2.1  xfun_0.17         openxlsx_4.1.5   
-[69] ellipsis_0.3.1   </code></pre>
+ [1] httr_1.4.2        jsonlite_1.7.1    splines_4.0.1     modelr_0.1.8     
+ [5] Formula_1.2-3     assertthat_0.2.1  highr_0.8         blob_1.2.1       
+ [9] cellranger_1.1.0  yaml_2.2.1        bayestestR_0.7.2  pillar_1.4.6     
+[13] backports_1.1.10  lattice_0.20-41   glue_1.4.2        digest_0.6.25    
+[17] rvest_0.3.6       colorspace_1.4-1  htmltools_0.5.0   Matrix_1.2-18    
+[21] pkgconfig_2.0.3   haven_2.3.1       bookdown_0.20     scales_1.1.1     
+[25] openxlsx_4.2.2    rio_0.5.16        farver_2.0.3      generics_0.0.2   
+[29] ellipsis_0.3.1    withr_2.3.0       cli_2.0.2         magrittr_1.5     
+[33] crayon_1.3.4      readxl_1.3.1      evaluate_0.14     fs_1.5.0         
+[37] fansi_0.4.1       xml2_1.3.2        foreign_0.8-80    blogdown_0.20    
+[41] tools_4.0.1       data.table_1.13.0 hms_0.5.3         lifecycle_0.2.0  
+[45] munsell_0.5.0     reprex_0.3.0      zip_2.1.1         compiler_4.0.1   
+[49] rlang_0.4.7       grid_4.0.1        rstudioapi_0.11   labeling_0.3     
+[53] rmarkdown_2.4     gtable_0.3.0      abind_1.4-5       DBI_1.1.0        
+[57] curl_4.3          R6_2.4.1          lubridate_1.7.9   knitr_1.30       
+[61] utf8_1.1.4        insight_0.9.6     stringi_1.5.3     Rcpp_1.0.5       
+[65] vctrs_0.3.4       dbplyr_1.4.4      tidyselect_1.1.0  xfun_0.18        </code></pre>
 </div>

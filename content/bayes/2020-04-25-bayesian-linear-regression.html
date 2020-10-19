@@ -65,14 +65,11 @@ The <strong>Evidence</strong> is the probability of the data at hand regardless 
 library(mlbench)
 library(rstanarm)</code></pre>
 <pre><code>## Loading required package: Rcpp</code></pre>
-<pre><code>## rstanarm (Version 2.19.3, packaged: 2020-02-11 05:16:41 UTC)</code></pre>
-<pre><code>## - Do not expect the default priors to remain the same in future rstanarm versions.</code></pre>
-<pre><code>## Thus, R scripts should specify priors explicitly, even if they are just the defaults.</code></pre>
+<pre><code>## This is rstanarm version 2.21.1</code></pre>
+<pre><code>## - See https://mc-stan.org/rstanarm/articles/priors for changes to default priors!</code></pre>
+<pre><code>## - Default priors may change, so it&#39;s safest to specify priors, even if equivalent to the defaults.</code></pre>
 <pre><code>## - For execution on a local, multicore CPU with excess RAM we recommend calling</code></pre>
-<pre><code>## options(mc.cores = parallel::detectCores())</code></pre>
-<pre><code>## - bayesplot theme set to bayesplot::theme_default()</code></pre>
-<pre><code>##    * Does _not_ affect other ggplot2 plots</code></pre>
-<pre><code>##    * See ?bayesplot_theme_set for details on theme setting</code></pre>
+<pre><code>##   options(mc.cores = parallel::detectCores())</code></pre>
 <pre class="r"><code>library(bayestestR)
 library(bayesplot)</code></pre>
 <pre><code>## This is bayesplot version 1.7.2</code></pre>
@@ -149,14 +146,14 @@ tidy(model_freq)</code></pre>
 ##  predictors:   4
 ## ------
 ##             Median MAD_SD
-## (Intercept) 32.656  2.221
+## (Intercept) 32.834  2.285
 ## age         -0.143  0.020
-## dis         -0.244  0.268
-## chas1        7.496  1.428
+## dis         -0.258  0.257
+## chas1        7.543  1.432
 ## 
 ## Auxiliary parameter(s):
 ##       Median MAD_SD
-## sigma 8.319  0.261 
+## sigma 8.324  0.260 
 ## 
 ## ------
 ## * For help interpreting the printed output see ?print.stanreg
@@ -171,15 +168,15 @@ tidy(model_freq)</code></pre>
 <p><img src="/bayes/2020-04-25-bayesian-linear-regression_files/figure-html/unnamed-chunk-10-1.svg" width="576" /></p>
 <p>Now how can we evaluate the model parameters? The answer is by analyzing the posteriors using some specific statistics. To get the full statistics provided by <a href="https://cran.r-project.org/web/packages/bayestestR/bayestestR.pdf">bayestestR</a> package, we make use of the function <code>describe_posterior</code>.</p>
 <pre class="r"><code>describe_posterior(model_bayes)</code></pre>
-<pre><code>## Possible multicollinearity between dis and age (r = 0.75). This might lead to inappropriate results. See &#39;Details&#39; in &#39;?rope&#39;.</code></pre>
+<pre><code>## Possible multicollinearity between dis and age (r = 0.76). This might lead to inappropriate results. See &#39;Details&#39; in &#39;?rope&#39;.</code></pre>
 <pre><code>## # Description of Posterior Distributions
 ## 
-## Parameter   | Median | CI | CI_low | CI_high |    pd | ROPE_CI | ROPE_low | ROPE_high | ROPE_Percentage |  Rhat |  ESS
-## ----------------------------------------------------------------------------------------------------------------------
-## (Intercept) | 32.656 | 89 | 29.244 |  36.332 | 1.000 |      89 |   -0.920 |     0.920 |               0 | 1.000 | 2315
-## age         | -0.143 | 89 | -0.175 |  -0.112 | 1.000 |      89 |   -0.920 |     0.920 |               1 | 1.000 | 2417
-## dis         | -0.244 | 89 | -0.662 |   0.168 | 0.824 |      89 |   -0.920 |     0.920 |               1 | 1.000 | 2452
-## chas1       |  7.496 | 89 |  5.348 |   9.944 | 1.000 |      89 |   -0.920 |     0.920 |               0 | 1.000 | 3752</code></pre>
+## Parameter   | Median |           89% CI |    pd |        89% ROPE | % in ROPE |  Rhat |      ESS
+## ------------------------------------------------------------------------------------------------
+## (Intercept) | 32.834 | [29.218, 36.295] | 1.000 | [-0.920, 0.920] |         0 | 1.002 | 2029.279
+## age         | -0.143 | [-0.175, -0.112] | 1.000 | [-0.920, 0.920] |       100 | 1.001 | 2052.155
+## dis         | -0.258 | [-0.667,  0.179] | 0.819 | [-0.920, 0.920] |       100 | 1.002 | 2115.192
+## chas1       |  7.543 | [ 5.159,  9.813] | 1.000 | [-0.920, 0.920] |         0 | 1.000 | 3744.403</code></pre>
 <p>Before starting analyzing the table we shoud first understanding the above various statistics commonly used in bayes regression.</p>
 <ul>
 <li><strong>CI</strong> : <a href="https://freakonometrics.hypotheses.org/18117">Credible Interval</a>, it is used to quantify the uncertainty about the regression coefficients. Ther are tow methods to compute <strong>CI</strong>, the <a href="https://www.sciencedirect.com/topics/mathematics/highest-density-interval">highest density interval</a> <code>HDI</code> which is the default, and the <a href="https://www.sciencedirect.com/topics/mathematics/credible-interval">Equal-tailed Interval</a> <code>ETI</code>. with 89% probability (given the data) that a coefficient lies above the <strong>CI_low</strong> value and under <strong>CI_high</strong> value. This strightforward probabilistic interpretation is completely diffrent from the confidence interval used in classical linear regression where the coefficient fall inside this confidence interval (if we choose 95% of confidence) 95 times if we repeat the study 100 times.<br />
@@ -193,14 +190,14 @@ tidy(model_freq)</code></pre>
 <pre class="r"><code>post &lt;- get_parameters(model_bayes)
 print(purrr::map_dbl(post, median), digits = 3)</code></pre>
 <pre><code>## (Intercept)         age         dis       chas1 
-##      32.656      -0.143      -0.244       7.496</code></pre>
+##      32.834      -0.143      -0.258       7.543</code></pre>
 <p>We can also compute the Maximum A posteriori (MAP), and the mean as follows</p>
 <pre class="r"><code>print(purrr::map_dbl(post, map_estimate), digits = 3)</code></pre>
 <pre><code>## (Intercept)         age         dis       chas1 
-##      32.273      -0.143      -0.255       7.192</code></pre>
+##      33.025      -0.145      -0.295       7.573</code></pre>
 <pre class="r"><code>print(purrr::map_dbl(post, mean), digits = 3)</code></pre>
 <pre><code>## (Intercept)         age         dis       chas1 
-##      32.734      -0.143      -0.244       7.506</code></pre>
+##      32.761      -0.143      -0.248       7.523</code></pre>
 <p>As we see the values are closer to each other due to the like normality of the distribution of the posteriors where all the central statistics (mean, median, mode) are closer to each other.
 Using the following plot to visualize the age coefficient using different statistics as follows</p>
 <pre class="r"><code>mcmc_dens(model_bayes, pars = c(&quot;age&quot;)) + vline_at(median(post$age), col = &quot;red&quot;) + 
@@ -216,20 +213,20 @@ Using the following plot to visualize the age coefficient using different statis
 ## 
 ## Parameter   |        89% HDI
 ## ----------------------------
-## (Intercept) | [29.24, 36.33]
-## age         | [-0.17, -0.11]
-## dis         | [-0.66,  0.17]
-## chas1       | [ 5.35,  9.94]</code></pre>
+## (Intercept) | [29.22, 36.29]
+## age         | [-0.18, -0.11]
+## dis         | [-0.67,  0.18]
+## chas1       | [ 5.16,  9.81]</code></pre>
 <p>And based on the <code>eti</code></p>
 <pre class="r"><code>eti(model_bayes)</code></pre>
 <pre><code>## # Equal-Tailed Interval
 ## 
 ## Parameter   |        89% ETI
 ## ----------------------------
-## (Intercept) | [29.21, 36.32]
+## (Intercept) | [29.20, 36.28]
 ## age         | [-0.17, -0.11]
-## dis         | [-0.66,  0.17]
-## chas1       | [ 5.17,  9.79]</code></pre>
+## dis         | [-0.67,  0.18]
+## chas1       | [ 5.17,  9.83]</code></pre>
 <p>Using both methods, the only non significant coefficient is <strong>dis</strong> variable, which is inline with the classical regression.</p>
 <p><strong>Note</strong>: this similar result between frequentist and bayesian regression may due to the normality assumption for the former that is well satisfied which gives satisfied results and due to the normal prior used in the latter. However, in real world it is less often to be sure about the normality assumption which may give contradict conclusions between the two approaches.</p>
 <p>Another way to test the significance by checking the part of the credible interval that falls inside the ROPE interval. we can get this by calling the <code>rope</code> from <strong>bayestestR</strong> package</p>
@@ -258,7 +255,7 @@ Using the following plot to visualize the age coefficient using different statis
 ## 
 ## inside ROPE
 ## -----------
-## 23.28 %</code></pre>
+## 20.02 %</code></pre>
 <p>In contrast, almost the quarter of the credible interval of <strong>dis</strong> variable is inside the ROPE interval. In other words, the probability of this coefficient to be zero is 23.28%.</p>
 <pre class="r"><code>rope_range(model_bayes)</code></pre>
 <pre><code>## [1] -0.9197104  0.9197104</code></pre>
@@ -272,11 +269,11 @@ df1$p.value &lt;- round(df1$p.value, digits = 3)
 df2 &lt;- 1 - purrr::map_dbl(post, p_direction)
 df &lt;- cbind(df1, df2)
 df</code></pre>
-<pre><code>##                    term p.value   df2
-## (Intercept) (Intercept)   0.000 0.000
-## age                 age   0.000 0.000
-## dis                 dis   0.354 0.176
-## chas1             chas1   0.000 0.000</code></pre>
+<pre><code>##                    term p.value     df2
+## (Intercept) (Intercept)   0.000 0.00000
+## age                 age   0.000 0.00000
+## dis                 dis   0.354 0.18075
+## chas1             chas1   0.000 0.00000</code></pre>
 <p># Conclusion</p>
 <p>within the last decade more practitioner , specially in some fields such as medicine and psychology, are turning towards bayesian analysis since almost every thing can be interpreted straightforwardly with a probabilistic manner. However, the Bayesian analysis has also some drawback , like the subjective way to define the priors (which play an important role to compute the posterior), or for problems that do not have conjugate prior, not always the mcmc alghorithm converges easily to the right values (specially with complex data).</p>
 </div>

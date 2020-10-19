@@ -26,7 +26,7 @@ projects: []
 
 <div id="TOC">
 <ul>
-<li><a href="#introducction">Introducction</a></li>
+<li><a href="#introduction">Introduction</a></li>
 <li><a href="#data-preparation">Data preparation</a></li>
 <li><a href="#partition-the-data-impute-the-missing-values.">Partition the data &amp; impute the missing values.</a>
 <ul>
@@ -44,8 +44,8 @@ projects: []
 </ul>
 </div>
 
-<div id="introducction" class="section level2">
-<h2>Introducction</h2>
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
 <p>Deep learning model belongs to the area of machine learning models which can be used either for supervised or unsupervised learning. Based on <a href="https://www.digitaltrends.com/cool-tech/what-is-an-artificial-neural-network/">artificial neural network</a>, it can handle a wide variety of data types by using different neural network architectures such as <a href="https://stanford.edu/~shervine/teaching/cs-230/cheatsheet-recurrent-neural-networks">recurrent neural network RNN</a> for sequence data (time series, text data etc.), <a href="https://towardsdatascience.com/a-comprehensive-guide-to-convolutional-neural-networks-the-eli5-way-3bd2b1164a53">convolutional neural network CNN</a> for computer vision, <a href="https://machinelearningmastery.com/what-are-generative-adversarial-networks-gans/">generative adversarial network GAN</a> for image generation and many other types of architecture.
 The basic architecture of deep learning is the same as the classical artificial neural network (that has one hidden layer) with the difference that deep learning allows more than one hidden layer (this is where does the name deep come from ). Theses layers are called dense layers since that each node of a particular layer is connected with all the nodes of the previous layer, and in addition each node has an <a href="https://missinglink.ai/guides/neural-network-concepts/7-types-neural-network-activation-functions-right/">activation function</a> to capture any nonlinearity in the data.</p>
 <p>In this article, we will use the basic deep learning model to predict the famous titanic data set (kaggle competition).</p>
@@ -54,8 +54,12 @@ The basic architecture of deep learning is the same as the classical artificial 
 <h2>Data preparation</h2>
 <p>We use the titanic data because of its familiarity with every one and hence focusing more on understanding and implementing our model. So Let’s call this data.</p>
 <pre class="r"><code>ssh &lt;- suppressPackageStartupMessages
-ssh(library(tidyverse))
-data &lt;- read_csv(&quot;C://Users/dell/Documents/new-blog/content/post/train.csv&quot;)</code></pre>
+ssh(library(tidyverse))</code></pre>
+<pre><code>## Warning: package &#39;ggplot2&#39; was built under R version 4.0.2</code></pre>
+<pre><code>## Warning: package &#39;tibble&#39; was built under R version 4.0.2</code></pre>
+<pre><code>## Warning: package &#39;tidyr&#39; was built under R version 4.0.2</code></pre>
+<pre><code>## Warning: package &#39;dplyr&#39; was built under R version 4.0.2</code></pre>
+<pre class="r"><code>data &lt;- read_csv(&quot;C://Users/dell/Documents/new-blog/content/post/train.csv&quot;)</code></pre>
 <pre><code>## Parsed with column specification:
 ## cols(
 ##   PassengerId = col_double(),
@@ -76,8 +80,8 @@ data &lt;- read_csv(&quot;C://Users/dell/Documents/new-blog/content/post/train.c
 ssh(library(caret))</code></pre>
 <p>The first step in modeling is to clean and prepare the data. the following code shows the structure of this data.</p>
 <pre class="r"><code>glimpse(data)</code></pre>
-<pre><code>## Observations: 891
-## Variables: 12
+<pre><code>## Rows: 891
+## Columns: 12
 ## $ PassengerId &lt;dbl&gt; 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, ...
 ## $ Survived    &lt;dbl&gt; 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0...
 ## $ Pclass      &lt;dbl&gt; 3, 1, 3, 1, 3, 3, 1, 3, 3, 2, 3, 1, 3, 3, 3, 2, 3, 2, 3...
@@ -95,8 +99,8 @@ ssh(library(caret))</code></pre>
 <p>As we see some variables should be of factor type such as <strong>Pclass</strong> (which is now double), <strong>Sex</strong> (character), and <strong>Embarked</strong> (character). thus, we convert them to factor type:</p>
 <pre class="r"><code>mydata &lt;- mydata %&gt;%  modify_at(c(&#39;Pclass&#39;, &#39;Embarked&#39;, &#39;Sex&#39; ), as.factor)
 glimpse(mydata)</code></pre>
-<pre><code>## Observations: 891
-## Variables: 8
+<pre><code>## Rows: 891
+## Columns: 8
 ## $ Survived &lt;dbl&gt; 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1...
 ## $ Pclass   &lt;fct&gt; 3, 1, 3, 1, 3, 3, 1, 3, 3, 2, 3, 1, 3, 3, 3, 2, 3, 2, 3, 3...
 ## $ Sex      &lt;fct&gt; male, female, female, female, male, male, male, male, fema...
@@ -138,11 +142,16 @@ So let’s partition the data using <strong>caret</strong> package function.</p>
 <p>we randomly split the data into two sets , 80% of samples will be used in the training process and the remaining 20% will be kept as test set.</p>
 <pre class="r"><code>set.seed(1234)
 index&lt;-createDataPartition(mydata$Survived,p=0.8,list=FALSE)
-train&lt;-mydata[index,]
-test&lt;-mydata[-index,]</code></pre>
+train&lt;-mydata[index,]</code></pre>
+<pre><code>## Warning: The `i` argument of ``[`()` can&#39;t be a matrix as of tibble 3.0.0.
+## Convert to a vector.
+## This warning is displayed once every 8 hours.
+## Call `lifecycle::last_warnings()` to see where this warning was generated.</code></pre>
+<pre class="r"><code>test&lt;-mydata[-index,]</code></pre>
 <p>Now we are ready to impute the missing values for both train and test set.</p>
-<pre class="r"><code>ssh(library(mice))
-impute_train&lt;-mice(train,m=1,seed = 1111)
+<pre class="r"><code>ssh(library(mice))</code></pre>
+<pre><code>## Warning: package &#39;mice&#39; was built under R version 4.0.2</code></pre>
+<pre class="r"><code>impute_train&lt;-mice(train,m=1,seed = 1111)
 train&lt;-complete(impute_train,1)
 
 impute_test&lt;-mice(test,m=1,seed = 1111)
@@ -159,8 +168,8 @@ test$Embarked&lt;-as.integer(test$Embarked)-1
 test$Sex&lt;-as.integer(test$Sex)-1
 test$Pclass&lt;-as.integer(test$Pclass)-1
 glimpse(test)</code></pre>
-<pre><code>## Observations: 178
-## Variables: 8
+<pre><code>## Rows: 178
+## Columns: 8
 ## $ Survived &lt;dbl&gt; 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0...
 ## $ Pclass   &lt;dbl&gt; 2, 2, 2, 1, 1, 2, 2, 1, 2, 2, 2, 0, 0, 2, 2, 2, 1, 2, 2, 2...
 ## $ Sex      &lt;dbl&gt; 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 1...
@@ -255,9 +264,9 @@ model&lt;-load_model_hdf5(&quot;simplemodel.h5&quot;)</code></pre>
 <pre class="r"><code>train_eva &lt;- model %&gt;%
   evaluate(trainx,trainlabel)
 test_eva &lt;- model %&gt;% 
-  evaluate(testx, testlabel)
-tibble(train_acc= train_eva$accuracy, test_acc= test_eva$accuracy, train_loss=train_eva$loss,test_loss=test_eva$loss)</code></pre>
-<p>The accuracy rate of the model using the test set is 80.62% which is higher than that of the training set (78.82%) which means that this model needs more improvement.</p>
+  evaluate(testx, testlabel) 
+tibble(train_acc= train_eva[[&quot;accuracy&quot;]], test_acc= test_eva[[&quot;accuracy&quot;]], train_loss=train_eva[[&quot;loss&quot;]],test_loss=test_eva[[&quot;loss&quot;]])</code></pre>
+<p>The accuracy rate of the model using the test set is 80.89% which is higher than that of the training set (79.92%) which means that this model needs more improvement.</p>
 </div>
 <div id="model-tuning" class="section level2">
 <h2>model tuning</h2>
@@ -278,7 +287,7 @@ model1 %&gt;%
 
 #history1&lt;- model1 %&gt;%
 #   fit (trainx,trainlabel,epoch=200,batch_size=40,validation_split=0.2)</code></pre>
-<p>Before evalation we should svve it.</p>
+<p>Before evaluation we should save it.</p>
 <pre class="r"><code>#save_model_hdf5(model,&quot;simplemodel1.h5&quot;)
 model1&lt;-load_model_hdf5(&quot;simplemodel1.h5&quot;)</code></pre>
 <p>Let’s evaluate this new model.</p>
@@ -286,7 +295,7 @@ model1&lt;-load_model_hdf5(&quot;simplemodel1.h5&quot;)</code></pre>
   evaluate(trainx,trainlabel)
 test_eva &lt;- model1 %&gt;% 
   evaluate(testx, testlabel)
-tibble(train_acc= train_eva$accuracy, test_acc= test_eva$accuracy, train_loss=train_eva$loss,test_loss=test_eva$loss)</code></pre>
+tibble(train_acc= train_eva[[&quot;accuracy&quot;]], test_acc= test_eva[[&quot;accuracy&quot;]], train_loss=train_eva[[&quot;loss&quot;]],test_loss=test_eva[[&quot;loss&quot;]])</code></pre>
 <p>with this new model we get a larger improvement with both accuracies. We can go back again to our model and try to increase the nodes or the layers or playing around with other parameters to get better results.</p>
 </div>
 <div id="conclusion" class="section level2">

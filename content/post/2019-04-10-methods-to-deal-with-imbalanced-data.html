@@ -76,8 +76,12 @@ h1,h2, h3, h4 {
 <p>Some type of models can handle imbalanced data such as <strong>deep learning</strong> model with the argument <strong>class_weight</strong> wich adds more weights to the minority class cases. Other models, however, such as <strong>svm</strong> or <strong>knn</strong> we have to make use of one of the above methods before training these type of models.</p>
 <p>In this article we will make use of the <strong>creditcard</strong> data from kaggle website -click <a href="https://www.kaggle.com/arvindratan/creditcard#creditcard.csv">here</a> to upload this data, which is highly imbalanced- and we will train a <strong>logistic regression</strong> model on the raw data and on the transformed data after applying the above methods and comparing the results. Also, we will use a simple deep learning model with and without taking into account the imbalanced problem.</p>
 <p>First we call the data.</p>
-<pre class="r"><code>spsm(library(tidyverse))
-data &lt;- read.csv(&quot;../sparklyr/creditcard.csv&quot;, header = TRUE)</code></pre>
+<pre class="r"><code>spsm(library(tidyverse))</code></pre>
+<pre><code>## Warning: package &#39;ggplot2&#39; was built under R version 4.0.2</code></pre>
+<pre><code>## Warning: package &#39;tibble&#39; was built under R version 4.0.2</code></pre>
+<pre><code>## Warning: package &#39;tidyr&#39; was built under R version 4.0.2</code></pre>
+<pre><code>## Warning: package &#39;dplyr&#39; was built under R version 4.0.2</code></pre>
+<pre class="r"><code>data &lt;- read.csv(&quot;../sparklyr/creditcard.csv&quot;, header = TRUE)</code></pre>
 <p>For privacy purposes the original features are replaced by the PCA variables from v1 to v28 and only <strong>Time</strong> and <strong>Amount</strong> features that are left from the original features.</p>
 <p>Let’s first check <strong>Class</strong> variable levels frequency (after having been converted to a factor type).</p>
 <pre class="r"><code>data$Class &lt;- as.factor(data$Class)

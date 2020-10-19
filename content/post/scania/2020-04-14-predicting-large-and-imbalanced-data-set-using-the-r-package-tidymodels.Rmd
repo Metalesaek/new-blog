@@ -173,11 +173,11 @@ df
 I think the best strategy is to first remove columns that have a large number of missing values then we impute the rest, thereby we reduce the number of predictors and the number of missing values at ones. The following script keep the predictors that have a number of missing values less than **10000**.
 
 ```{r}
+
 names <- modify(train[-1], is.na) %>% 
   colSums() %>%
   tibble(names = colnames(train[-1]), missing_values=.) %>% 
-  filter(missing_values < 10000) %>% 
-  select(1)
+  filter(missing_values < 10000) 
 train1 <- train[c("class",names$names)]
 test1 <- test[c("class",names$names)]
 ```
@@ -257,7 +257,7 @@ Now we can run everything at once, the recipe and the model,  notice that here w
 
 Everything now is ready to run our model with the default values.
 
-```{r}
+```{r , cache=TRUE}
 model_rf <- rf_wf %>% 
   fit(data = train1)
 ```
@@ -291,7 +291,7 @@ with this model we get high accuracy which is very closer to the previous one. H
 caret::confusionMatrix(as.factor(test1$class), predict(model_rf, new_data = test1)$.pred_class)
 ```
 
-As said shortly, the specificity rate related to the minor class **77%** is very low compared to the major class **99%**, and You can think of this as a partial overfitting towards the major class. So if we are more interested to the minor class (which is often the case) then we have go back to our model and try tuning our model or try another subsampling method. 
+As said shortly, the specificity rate related to the minor class **78%** is very low compared to the major class **99%**, and You can think of this as a partial overfitting towards the major class. So if we are more interested to the minor class (which is often the case) then we have go back to our model and try tuning our model or try another subsampling method. 
 
 ### Model tuning: 
 
@@ -307,7 +307,7 @@ And tune the following:
 
 First, we define the model with these new arguments.  
 
-```{r}
+```{r, cache=TRUE}
 model_tune <- rand_forest(trees= 100, mtry=tune(), min_n = tune()) %>%
   set_engine("ranger", num.threads=3, seed=123) %>% 
   set_mode("classification")
@@ -334,7 +334,7 @@ test2 <- prep(data_rec) %>%
 To tune our model we use cross validation technique. since we have large data set we use only 3 folds.
 
 
-```{r}
+```{r }
 set.seed(111)
 fold <- vfold_cv(train2, v = 3, strata = class)
 ```
@@ -351,7 +351,7 @@ tune_wf <- workflow() %>%
 To fit these models across the folds we use the **tune_grid** function instead of **fit**. 
 
 
-```{r}
+```{r , cache=TRUE}
 tune_rf <- tune_wf %>% 
   tune_grid(resamples = fold, grid = grid)
 ```
@@ -360,8 +360,10 @@ tune_rf <- tune_wf %>%
 For classification problems this function uses two metrics: accuracy and area under the ROC curve. SO we can extract the metric values as follows.   
  
 ```{r}
-tune_rf %>% collect_metrics()
+results <- tune_rf %>% collect_metrics()
+
 ```
+
 
 To get the best model we have to choose one of the two metrics, so let's go ahead with the accuracy rate.
 
@@ -381,7 +383,7 @@ tune_wf2
 
 Now we fit the model with the best parameter values to the entire training data.
 
-```{r}
+```{r, cache=TRUE}
 best_model <- tune_wf2 %>% 
   fit(train2)
 best_model
@@ -398,8 +400,8 @@ caret::confusionMatrix(as.factor(test2$class), predict(best_model, new_data = te
 As we see we do not get any improvement for the specificity rate. so let's try another subsampling method, say **Rose** method.
 
 
-```{r}
-rf_rose <- rand_forest(trees = 100, mtry=15, min_n = 5) %>% 
+```{r, cache=TRUE}
+rf_rose <- rand_forest(trees = 100, mtry=9, min_n = 5) %>% 
   set_engine("ranger", num.threads=3, seed = 123) %>%
   set_mode("classification")
 data_rec2 <- recipe(class~., data=train1) %>% 
@@ -417,14 +419,14 @@ caret::confusionMatrix(as.factor(test1$class), predict(model_rose_rf, new_data =
 
 ```
 
-The rose method is much worse than smote method since the specificity rate has doped down to 52%.
+The rose method is much worse than smote method since the specificity rate has doped down to 69%.
 
 ## logistic regression model
 
 The logistic regression is another model to fit data with binary outcome. As before we use the first recipe with smote method.
 
 
-```{r}
+```{r, cache=TRUE}
 logit <- logistic_reg() %>% 
   set_engine("glm") %>%
   set_mode("classification")
