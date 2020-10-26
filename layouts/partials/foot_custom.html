@@ -1,5 +1,5 @@
 {{ template "_internal/google_analytics.html" . }}
 
 {{ if .IsPage }}
-  {{ template "_internal/disqus.html" . }}
+  {{ template "comments/disqus.html" . }}
 {{ end }}
