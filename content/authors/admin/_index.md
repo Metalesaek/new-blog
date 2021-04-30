@@ -36,4 +36,4 @@ user_groups:
 - Visitors
 ---
 
-My main research interests are econometrics, statistics, machine learning, and deep learning. Since R is my favorite language, All practical casses presented here are implemented using R with some of its packages. For instances, tidymodels for machine learning, keras for deep learning..etc. Most of the papers are written using Rmarkdown. 
+My main research interests are econometrics, statistics, machine learning, and deep learning. Since R and Python are my favorite languages, All practical casses presented here are implemented using Rmarkdown or Jupyter notebook.  
