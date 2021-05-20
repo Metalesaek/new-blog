@@ -24,7 +24,7 @@ date_format = "Jan 2006"
   company_url = ""
   location = "Algeria"
   date_start = "2009-02-01"
-  date_end = "2016-10-01"
+  date_end = "2016-05-15"
   description = """
   Topics:
   
