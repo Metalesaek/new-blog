@@ -19,8 +19,8 @@ date_format = "Jan 2006"
 #   Begin/end multi-line descriptions with 3 quotes `"""`.
 
 [[experience]]
-  title = " Professor"
-  company = " Algeries3 university"
+  title = " Lecturer"
+  company = " Algiers3 university"
   company_url = ""
   location = "Algeria"
   date_start = "2009-02-01"
@@ -37,7 +37,7 @@ date_format = "Jan 2006"
 
 
 [[experience]]
-  title = "Associate Professor"
+  title = "Lecturer"
   company = "ENSSEA"
   company_url = ""
   location = "Algeria"
