@@ -23,8 +23,8 @@ date_format = "Jan 2006"
   company = " Algiers3 university"
   company_url = ""
   location = "Algeria"
-  date_start = "2009-02-01"
-  date_end = "2016-05-15"
+  date_start = ""
+  date_end = ""
   description = """
   Topics:
   
@@ -41,8 +41,8 @@ date_format = "Jan 2006"
   company = "ENSSEA"
   company_url = ""
   location = "Algeria"
-  date_start = "2009-10-01"
-  date_end = "2016-05-30"
+  date_start = ""
+  date_end = ""
   description = """
   Topics:
   
@@ -52,21 +52,12 @@ date_format = "Jan 2006"
   """
 
 [[experience]]
-  title = "Agency head"
-  company = "SONALGAZ"
-  company_url = ""
-  location = "Algeria"
-  date_start = "2006-06-01"
-  date_end = "2007-02-15"
-  description = """SONALGAZ is the national company of electricity and gaz."""
-
-[[experience]]
   title = "Manager"
   company = "EURL AMAJ"
   company_url = ""
   location = "Algeria"
-  date_start = "1998-02-10"
-  date_end = "2006-04-15"
+  date_start = ""
+  date_end = ""
   description = """"""
 
 
