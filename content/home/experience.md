@@ -23,8 +23,8 @@ date_format = "Jan 2006"
   company = " Algiers3 university"
   company_url = ""
   location = "Algeria"
-  date_start = ""
-  date_end = ""
+  date_start = " "
+  date_end = " "
   description = """
   Topics:
   
@@ -41,8 +41,8 @@ date_format = "Jan 2006"
   company = "ENSSEA"
   company_url = ""
   location = "Algeria"
-  date_start = ""
-  date_end = ""
+  date_start = " "
+  date_end = " "
   description = """
   Topics:
   
@@ -56,8 +56,8 @@ date_format = "Jan 2006"
   company = "EURL AMAJ"
   company_url = ""
   location = "Algeria"
-  date_start = ""
-  date_end = ""
+  date_start = " "
+  date_end = " "
   description = """"""
 
 
