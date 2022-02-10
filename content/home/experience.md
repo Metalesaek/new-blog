@@ -23,8 +23,8 @@ date_format = "Jan 2006"
   company = " Algiers3 university"
   company_url = ""
   location = "Algeria"
-  date_start = "Dec 2006"
-  date_end = "Jun 2016"
+  date_start = "2009-12-01"
+  date_end = "2016-06-01"
   description = """
   Topics:
   
@@ -41,14 +41,27 @@ date_format = "Jan 2006"
   company = "ENSSEA"
   company_url = ""
   location = "Algeria"
-  date_start = "Oct 2013"
-  date_end = "Oct 2016"
+  date_start = "2013-10-01"
+  date_end = "2016-10-01"
+  description = """
+  Topics: 
+  
+  * Econometrics
+  """
+  
+  
+[[experience]]
+  title = "Lecturer"
+  company = "EPECG"
+  company_url = ""
+  location = "Algeria"
+  date_start = "2013-09-01"
+  date_end = "2015-06-01"
   description = """
   Topics:
   
-  * Econometrics
-  * Statistics
-  * Machine learning
+  * Macroeconomics
+  * Mathematics
   """
 
 [[experience]]
@@ -56,8 +69,8 @@ date_format = "Jan 2006"
   company = "EURL AMAJ"
   company_url = ""
   location = "Algeria"
-  date_start = "Feb 1998"
-  date_end = "Mar 2007"
+  date_start = "1998-02-01"
+  date_end = "2007-03-01"
   description = """"""
 
 
