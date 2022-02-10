@@ -37,7 +37,7 @@ date_format = "Jan 2006"
 
 
 [[experience]]
-  title = "Lecturer"
+  title = "Teacher"
   company = "ENSSEA"
   company_url = ""
   location = "Algeria"
@@ -51,7 +51,7 @@ date_format = "Jan 2006"
   
   
 [[experience]]
-  title = "Lecturer"
+  title = "Teacher"
   company = "EPECG"
   company_url = ""
   location = "Algeria"
