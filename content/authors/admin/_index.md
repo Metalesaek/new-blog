@@ -18,7 +18,9 @@ Interests:
 - Econometrics
 - statistics
 - Machine learning
-- deep learnning
+- deep learning
+- Generative AI
+- Web application
 social:
 - icon: envelope
   icon_pack: fas
